@@ -31,6 +31,8 @@ theme:
         emoji_generator: !!python/name:material.extensions.emoji.to_svg
     - pymdownx.highlight:
         anchor_linenums: true
+        line_spans: __span
+      pygments_lang_class: true
     - pymdownx.keys
     - pymdownx.smartsymbols
     - pymdownx.caret
@@ -43,6 +45,8 @@ theme:
     - pymdownx.details
     - pymdownx.superfences
     - attr_list
+    - pymdownx.snippets
+
 
   palette:
     - scheme: default
