@@ -11,7 +11,4 @@ echo 'PostgreSQL iniciado'
 echo 'Migrando banco de dados...'
 python3 manage.py migrate
 
-echo 'Criando usuário admin...'
-python3 manage.py initadmin
-
 exec "$@"
