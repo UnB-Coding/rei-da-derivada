@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:16
-    container_name: postgresql
+    container_name: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
     env_file:
@@ -9,7 +9,7 @@ services:
 
   backend:
     restart: unless-stopped
-    container_name: django-api
+    container_name: api-django
     build:
       context: .
       dockerfile: ./docker/Dockerfile
@@ -22,10 +22,10 @@ services:
       - 8000:8000
     depends_on:
       - db
-  
+
   frontend:
     restart: unless-stopped
-    container_name: nextjs-web
+    container_name: web-nextjs
     build:
       context: .
       dockerfile: ./docker/Dockerfile.web
@@ -37,6 +37,6 @@ services:
       - 3000:3000
     depends_on:
       - backend
-  
+
 volumes:
   postgres_data:
