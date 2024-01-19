@@ -28,16 +28,3 @@ stop:
 
 stop-v:
 	sudo docker compose down -v
-## Django Shortcuts ##
-
-# Tests
-test:
-	python3 scripts/test.py --clean
-
-testfull:
-	python3 scripts/test.py
-	sudo docker exec api-django coverage html
-	python3 scripts/report.py
-cleanup:
-	sudo rm -f api/.coverage
-	sudo rm -f -r api/htmlcov
