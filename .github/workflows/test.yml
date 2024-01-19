@@ -22,7 +22,7 @@ jobs:
         run: make config
 
       - name: Start Docker Compose
-        run: docker compose up --build -d api
+        run: docker compose up --build -d backend
 
       - name: Run Tests
         run: |
