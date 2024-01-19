@@ -41,3 +41,9 @@ testfull:
 cleanup:
 	sudo rm -f api/.coverage
 	sudo rm -f -r api/htmlcov
+# Migrations
+makemigrations:
+	sudo docker exec api-django python3 manage.py makemigrations
+
+migrate:
+	sudo docker exec api-django python3 manage.py migrate
