@@ -14,6 +14,7 @@ entrypoint-chmod:
 
 install:
 	pip install -r ./api/requirements.txt
+	npm install --prefix ./web
 
 ## Docker ##
 
