@@ -4,6 +4,16 @@ import uuid
 
 
 class User(AbstractUser):
+    """
+    This model is used to store user information.
+    params:
+    - uuid: UUIDField
+    - first_name: CharField
+    - last_name: CharField
+    - email: EmailField
+    - picture_url: URLField
+    - is_active: BooleanField
+    """
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     first_name = models.CharField(default='', max_length=64)
     last_name = models.CharField(default='', max_length=128)
@@ -13,7 +23,9 @@ class User(AbstractUser):
 
     REQUIRED_FIELDS = ["email"]
 
-#Falta terminar de adicionar as permissioes e fazer as views.
+# Falta terminar de adicionar as permissioes e fazer as views.
+
+
 class CustomUsersPermissions:
     class Meta:
         permissions = (
