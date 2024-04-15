@@ -1,8 +1,6 @@
 from django.contrib import admin
 from .models import Token, Event, Sumula, PlayerScore, PlayerTotalScore
 
-# Register your models here.
-
 
 @admin.register(Token)
 class TokenAdmin(admin.ModelAdmin):
@@ -13,9 +11,9 @@ class TokenAdmin(admin.ModelAdmin):
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    list_display = ['token']
-    search_fields = ['token']
-    fields = ['token']
+    list_display = ['token', 'name']
+    search_fields = ['token', 'name']
+    fields = ['token', 'name']
 
 
 @admin.register(Sumula)
