@@ -22,4 +22,5 @@ class UserAdmin(admin.ModelAdmin):
     list_display = ['uuid', 'email', 'username',
                     'first_name', 'last_name', 'is_active']
     search_fields = ['email']
-    fields = [('first_name', 'last_name'), 'email', 'username', 'is_active']
+    fields = [('first_name', 'last_name'), 'email', 'username', 'is_active', 'is_staff',
+              'is_superuser', 'groups', 'user_permissions']
