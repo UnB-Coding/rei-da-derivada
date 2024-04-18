@@ -110,11 +110,10 @@ class PlayerScore(models.Model):
     def __str__(self):
         return str(self.points)
 
-# @receiver(post_save, sender=PlayerScore)
-
 
 class PlayerTotalScore(models.Model):
     """Armaneza a pontuacao total de um usuario em um evento.
+    Apenas um PlayerTotalScore por usuario e evento é permitido.
     fields:
     - user: ForeignKey para User
     - event: ForeignKey para Event
@@ -129,6 +128,7 @@ class PlayerTotalScore(models.Model):
     class Meta:
         verbose_name = ("PlayerTotalScore")
         verbose_name_plural = ("PlayerTotalScores")
+        unique_together = ['user', 'event']
 
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}: {self.total_points} pontos"

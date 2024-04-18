@@ -63,8 +63,7 @@ class TokenTest(TestCase):
 
     def test_token_str(self):
         """Testa a representação de um token"""
-        self.assertEqual(self.token.__str__(),
-                         ("Token: " + self.token.token_code))
+        self.assertEqual(self.token.__str__(), (self.token.token_code))
 
 
 class EventTest(TestCase):
@@ -111,5 +110,4 @@ class EventTest(TestCase):
     def test_event_str(self):
         """Testa a representação de um evento"""
         event = Event.objects.create(name='Evento 1', token=self.token)
-        self.assertEqual(event.__str__(),
-                         "Evento: Evento 1 - Token: " + event.token.token_code)
+        self.assertEqual(event.__str__(), "Evento 1")
