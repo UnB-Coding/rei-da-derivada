@@ -22,18 +22,3 @@ class User(AbstractUser):
     is_active = models.BooleanField(default=True)
 
     REQUIRED_FIELDS = ["email"]
-
-# Falta terminar de adicionar as permissioes e fazer as views.
-
-
-class CustomUsersPermissions:
-    class Meta:
-        permissions = (
-            ("can_create_event", 'Can create an event'),
-            ("can_edit_event", 'Can edit an event'),
-            ("can_delete_event", 'Can delete an event'),
-            ("can_create_sumula", 'Can create a sumula'),
-            ("can_edit_sumula", 'Can edit a sumula'),
-            ("can_delete_sumula", 'Can delete a sumula')
-
-        )
