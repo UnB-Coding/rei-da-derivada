@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
     'corsheaders',
     'drf_yasg',
-    # 'api',
+    'api',
     'users',
     # 'utils',
     'rest_framework',
