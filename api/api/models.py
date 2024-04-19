@@ -74,9 +74,9 @@ class Sumula (models.Model):
     - event: ForeignKey para Event
     - name: CharField com o nome da sumula
     """
-    referee = models.ManyToManyField(User, related_name='sumula')
+    referee = models.ManyToManyField(User, related_name='sumulas', blank=True)
     event = models.ForeignKey(
-        Event, on_delete=models.CASCADE, related_name='event_sumula')
+        Event, on_delete=models.CASCADE, related_name='event_sumulas')
     name = models.CharField(default='', max_length=64)
 
     class Meta:
@@ -101,7 +101,7 @@ class PlayerScore(models.Model):
         Event, on_delete=models.CASCADE, related_name='player_score')
     sumula = models.ForeignKey(
         Sumula, on_delete=models.CASCADE, related_name='player_score')
-    points = models.IntegerField(default=0)
+    points = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
         verbose_name = ("PlayerScore")
@@ -120,10 +120,10 @@ class PlayerTotalScore(models.Model):
     - total_points: IntegerField com a pontuacao total do usuario
     """
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='total_scores')
+        User, on_delete=models.CASCADE, related_name='total_score')
     event = models.ForeignKey(
-        Event, on_delete=models.CASCADE, related_name='total_scores')
-    total_points = models.IntegerField(default=0)
+        Event, on_delete=models.CASCADE, related_name='total_score')
+    total_points = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
         verbose_name = ("PlayerTotalScore")
@@ -131,4 +131,4 @@ class PlayerTotalScore(models.Model):
         unique_together = ['user', 'event']
 
     def __str__(self):
-        return f"{self.user.first_name} {self.user.last_name}: {self.total_points} pontos"
+        return str(self.total_points)
