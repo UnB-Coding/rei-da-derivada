@@ -24,4 +24,5 @@ urlpatterns = [
 
     # Views
     path('users/', include('users.urls')),
+    path('api/', include('api.urls')),
 ]
