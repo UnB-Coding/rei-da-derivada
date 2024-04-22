@@ -1,4 +1,3 @@
-from math import e
 from django.db import IntegrityError
 from django.test import TestCase
 from api.models import PlayerTotalScore, Token, Event, Sumula, PlayerScore, TOKEN_LENGTH
@@ -90,6 +89,12 @@ class EventTest(TestCase):
         """Testa a criação de um evento sem token"""
         with self.assertRaises(IntegrityError):
             Event.objects.create(name='Evento 1')
+
+    def test_team_members_token_creation(self):
+        """Testa a criação de um token de membros de equipe"""
+        event = Event.objects.create(name='Evento 1', token=self.token)
+        self.assertIsNotNone(event.team_members_token)
+        self.assertTrue(len(event.team_members_token) == TOKEN_LENGTH)
 
     def test_edit_event_name(self):
         """Testa a edição do nome de um evento"""
