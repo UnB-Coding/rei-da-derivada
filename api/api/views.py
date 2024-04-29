@@ -1,8 +1,12 @@
+from requests import Response
 from rest_framework import response, status
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from api.models import Token, Event
 from .serializers import TokenSerializer, EventSerializer
+from django.contrib.auth.mixins import PermissionRequiredMixin
+from rest_framework.permissions import BasePermission
+from django.contrib.auth.decorators import permission_required
 from .utils import handle_400_error
 
 TOKEN_NOT_PROVIDED_ERROR_MESSAGE = "Token não fornecido!"
@@ -17,14 +21,38 @@ class TokenView(APIView):
 
     def post(self, request):
         """Cria um novo token e retorna o código do token gerado."""
+        if not request.user.has_perm('api.add_token'):
+            return response.Response(status=status.HTTP_403_FORBIDDEN)
         token = Token.objects.create()
         data = TokenSerializer(token).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
 
+class CanAddEvent(BasePermission):
+    def has_permission(self, request, view):
+        if request.method == 'POST':
+            return request.user.has_perm('api.add_event')
+        return True
+
+
+class CanDeleteEvent(BasePermission):
+    def has_permission(self, request, view):
+        if request.method == 'DELETE':
+            return request.user.has_perm('api.delete_event')
+        return True
+
+
 class EventView(APIView):
     """Lida com os requests relacionados a eventos."""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanAddEvent, CanDeleteEvent]
+
+    def get_permission_required(self):
+        if self.request.method == 'POST':
+            return ['api.add_event']
+        elif self.request.method == 'DELETE':
+            return ['api.delete_event']
+        else:
+            return []
 
     def get_token(self, token_code: str) -> Token:
         """Retorna um token com o código fornecido."""
@@ -86,4 +114,5 @@ class EventView(APIView):
         if not event:
             return handle_400_error(EVENT_DELETE_ERROR_MESSAGE)
         event.delete()
+        token.used = False
         return response.Response(status=status.HTTP_200_OK)
