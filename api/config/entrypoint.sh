@@ -14,4 +14,6 @@ python3 manage.py migrate
 echo 'Criando usuário admin...'
 python3 manage.py initadmin
 
+echo 'Criando grupos de usuários...'
+python3 manage.py initgroups
 exec "$@"
