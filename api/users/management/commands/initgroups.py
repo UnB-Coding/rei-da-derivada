@@ -6,14 +6,14 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from decouple import config
 from api.models import Event, Sumula, PlayerScore, PlayerTotalScore, Token
-GROUPS = ["Owners,Event_Admin,Staff_Manager,Staff_Member,Player"]
+GROUPS = "Owners,Event_Admin,Staff_Manager,Staff_Member,Player"
 
 
 class Command(BaseCommand):
     """Este comando cria os grupos de usuários no banco de dados."""
 
     def handle(self, *args, **options):
-        for group in config('GROUPS').split(','):
+        for group in GROUPS.split(','):
             if not Group.objects.filter(name=group).exists():
                 self.group = Group.objects.create(name=group)
                 print(f'Grupo {group} criado!')
@@ -52,7 +52,9 @@ class Command(BaseCommand):
         if group.name in group_permissions:
             group.permissions.set(group_permissions[group.name])
             print(f'Permissões adicionadas com sucesso! {group}')
-            print(f'Permissões do grupo: {group.permissions.all().values_list("name", flat=True)}')
+            permissions_list = group_permissions[group.name].values_list(
+                "name", flat=True)
+            print(f'Permissões do grupo: {permissions_list}')
 
     def get_content_type(self, model):
         return ContentType.objects.get_for_model(model)
