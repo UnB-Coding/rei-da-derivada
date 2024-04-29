@@ -5,7 +5,7 @@ from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from decouple import config
-from api.models import Event, Sumula, PlayerScore, PlayerTotalScore
+from api.models import Event, Sumula, PlayerScore, PlayerTotalScore, Token
 GROUPS = ["Owners,Event_Admin,Staff_Manager,Staff_Member,Player"]
 
 
@@ -14,59 +14,48 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         for group in config('GROUPS').split(','):
-            if not len(Group.objects.all().filter(name=group)):
-                self.group_created = Group.objects.create(name=group)
+            if not Group.objects.filter(name=group).exists():
+                self.group = Group.objects.create(name=group)
                 print(f'Grupo {group} criado!')
             else:
-                print(f'Grupo {group} já existe!')
-            self.add_permissions(self.group_created)
+                self.group = Group.objects.get(name=group)
+            self.add_permissions(self.group)
 
     def add_permissions(self, *args, **options):
-        """Adiciona diferentes níveis de permissão aos grupos de usuários.
-        para as models de Event,Sumula,PlayerScore e PlayerTotalScore."""
         group = args[0]
-        event_content_type = ContentType.objects.get_for_model(Event)
-        sumula_content_type = ContentType.objects.get_for_model(Sumula)
-        player_score_content_type = ContentType.objects.get_for_model(
-            PlayerScore)
-        player_total_score_content_type = ContentType.objects.get_for_model(
-            PlayerTotalScore)
-        event_permissions = Permission.objects.filter(
-            content_type=event_content_type)
-        print(event_permissions)
-        sumula_permissions = Permission.objects.filter(
-            content_type=sumula_content_type)
-        player_score_permissions = Permission.objects.filter(
-            content_type=player_score_content_type)
-        player_total_score_permissions = Permission.objects.filter(
-            content_type=player_total_score_content_type)
+        print(f'Adicionando permissões ao grupo {group.name}...')
 
-        if group == "Owners":
-            permissions = event_permissions | sumula_permissions | player_score_permissions | player_total_score_permissions
-            group.permissions.set(permissions)
+        content_types = {
+            'event': self.get_content_type(Event),
+            'sumula': self.get_content_type(Sumula),
+            'player_score': self.get_content_type(PlayerScore),
+            'player_total_score': self.get_content_type(PlayerTotalScore),
+            'token': self.get_content_type(Token),
+        }
+
+        permissions = {
+            'event': self.get_permissions(content_types['event']),
+            'sumula': self.get_permissions(content_types['sumula']),
+            'player_score': self.get_permissions(content_types['player_score']),
+            'player_total_score': self.get_permissions(content_types['player_total_score']),
+            'token': self.get_permissions(content_types['token']),
+        }
+
+        group_permissions = {
+            "Owners": permissions['event'] | permissions['sumula'] | permissions['player_score'] | permissions['player_total_score'] | permissions['token'],
+            "Event_Admin": permissions['event'].filter(Q(codename__icontains='change') | Q(codename__icontains='delete') | Q(codename__icontains='view')) | permissions['sumula'] | permissions['player_score'] | permissions['player_total_score'],
+            "Staff_Manager": permissions['event'].filter(Q(codename__icontains='view')) | permissions['sumula'] | permissions['player_score'] | permissions['player_total_score'].filter(Q(codename__icontains='view') | Q(codename__icontains='change')),
+            "Staff_Member": permissions['event'].filter(Q(codename__icontains='view')) | permissions['sumula'].filter(Q(codename__icontains='change') | Q(codename__icontains="view")) | permissions['player_score'].filter(Q(codename__icontains='view') | Q(codename__icontains='change')) | permissions['player_total_score'].filter(Q(codename__icontains='view') | Q(codename__icontains='change')),
+            "Player": permissions['event'].filter(Q(codename__icontains='view')) | permissions['player_score'].filter(Q(codename__icontains='view')) | permissions['player_total_score'].filter(Q(codename__icontains='view')),
+        }
+
+        if group.name in group_permissions:
+            group.permissions.set(group_permissions[group.name])
             print(f'Permissões adicionadas com sucesso! {group}')
+            print(f'Permissões do grupo: {group.permissions.all().values_list("name", flat=True)}')
 
-        elif group.name == "Event_Admin":
-            permissions = event_permissions.filter(
-                Q(codename__icontains='change') |
-                Q(codename__icontains='delete') |
-                Q(codename__icontains='view')) | sumula_permissions | player_score_permissions | player_total_score_permissions
-            group.permissions.set(permissions)
-            print(f'Permissões adicionadas com sucesso! {group}')
-        elif group.name == "Staff_Manager":
-            permissions = event_permissions.filter(
-                Q(codename__icontains='view')) | sumula_permissions.filter | player_score_permissions | player_total_score_permissions
-            group.permissions.set(permissions)
-        elif group.name == "Staff_Member":
-            permissions = event_permissions.filter(
-                Q(codename__icontains='view')) | sumula_permissions.filter(Q(codename__icontains='change') | Q(codename__icontains="view")) | player_score_permissions.filter | player_total_score_permissions
-            group.permissions.set(permissions)
+    def get_content_type(self, model):
+        return ContentType.objects.get_for_model(model)
 
-        elif group.name == "Player":
-            permissions = event_permissions.filter(
-                Q(codename__icontains='view')) | player_score_permissions.filter(Q(codename__icontains='view')) | player_total_score_permissions.filter(Q(codename__icontains='view'))
-            group.permissions.set(permissions)
-        print('Permissões adicionadas com sucesso!')
-
-    def add_owner_permissions(self, group: Group, *args, **options):
-        """Adiciona permissões de Owner ao grupo Owners."""
+    def get_permissions(self, content_type):
+        return Permission.objects.filter(content_type=content_type)
