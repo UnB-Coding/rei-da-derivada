@@ -22,3 +22,6 @@ class User(AbstractUser):
     is_active = models.BooleanField(default=True)
 
     REQUIRED_FIELDS = ["email"]
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
