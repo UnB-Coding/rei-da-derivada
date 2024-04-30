@@ -1,4 +1,5 @@
 from django.db import models
+import uuid
 from users.models import User
 import string
 import random
@@ -57,7 +58,6 @@ class Event (models.Model):
     name = models.CharField(default='', max_length=64)
     team_members_token = models.CharField(
         default='', max_length=TOKEN_LENGTH, unique=True)
-    
 
     class Meta:
         verbose_name = ("Evento")
@@ -92,6 +92,7 @@ class Sumula (models.Model):
     event = models.ForeignKey(
         Event, on_delete=models.CASCADE, related_name='event_sumulas')
     name = models.CharField(default='', max_length=64)
+    active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = ("Sumula")
@@ -110,11 +111,11 @@ class PlayerScore(models.Model):
     - points: IntegerField com a pontuacao do player
     """
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='player_score')
+        User, on_delete=models.CASCADE)
     event = models.ForeignKey(
-        Event, on_delete=models.CASCADE, related_name='player_score')
+        Event, on_delete=models.CASCADE)
     sumula = models.ForeignKey(
-        Sumula, on_delete=models.CASCADE, related_name='player_score')
+        Sumula, on_delete=models.CASCADE)
     points = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
