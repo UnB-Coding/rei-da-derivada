@@ -1,13 +1,13 @@
+from typing import Optional
 from requests import Response
-from rest_framework import response, status
+from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from api.models import Token, Event
-from .serializers import TokenSerializer, EventSerializer
-from django.contrib.auth.mixins import PermissionRequiredMixin
+from api.models import Token, Event, Sumula, PlayerScore, PlayerTotalScore
+from users.models import User
+from ..serializers import TokenSerializer, EventSerializer, PlayerTotalScoreSerializer, PlayerScoreSerializer, SumulaSerializer, UserSerializer
 from rest_framework.permissions import BasePermission
-from django.contrib.auth.decorators import permission_required
-from .utils import handle_400_error
+from ..utils import handle_400_error
 
 TOKEN_NOT_PROVIDED_ERROR_MESSAGE = "Token não fornecido!"
 TOKEN_ERROR_MESSAGE = "Token não encontrado!"
@@ -54,12 +54,12 @@ class EventView(APIView):
         else:
             return []
 
-    def get_token(self, token_code: str) -> Token:
+    def get_token(self, token_code: str) -> Optional[Token]:
         """Retorna um token com o código fornecido."""
         return Token.objects.filter(
             token_code=token_code).first()
 
-    def get_event(self, token: Token) -> Event:
+    def get_event(self, token: Token) -> Optional[Event]:
         """Retorna um evento com o código fornecido."""
         return Event.objects.filter(
             token=token).first()
@@ -116,3 +116,28 @@ class EventView(APIView):
         event.delete()
         token.used = False
         return response.Response(status=status.HTTP_200_OK)
+
+
+
+
+
+class CanViewPlayers(BasePermission):
+    def has_permission(self, request, view):
+        if request.method == 'GET':
+            return request.user.has_perm('api.view_players_score')
+        return True
+
+
+class GetAllPlayers(APIView):
+    permission_classes = [IsAuthenticated, CanViewPlayers]
+
+    def get(self, request: request.Request):
+        """Retorna todos os jogadores."""
+        event_id = request.query_params.get('event_id')
+        event = Event.objects.filter(id=event_id).first()
+        players = PlayerTotalScore.objects.filter(event=event)
+        users = []
+        for player in players:
+            users.append(player.user)
+        data = UserSerializer(users, many=True).data
+        return response.Response(status=status.HTTP_200_OK, data=data)
