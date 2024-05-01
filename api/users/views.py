@@ -5,13 +5,63 @@ from users.backends.utils import get_backend
 from users.simplejwt.decorators import move_refresh_token_to_cookie
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-# from api.swagger import Errors
+from api.swagger import Errors
 
 TOKEN_EXPIRED_MESSAGE = 'Token is invalid or expired'
+
+
 class Register(TokenObtainPairView):
 
     GOOGLE_HELP_URL = "https://developers.google.com/identity/protocols/oauth2/javascript-implicit-flow?hl=pt-br"
 
+    @swagger_auto_schema(
+        operation_description="""Registra um novo usuário no sistema, ou retorna os dados caso o mesmo já exista.
+        O header da resposta acompanha o token de `refresh` nos cookies no seguinte formato:
+
+        headers = {
+            "Set-Cookie": "refresh=<refresh-token>; Secure; HttpOnly; SameSite=Lax; Expires=<expires-date>"
+        }
+        """,
+        security=[],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'access_token': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description=f"""Token de acesso provido pelo provedor \n de autenticação Google.
+                    Os passos para obter o token podem ser encontrados [aqui]({GOOGLE_HELP_URL})"""
+                ),
+            }
+        ),
+        responses={
+            200: openapi.Response('OK', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'access': openapi.Schema(
+                        type=openapi.TYPE_STRING,
+                        description='Token de acesso JWT'
+                    ),
+                    'first_name': openapi.Schema(
+                        type=openapi.TYPE_STRING,
+                        description='Primeiro nome do usuário'
+                    ),
+                    'last_name': openapi.Schema(
+                        type=openapi.TYPE_STRING,
+                        description='Último nome do usuário'
+                    ),
+                    'picture_url': openapi.Schema(
+                        type=openapi.TYPE_STRING,
+                        description='URL da foto do usuário'
+                    ),
+                    'email': openapi.Schema(
+                        type=openapi.TYPE_STRING,
+                        description='Email do usuário'
+                    ),
+                }
+            )),
+            **Errors([400]).retrieve_erros()
+        }
+    )
     @move_refresh_token_to_cookie
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         token = request.data.get('access_token')
@@ -73,7 +123,37 @@ class HandlePostErrorMixin():
 
 
 class RefreshJWTView(HandlePostErrorMixin, HandleRefreshMixin, TokenRefreshView):
+    @swagger_auto_schema(
+        operation_description="""Atualiza o token de acesso JWT, caso o token de `refresh` esteja presente nos **request cookies**.
+        O header da resposta acompanha o novo token de `refresh` nos cookies no seguinte formato:
 
+        // Request
+        headers = {
+            Cookie: "refresh=<refresh-token>"
+        }
+
+        // Response
+        headers = {
+            "Set-Cookie": "refresh=<refresh-token>; Secure; HttpOnly; SameSite=Lax; Expires=<expires-date>"
+        }
+        """,
+        security=[],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+        ),
+        responses={
+            200: openapi.Response('OK', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'access': openapi.Schema(
+                        type=openapi.TYPE_STRING,
+                        description='Token de acesso JWT'
+                    ),
+                }
+            )),
+            **Errors([400]).retrieve_erros()
+        }
+    )
     @move_refresh_token_to_cookie
     def post(self, request, *args, **kwargs):
         request = self.handle(request)
@@ -81,7 +161,25 @@ class RefreshJWTView(HandlePostErrorMixin, HandleRefreshMixin, TokenRefreshView)
 
 
 class BlacklistJWTView(HandlePostErrorMixin, HandleRefreshMixin, TokenBlacklistView):
+    @swagger_auto_schema(
+        operation_description="""Revoga o Token de acesso JWT, caso o token de `refresh` esteja presente nos **request cookies**.
 
+            // Request
+            headers = {
+                Cookie: "refresh=<refresh-token>"
+            }
+            """,
+        security=[],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+        ),
+        responses={
+            200: openapi.Response('OK', openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+            )),
+            **Errors([400]).retrieve_erros()
+        }
+    )
     def post(self, request, *args, **kwargs):
         request = self.handle(request)
         return super().post(request, *args, **kwargs)
