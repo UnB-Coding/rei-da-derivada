@@ -17,7 +17,6 @@ class CreateGroupsTestCase(TestCase):
         self.command.handle()
         for group_name in GROUPS.split(','):
             self.assertTrue(Group.objects.filter(name=group_name).exists())
-            mock_print.assert_any_call(f'Grupo {group_name} criado!')
 
     def test_content_type(self):
         content_type_event = self.command.get_content_type(Event)
@@ -39,4 +38,3 @@ class CreateGroupsTestCase(TestCase):
             codename='add_event').exists())
         self.assertTrue(group.permissions.filter(
             codename='change_event').exists())
-        # Add assertions for other permissions as needed

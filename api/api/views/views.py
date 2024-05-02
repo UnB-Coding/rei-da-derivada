@@ -1,5 +1,4 @@
 from typing import Optional
-from requests import Response
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -7,20 +6,36 @@ from api.models import Token, Event, Sumula, PlayerScore, PlayerTotalScore
 from users.models import User
 from ..serializers import TokenSerializer, EventSerializer, PlayerTotalScoreSerializer, PlayerScoreSerializer, SumulaSerializer, UserSerializer
 from rest_framework.permissions import BasePermission
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from ..utils import handle_400_error
-
+from ..swagger import Errors
 TOKEN_NOT_PROVIDED_ERROR_MESSAGE = "Token não fornecido!"
 TOKEN_ERROR_MESSAGE = "Token não encontrado!"
 EVENT_CREATE_ERROR_MESSAGE = "Evento não encontrado!"
 EVENT_DELETE_ERROR_MESSAGE = "Este evento não existe!"
 
 
-class TokenView(APIView):
-    """ TokenView é uma view que lida com os requests relacionados a tokens."""
-    permission_classes = [IsAuthenticated]
+class CanAddToken(BasePermission):
+    def has_permission(self, request, view):
+        if request.method == 'POST':
+            return request.user.has_perm('api.add_token')
+        return True
 
+
+class TokenView(APIView):
+    permission_classes = [IsAuthenticated, CanAddToken]
+
+    @swagger_auto_schema(
+
+        security=[{'Bearer': []}],
+        responses={200: openapi.Response(
+            'OK', TokenSerializer), **Errors([403]).retrieve_erros()}
+    )
     def post(self, request):
-        """Cria um novo token e retorna o código do token gerado."""
+        """Cria um novo token e retorna o código do token gerado.
+
+        Permissões necessárias: IsAthenticated ,CanAddToken"""
         if not request.user.has_perm('api.add_token'):
             return response.Response(status=status.HTTP_403_FORBIDDEN)
         token = Token.objects.create()
@@ -28,23 +43,22 @@ class TokenView(APIView):
         return response.Response(status=status.HTTP_200_OK, data=data)
 
 
-class CanAddEvent(BasePermission):
+class EventPermissions(BasePermission):
     def has_permission(self, request, view):
-        if request.method == 'POST':
+        if request.method == 'GET':
+            return request.user.has_perm('api.view_event')
+        elif request.method == 'POST':
             return request.user.has_perm('api.add_event')
-        return True
-
-
-class CanDeleteEvent(BasePermission):
-    def has_permission(self, request, view):
-        if request.method == 'DELETE':
+        elif request.method == 'PUT':
+            return request.user.has_perm('api.change_event')
+        elif request.method == 'DELETE':
             return request.user.has_perm('api.delete_event')
         return True
 
 
 class EventView(APIView):
     """Lida com os requests relacionados a eventos."""
-    permission_classes = [IsAuthenticated, CanAddEvent, CanDeleteEvent]
+    permission_classes = [IsAuthenticated, EventPermissions]
 
     def get_permission_required(self):
         if self.request.method == 'POST':
@@ -70,9 +84,25 @@ class EventView(APIView):
             return False
         return True
 
-    def post(self, request):
+    @swagger_auto_schema(
+        operation_description="Cria um novo evento associado a um token e retorna o evento criado.",
+        operation_summary="Cria um novo evento.",
+        security=[{'Bearer': []}],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'token_code': openapi.Schema(type=openapi.TYPE_STRING, description='Código do token para criar um evento.')
+            },
+            required=['token_code']
+        ),
+        responses={200: openapi.Response(
+            'OK', EventSerializer), **Errors([400]).retrieve_erros()}
+    )
+    def post(self, request, *args, **kwargs):
         """Cria um novo evento associado a um token e retorna o evento criado.
         Caso o token já tenha sido utilizado ou já exista um evento associado ao token, retorna um erro 400.
+
+        Permissões necessárias: IsAthenticated ,EventPermissions
         """
         if 'token_code' not in request.data:
             return handle_400_error(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
@@ -90,14 +120,30 @@ class EventView(APIView):
         if self.get_event(token):
             return handle_400_error(EVENT_CREATE_ERROR_MESSAGE)
 
-        event = Event.objects.create(token=token, name=request.data['name'])
+        event = Event.objects.create(token=token)
         data = EventSerializer(event).data
 
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
-    def delete(self, request):
+    @swagger_auto_schema(
+        operation_summary="Deleta um evento associado a um token.",
+        operation_description='Deleta um evento associado a um token.',
+        security=[{'Bearer': []}],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'token_code': openapi.Schema(type=openapi.TYPE_STRING, description='Código do token')
+            },
+            required=['token_code']
+        ),
+        responses={200: openapi.Response(
+            'OK', EventSerializer), **Errors([400]).retrieve_erros()}
+    )
+    def delete(self, request, *args, **kwargs):
         """Deleta um evento associado a um token e retorna o evento deletado.
         Caso o token não tenha um evento associado, retorna um erro 400.
+
+        Permissões necessárias: IsAthenticated ,EventPermissions
         """
         if 'token_code' not in request.data:
             return handle_400_error(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
@@ -118,9 +164,6 @@ class EventView(APIView):
         return response.Response(status=status.HTTP_200_OK)
 
 
-
-
-
 class CanViewPlayers(BasePermission):
     def has_permission(self, request, view):
         if request.method == 'GET':
@@ -129,9 +172,14 @@ class CanViewPlayers(BasePermission):
 
 
 class GetAllPlayers(APIView):
+    """ Retorna todos os jogadores de um event.
+    Permissões necessárias: IsAuthenticated, CanViewPlayers
+    """
     permission_classes = [IsAuthenticated, CanViewPlayers]
 
-    def get(self, request: request.Request):
+    @ swagger_auto_schema(security=[{'Bearer': []}],
+                          responses={200: openapi.Response(200, UserSerializer), **Errors([400]).retrieve_erros()})
+    def get(self, request: request.Request, *args, **kwargs):
         """Retorna todos os jogadores."""
         event_id = request.query_params.get('event_id')
         event = Event.objects.filter(id=event_id).first()

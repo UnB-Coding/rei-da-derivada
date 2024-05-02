@@ -55,7 +55,7 @@ class Event (models.Model):
     """
     token = models.OneToOneField(
         Token, on_delete=models.CASCADE, related_name='event')
-    name = models.CharField(default='', max_length=64)
+    name = models.CharField(default='', max_length=64, blank=True, null=True)
     team_members_token = models.CharField(
         default='', max_length=TOKEN_LENGTH, unique=True)
 

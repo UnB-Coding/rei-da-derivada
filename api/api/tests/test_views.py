@@ -8,6 +8,8 @@ from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import Permission
 from ..utils import get_permissions, get_content_type
+
+
 class TokenViewTest(APITestCase):
     def setUp(self):
         self.user = User.objects.create(
@@ -63,16 +65,16 @@ class EventViewTest(APITestCase):
     def test_create_event(self):
         """Test creating a new event with a valid token."""
         url = reverse('api:event')
-        data = {'token_code': self.token.token_code, 'name': 'New Event'}
+        data = {'token_code': self.token.token_code}
         self.client.force_authenticate(user=self.user)
 
         response = self.client.post(url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['name'], 'New Event')
+        self.assertEqual(response.data['name'], '')
         self.assertEqual(response.data['id'], 1)
         self.assertEqual(Event.objects.count(), 1)
-        self.assertEqual(Event.objects.get().name, 'New Event')
+        self.assertEqual(Event.objects.get().name, '')
         self.assertEqual(Event.objects.get().id, 1)
 
     def test_create_event_with_invalid_token_with_authorized_user(self):
