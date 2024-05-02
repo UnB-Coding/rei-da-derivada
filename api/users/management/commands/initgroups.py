@@ -16,14 +16,14 @@ class Command(BaseCommand):
         for group in GROUPS.split(','):
             if not Group.objects.filter(name=group).exists():
                 self.group = Group.objects.create(name=group)
-                print(f'Grupo {group} criado!')
+                """ print(f'Grupo {group} criado!') """
             else:
                 self.group = Group.objects.get(name=group)
             self.add_permissions(self.group)
 
     def add_permissions(self, *args, **options):
         group = args[0]
-        print(f'Adicionando permissões ao grupo {group.name}...')
+        """ print(f'Adicionando permissões ao grupo {group.name}...') """
 
         content_types = {
             'event': self.get_content_type(Event),
@@ -51,10 +51,10 @@ class Command(BaseCommand):
 
         if group.name in group_permissions:
             group.permissions.set(group_permissions[group.name])
-            print(f'Permissões adicionadas com sucesso! {group}')
+            """ print(f'Permissões adicionadas com sucesso! {group}')
             permissions_list = group_permissions[group.name].values_list(
                 "name", flat=True)
-            print(f'Permissões do grupo: {permissions_list}')
+            print(f'Permissões do grupo: {permissions_list}') """
 
     def get_content_type(self, model):
         return ContentType.objects.get_for_model(model)

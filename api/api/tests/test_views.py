@@ -1,5 +1,5 @@
 
-from api.models import Token, Event
+from api.models import Sumula, Token, Event
 from users.models import User
 from rest_framework.test import APITestCase
 from rest_framework import status
@@ -7,16 +7,7 @@ from django.urls import reverse
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import Permission
-
-
-def get_content_type(model):
-    """ Returns the content type for a given model."""
-    return ContentType.objects.get_for_model(model)
-
-
-def get_permissions(content_type):
-    """ Returns all permissions for a given content type."""
-    return Permission.objects.filter(content_type=content_type)
+from ..utils import get_permissions, get_content_type
 
 
 class TokenViewTest(APITestCase):
@@ -74,14 +65,17 @@ class EventViewTest(APITestCase):
     def test_create_event(self):
         """Test creating a new event with a valid token."""
         url = reverse('api:event')
-        data = {'token_code': self.token.token_code, 'name': 'New Event'}
+        data = {'token_code': self.token.token_code}
         self.client.force_authenticate(user=self.user)
 
         response = self.client.post(url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['name'], '')
+        self.assertEqual(response.data['id'], 1)
         self.assertEqual(Event.objects.count(), 1)
-        self.assertEqual(Event.objects.get().name, 'New Event')
+        self.assertEqual(Event.objects.get().name, '')
+        self.assertEqual(Event.objects.get().id, 1)
 
     def test_create_event_with_invalid_token_with_authorized_user(self):
         """Test creating a new event with an invalid token."""
@@ -183,3 +177,15 @@ class EventViewTest(APITestCase):
         self.client.force_authenticate(user=None)
         if Event.objects.exists():
             Event.objects.all().delete()
+
+
+""" class SumulaViewTest(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create(
+            username='testuser', name='Test User', email='testuser@email', uuid='123')
+
+        self.token = Token.objects.create()
+        self.event = Event.objects.create(token=self.token, name='Test Event')
+        self.group = Group.objects.create(name='Owners')
+        self.sumula_permission = get_permissions(get_content_type(Sumula))
+        self.group.permissions.set(self.sumula_permission) """
