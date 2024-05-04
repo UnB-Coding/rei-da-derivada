@@ -14,7 +14,7 @@ class TokenViewTest(APITestCase):
     def setUp(self):
         self.user = User.objects.create(
             username='testuser', email='example@email.com')
-        self.group = Group.objects.create(name='Owners')
+        self.group = Group.objects.create(name='App_Admin')
         self.permission = get_permissions(get_content_type(Token))
         self.group.permissions.set(self.permission)
 
@@ -57,7 +57,7 @@ class EventViewTest(APITestCase):
         self.user = User.objects.create(
             username='testuser', email='test@email.com')
         self.token = Token.objects.create()
-        self.group = Group.objects.create(name='Owners')
+        self.group = Group.objects.create(name='App_Admin')
         self.permission = get_permissions(get_content_type(Event))
         self.group.permissions.set(self.permission)
         self.user.groups.add(self.group)
@@ -186,6 +186,6 @@ class EventViewTest(APITestCase):
 
         self.token = Token.objects.create()
         self.event = Event.objects.create(token=self.token, name='Test Event')
-        self.group = Group.objects.create(name='Owners')
+        self.group = Group.objects.create(name='App_Admin')
         self.sumula_permission = get_permissions(get_content_type(Sumula))
         self.group.permissions.set(self.sumula_permission) """
