@@ -6,7 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from decouple import config
 from api.models import Event, Sumula, PlayerScore, PlayerTotalScore, Token
-GROUPS = "Owners,Event_Admin,Staff_Manager,Staff_Member,Player"
+GROUPS = "App_Admin,Event_Admin,Staff_Manager,Staff_Member,Player"
 
 
 class Command(BaseCommand):
@@ -42,7 +42,7 @@ class Command(BaseCommand):
         }
 
         group_permissions = {
-            "Owners": permissions['event'] | permissions['sumula'] | permissions['player_score'] | permissions['player_total_score'] | permissions['token'],
+            "App_Admin": permissions['event'] | permissions['sumula'] | permissions['player_score'] | permissions['player_total_score'] | permissions['token'],
             "Event_Admin": permissions['event'].filter(Q(codename__icontains='change') | Q(codename__icontains='delete') | Q(codename__icontains='view')) | permissions['sumula'] | permissions['player_score'] | permissions['player_total_score'],
             "Staff_Manager": permissions['event'].filter(Q(codename__icontains='view')) | permissions['sumula'] | permissions['player_score'] | permissions['player_total_score'].filter(Q(codename__icontains='view') | Q(codename__icontains='change')),
             "Staff_Member": permissions['event'].filter(Q(codename__icontains='view')) | permissions['sumula'].filter(Q(codename__icontains='change') | Q(codename__icontains="view")) | permissions['player_score'].filter(Q(codename__icontains='view') | Q(codename__icontains='change')) | permissions['player_total_score'].filter(Q(codename__icontains='view') | Q(codename__icontains='change')),
