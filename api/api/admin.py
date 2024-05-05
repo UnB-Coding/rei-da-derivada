@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Token, Event, Sumula, PlayerScore, PlayerTotalScore
+from .models import Token, Event, Sumula, PlayerScore, Player
 
 
 @admin.register(Token)
@@ -31,13 +31,15 @@ class SumulaAdmin(admin.ModelAdmin):
 
 @admin.register(PlayerScore)
 class PlayerScoreAdmin(admin.ModelAdmin):
-    list_display = ['user', 'event', 'sumula', 'points', 'id']
-    search_fields = ['user', 'event', 'sumula', 'points']
-    fields = ['user', 'event', 'sumula', 'points']
+    list_display = ['event', 'sumula', 'points', 'id']
+    search_fields = ['event', 'sumula', 'points']
+    fields = ['event', 'sumula', 'points']
 
 
-@admin.register(PlayerTotalScore)
-class PlayerTotalScoreAdmin(admin.ModelAdmin):
-    list_display = ['user', 'total_points', 'event', 'id']
-    search_fields = ['user', '_total_points', 'event']
-    fields = ['user', 'total_points', 'event']
+@admin.register(Player)
+class Admin(admin.ModelAdmin):
+    list_display = ['first_name', 'last_name', 'event',
+                    'total_score', 'registration_email', 'id']
+    search_fields = ['first_name', 'last_name',
+                     'total_score', 'event', 'registration_email']
+    fields = ['user', 'total_score', 'event', 'registration_email']

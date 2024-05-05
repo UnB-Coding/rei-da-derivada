@@ -2,9 +2,9 @@ from typing import Optional
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from api.models import Token, Event, Sumula, PlayerScore, PlayerTotalScore
+from api.models import Token, Event, Sumula, PlayerScore, Player
 from users.models import User
-from ..serializers import TokenSerializer, EventSerializer, PlayerTotalScoreSerializer, PlayerScoreSerializer, SumulaSerializer, UserSerializer
+from ..serializers import TokenSerializer, EventSerializer, PlayerSerializer, PlayerScoreSerializer, SumulaSerializer, UserSerializer
 from rest_framework.permissions import BasePermission
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -171,21 +171,18 @@ class CanViewPlayers(BasePermission):
         return True
 
 
-class GetAllPlayers(APIView):
-    """ Retorna todos os jogadores de um event.
-    Permissões necessárias: IsAuthenticated, CanViewPlayers
-    """
+""" class GetAllPlayers(APIView):
+
     permission_classes = [IsAuthenticated, CanViewPlayers]
 
     @ swagger_auto_schema(security=[{'Bearer': []}],
                           responses={200: openapi.Response(200, UserSerializer), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs):
-        """Retorna todos os jogadores."""
         event_id = request.query_params.get('event_id')
         event = Event.objects.filter(id=event_id).first()
-        players = PlayerTotalScore.objects.filter(event=event)
+        players = Player.objects.filter(event=event)
         users = []
         for player in players:
             users.append(player.user)
         data = UserSerializer(users, many=True).data
-        return response.Response(status=status.HTTP_200_OK, data=data)
+        return response.Response(status=status.HTTP_200_OK, data=data) """

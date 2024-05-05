@@ -3,7 +3,7 @@ from requests import Response
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from api.models import Token, Event, Sumula, PlayerScore, PlayerTotalScore
+from api.models import Token, Event, Sumula, PlayerScore, Player
 from users.models import User
 from ..serializers import SumulaSerializer, PlayerScoreSerializerForSumula
 from rest_framework.permissions import BasePermission
@@ -30,12 +30,12 @@ class SumulaView(APIView):
 
     def create_players_score(self, players: list, sumula: Sumula, event: Event) -> None:
         """Cria uma lista de PlayerScore associados a uma sumula."""
-        for player in players:
-            user = User.objects.filter(id=player['user_id']).first()
-            if not user:
+        for player_it in players:
+            player = Player.objects.filter(id=player_it['user_id']).first()
+            if not player:
                 continue
             player_score = PlayerScore.objects.create(
-                user=user, sumula=sumula, points=0, event=event)
+                player=player, sumula=sumula, points=0, event=event)
             player_score.save()
 
     @swagger_auto_schema(

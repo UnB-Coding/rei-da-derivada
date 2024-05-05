@@ -27,11 +27,11 @@ schema_view = get_schema_view(
         description="""API para o projeto Aplicação Mobile para apoio ao Rei e Rainha da Derivada
 
         Grupos de usuários e permissões:
-            - App_Admin: Total permissão sobre os Eventos, Sumulas, PlayerScore e PlayerTotalScore.
-            - Event_Admin: Permissão para Alterar, Deletar e Visualizar Eventos e todas as permissões de Sumula, Player_Score e Player_Total_Score.
-            - Staff_Manager: Permissão para Visualizar Eventos e todas as permissões de Sumula, Player_Score e Player_Total_Score, exceto deletar Player_Total_Score.
-            - Staff_Member: Permissão para Visualizar Eventos, Alterar e Visualizar Sumulas, Alterar e Visualizar Player_Score e Player_Total_Score.
-            - Player: Permissão para Visualizar Eventos, Visualizar Player_Score e Player_Total_Score.
+            - App_Admin: Total permissão sobre os Eventos, Sumulas, PlayerScore e Player.
+            - Event_Admin: Permissão para Alterar, Deletar e Visualizar Eventos e todas as permissões de Sumula, Player_Score e player.
+            - Staff_Manager: Permissão para Visualizar Eventos e todas as permissões de Sumula, Player_Score e player, exceto deletar player.
+            - Staff_Member: Permissão para Visualizar Eventos, Alterar e Visualizar Sumulas, Alterar e Visualizar Player_Score e player.
+            - Player: Permissão para Visualizar Eventos, Visualizar Player_Score e player.
         """,
         contact=openapi.Contact(email="reidaderivada2024@gmail.com"),
         license=openapi.License(name="MIT License"),

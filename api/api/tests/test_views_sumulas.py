@@ -2,7 +2,7 @@ from rest_framework.test import APITestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-from api.models import Sumula, Event, PlayerScore, Token
+from api.models import Sumula, Event, PlayerScore, Token, Player
 from users.models import User
 from rest_framework.test import force_authenticate
 from ..utils import get_permissions, get_content_type
@@ -15,8 +15,10 @@ class SumulaViewTest(APITestCase):
         self.event = Event.objects.create(name='Evento 1', token=self.token)
         self.sumula = Sumula.objects.create(event=self.event)
         self.user = User.objects.create(username='user1')
+        self.player = Player.objects.create(
+            user_ptr=self.user, event=self.event)
         self.player_score = PlayerScore.objects.create(
-            user=self.user, sumula=self.sumula, points=0, event=self.event)
+            player=self.player, sumula=self.sumula, points=0, event=self.event)
         self.sumula_content_type = get_content_type(Sumula)
         self.permission = get_permissions(self.sumula_content_type)
         self.group = Group.objects.create(name='Grupo_teste')
@@ -27,7 +29,7 @@ class SumulaViewTest(APITestCase):
     def test_create_sumula(self):
 
         data = {
-            'players': [{'user_id': self.user.id}]
+            'players': [{'user_id': self.player.id}]
         }
         self.client.force_authenticate(user=self.user)
         response = self.client.post(self.url, data, format='json')
