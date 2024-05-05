@@ -17,9 +17,11 @@ class PlayerSerializer(ModelSerializer):
     """ Serializer for the Player model.
     fields: first_name, last_name, event, total_score, registration_email, id
     """
+    user = UserSerializer()
+
     class Meta:
         model = Player
-        fields = ['first_name', 'last_name', 'event',
+        fields = ['user', 'event',
                   'total_score', 'registration_email', 'id']
 
 
@@ -33,12 +35,6 @@ class EventSerializer(ModelSerializer):
     class Meta:
         model = Event
         fields = ['name', 'id']
-
-
-class PlayerSerializer(ModelSerializer):
-    class Meta:
-        model = Player
-        fields = '__all__'
 
 
 class PlayerScoreSerializer(ModelSerializer):
@@ -64,7 +60,8 @@ class SumulaSerializer(ModelSerializer):
     """
     players_score = PlayerScoreSerializerForSumula(
         source='scores', many=True)
+    referee = UserSerializer(many=True)
 
     class Meta:
         model = Sumula
-        fields = ['id', 'name', 'players_score']
+        fields = ['id', 'name', 'players_score', 'active', 'referee']

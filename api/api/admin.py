@@ -19,27 +19,43 @@ class EventAdmin(admin.ModelAdmin):
 @admin.register(Sumula)
 class SumulaAdmin(admin.ModelAdmin):
 
-    def referee():
+    def referee(self, obj):
         referees = []
-        for referee in Sumula.referee:
-            referees.append(referee)
-        return ' '.join(referees)
-    list_display = ['event', 'name', 'referee', 'id']
-    search_fields = ['referee', 'event', 'name']
-    fields = ['referee', 'event', 'name']
+        for referee in obj.referee.all():
+            referees.append(str(referee))
+        return ', '.join(referees)
+
+    def player_scores(self, obj):
+        scores = []
+        for score in obj.scores.all():
+            scores.append(f'{score.player.user.__str__()}: {score.points}')
+        return ', '.join(scores)
+    player_scores.short_description = 'Player Scores'
+
+    list_display = ['event', 'name', 'referee', 'id', 'player_scores']
+    search_fields = ['referee__username', 'event__name', 'name']
+    fields = ['referee', 'event', 'name', 'player_scores']
 
 
 @admin.register(PlayerScore)
 class PlayerScoreAdmin(admin.ModelAdmin):
-    list_display = ['event', 'sumula', 'points', 'id']
-    search_fields = ['event', 'sumula', 'points']
-    fields = ['event', 'sumula', 'points']
+    def get_player_name(self, obj):
+        return obj.player.user.__str__()
+    # Define um cabeçalho para a coluna
+    get_player_name.short_description = 'Player Name'
+
+    list_display = ['get_player_name', 'event', 'sumula', 'points', 'id']
+    search_fields = ['event', 'sumula', 'points', 'player']
+    fields = ['event', 'sumula', 'points', 'player']
 
 
 @admin.register(Player)
 class Admin(admin.ModelAdmin):
-    list_display = ['first_name', 'last_name', 'event',
-                    'total_score', 'registration_email', 'id']
-    search_fields = ['first_name', 'last_name',
-                     'total_score', 'event', 'registration_email']
+    list_display = ['user', 'event', 'total_score', 'registration_email', 'id']
+    search_fields = ['user', 'total_score', 'event', 'registration_email']
     fields = ['user', 'total_score', 'event', 'registration_email']
+
+    def username(self, obj):
+        return obj.username
+    # Optional, to set column header in admin interface.
+    username.short_description = 'username'
