@@ -3,7 +3,7 @@ from django.test import TestCase
 from api.models import Player, Token, Event, Sumula, PlayerScore, TOKEN_LENGTH
 from users.models import User
 from unittest import TestCase
-
+import uuid
 # Create your tests here.
 
 
@@ -181,7 +181,7 @@ class PlayerScoreTest(TestCase):
         self.event = Event.objects.create(name='Evento 1', token=self.token)
         self.sumula = Sumula.objects.create(name='Sumula 1', event=self.event)
         self.player = Player.objects.create(
-            user_ptr=self.user, event=self.event, registration_email='email@teste.com')
+            user=self.user, event=self.event, registration_email='email@teste.com')
         self.player_score = PlayerScore.objects.create(
             player=self.player, event=self.event, sumula=self.sumula, points=0)
         self.player_score.save()
@@ -256,18 +256,29 @@ class PlayerScoreTest(TestCase):
 
 
 class PlayerTest(TestCase):
+    def create_unique_email(self):
+        self.unique_email = f'{uuid.uuid4()}@gmail.com'
+
+    def create_unique_username(self):
+        self.unique_username = f'user_{uuid.uuid4().hex[:10]}'
+
     def setUp(self):
+        self.create_unique_email()
+        self.create_unique_username()
         self.token = Token.objects.create()
+
         self.event = Event.objects.create(name='Evento 1', token=self.token)
         self.user = User.objects.create(
-            username='user1', email='test@user1.com')
+            username=self.unique_username, email='test@user1.com', first_name='Test', last_name='User')
         self.player = Player.objects.create(
-            user_ptr=self.user, event=self.event, registration_email='another@email.com')
+            user=self.user, event=self.event, registration_email=self.unique_email)
         self.sumula = Sumula.objects.create(name='Sumula 1', event=self.event)
 
     def test_create_player(self):
+        self.assertIsNotNone(self.user)
         self.assertIsNotNone(self.player)
-        self.assertEqual(self.player.registration_email, 'another@email.com')
+        self.assertEqual(self.player.registration_email, self.unique_email)
+        self.assertEqual(self.player.user.username, self.unique_username)
 
     def test_update_total_score(self):
         self.assertEqual(self.player.total_score, 0)
@@ -305,4 +316,5 @@ class PlayerTest(TestCase):
         self.user.delete()
         self.event.delete()
         self.player.delete()
-        return super().tearDown()
+        self.unique_email = None
+        self.sumula.delete()
