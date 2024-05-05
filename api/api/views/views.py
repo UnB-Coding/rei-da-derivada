@@ -2,9 +2,9 @@ from typing import Optional
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from api.models import Token, Event, Sumula, PlayerScore, PlayerTotalScore
+from api.models import Token, Event, Sumula, PlayerScore, Player
 from users.models import User
-from ..serializers import TokenSerializer, EventSerializer, PlayerTotalScoreSerializer, PlayerScoreSerializer, SumulaSerializer, UserSerializer
+from ..serializers import TokenSerializer, EventSerializer, PlayerSerializer, PlayerScoreSerializer, SumulaSerializer, UserSerializer
 from rest_framework.permissions import BasePermission
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -183,7 +183,7 @@ class GetAllPlayers(APIView):
         """Retorna todos os jogadores."""
         event_id = request.query_params.get('event_id')
         event = Event.objects.filter(id=event_id).first()
-        players = PlayerTotalScore.objects.filter(event=event)
+        players = Player.objects.filter(event=event)
         users = []
         for player in players:
             users.append(player.user)

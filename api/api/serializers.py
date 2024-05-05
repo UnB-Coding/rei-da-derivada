@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
-from api.models import Token, Event, Sumula, PlayerScore, PlayerTotalScore
+from api.models import Token, Event, Sumula, PlayerScore, Player
 from users.models import User
 
 
@@ -11,6 +11,16 @@ class UserSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'id']
+
+
+class PlayerSerializer(ModelSerializer):
+    """ Serializer for the Player model.
+    fields: first_name, last_name, event, total_score, registration_email, id
+    """
+    class Meta:
+        model = Player
+        fields = ['first_name', 'last_name', 'event',
+                  'total_score', 'registration_email', 'id']
 
 
 class TokenSerializer(ModelSerializer):
@@ -25,26 +35,26 @@ class EventSerializer(ModelSerializer):
         fields = ['name', 'id']
 
 
-class PlayerTotalScoreSerializer(ModelSerializer):
+class PlayerSerializer(ModelSerializer):
     class Meta:
-        model = PlayerTotalScore
+        model = Player
         fields = '__all__'
 
 
 class PlayerScoreSerializer(ModelSerializer):
-    user_ = UserSerializer()
+    player = PlayerSerializer()
 
     class Meta:
         model = PlayerScore
-        fields = ['user_', 'event', 'sumula', 'points']
+        fields = ['player', 'event', 'sumula', 'points']
 
 
 class PlayerScoreSerializerForSumula(ModelSerializer):
-    user = UserSerializer()
+    player = PlayerSerializer()
 
     class Meta:
         model = PlayerScore
-        fields = ['user', 'points']
+        fields = ['player', 'points']
 
 
 class SumulaSerializer(ModelSerializer):
@@ -53,7 +63,7 @@ class SumulaSerializer(ModelSerializer):
     returns: players_score as a list of PlayerScoreSerializer
     """
     players_score = PlayerScoreSerializerForSumula(
-        source='playerscore_set', many=True)
+        source='scores', many=True)
 
     class Meta:
         model = Sumula
