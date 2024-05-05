@@ -104,8 +104,9 @@ class Player(User):
     """
     This model is used to store player information.
     params:
-    - user: ForeignKey to User
-    - score: IntegerField
+    - event: ForeignKey to Event
+    - registration_email: EmailField
+    - total_score: IntegerField
     """
     total_score = models.PositiveSmallIntegerField(default=0)
     registration_email = models.EmailField(blank=False, unique=True)
@@ -150,10 +151,10 @@ class PlayerScore(models.Model):
         return str(self.points)
 
     def save(self, *args, **kwargs) -> None:
-        if self.player_id is not None and self.event_id is not None:
-            self.player.update_total_score(self.event)
-
         super(PlayerScore, self).save(*args, **kwargs)
+        
+        if self.player is not None and self.event is not None:
+            self.player.update_total_score(self.event)
 
 
 """ class PlayerTotalScore(models.Model):

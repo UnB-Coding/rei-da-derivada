@@ -199,6 +199,13 @@ class PlayerScoreTest(TestCase):
         self.assertEqual(self.player_score.points, 10)
         self.assertEqual(str(self.player_score), '10')
 
+    def test_update_total_score_within_save_method(self):
+        self.assertEqual(self.player.total_score, 0)
+        self.player_score.points = 10
+        self.player_score.save()
+
+        self.assertEqual(self.player.total_score, 10)
+
     def test_create_player_score_without_user(self):
         """Testa a criação de uma pontuação de jogador sem usuário"""
         with self.assertRaises(IntegrityError):
@@ -248,8 +255,54 @@ class PlayerScoreTest(TestCase):
         return super().tearDown()
 
 
-""" class PlayerTest(TestCase):
+class PlayerTest(TestCase):
     def setUp(self):
         self.token = Token.objects.create()
+        self.event = Event.objects.create(name='Evento 1', token=self.token)
         self.user = User.objects.create(
- """
+            username='user1', email='test@user1.com')
+        self.player = Player.objects.create(
+            user_ptr=self.user, event=self.event, registration_email='another@email.com')
+        self.sumula = Sumula.objects.create(name='Sumula 1', event=self.event)
+
+    def test_create_player(self):
+        self.assertIsNotNone(self.player)
+        self.assertEqual(self.player.registration_email, 'another@email.com')
+
+    def test_update_total_score(self):
+        self.assertEqual(self.player.total_score, 0)
+
+        # Create player scores
+        PlayerScore.objects.create(
+            player=self.player, event=self.event, sumula=self.sumula, points=10)
+        PlayerScore.objects.create(
+            player=self.player, event=self.event, sumula=self.sumula, points=20)
+
+        # Check if total score is updated
+        self.assertEqual(self.player.total_score, 30)
+
+    def test_update_total_score_alredy_with_score(self):
+        self.assertEqual(self.player.total_score, 0)
+
+        # Create player scores
+        PlayerScore.objects.create(
+            player=self.player, event=self.event, sumula=self.sumula, points=10)
+        PlayerScore.objects.create(
+            player=self.player, event=self.event, sumula=self.sumula, points=20)
+
+        # Check if total score is updated
+        self.assertEqual(self.player.total_score, 30)
+
+        # Create another player score
+        PlayerScore.objects.create(
+            player=self.player, event=self.event, sumula=self.sumula, points=5)
+
+        # Check if total score is updated
+        self.assertEqual(self.player.total_score, 35)
+
+    def tearDown(self):
+        self.token.delete()
+        self.user.delete()
+        self.event.delete()
+        self.player.delete()
+        return super().tearDown()
