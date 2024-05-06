@@ -1,9 +1,9 @@
 from django.db import IntegrityError
 from django.test import TestCase
-from api.models import PlayerTotalScore, Token, Event, Sumula, PlayerScore, TOKEN_LENGTH
+from api.models import Player, Token, Event, Sumula, PlayerScore, TOKEN_LENGTH
 from users.models import User
 from unittest import TestCase
-
+import uuid
 # Create your tests here.
 
 
@@ -180,13 +180,15 @@ class PlayerScoreTest(TestCase):
             email='user1@gmail.com', username='user1')
         self.event = Event.objects.create(name='Evento 1', token=self.token)
         self.sumula = Sumula.objects.create(name='Sumula 1', event=self.event)
+        self.player = Player.objects.create(
+            user=self.user, event=self.event, registration_email='email@teste.com')
         self.player_score = PlayerScore.objects.create(
-            user=self.user, event=self.event, sumula=self.sumula, points=0)
+            player=self.player, event=self.event, sumula=self.sumula, points=0)
         self.player_score.save()
 
     def test_create_empty_player_score(self):
         """Testa a criação de uma pontuação de jogador"""
-        self.assertEqual(self.player_score.user, self.user)
+        self.assertEqual(self.player_score.player, self.player)
         self.assertEqual(self.player_score.event, self.event)
         self.assertEqual(self.player_score.sumula, self.sumula)
         self.assertEqual(self.player_score.points, 0)
@@ -197,6 +199,13 @@ class PlayerScoreTest(TestCase):
         self.assertEqual(self.player_score.points, 10)
         self.assertEqual(str(self.player_score), '10')
 
+    def test_update_total_score_within_save_method(self):
+        self.assertEqual(self.player.total_score, 0)
+        self.player_score.points = 10
+        self.player_score.save()
+
+        self.assertEqual(self.player.total_score, 10)
+
     def test_create_player_score_without_user(self):
         """Testa a criação de uma pontuação de jogador sem usuário"""
         with self.assertRaises(IntegrityError):
@@ -205,31 +214,31 @@ class PlayerScoreTest(TestCase):
     def test_create_player_score_without_event(self):
         """Testa a criação de uma pontuação de jogador sem evento"""
         with self.assertRaises(IntegrityError):
-            PlayerScore.objects.create(user=self.user, sumula=self.sumula)
+            PlayerScore.objects.create(player=self.player, sumula=self.sumula)
 
     def test_create_player_score_without_sumula(self):
         """Testa a criação de uma pontuação de jogador sem sumula"""
         with self.assertRaises(IntegrityError):
-            PlayerScore.objects.create(user=self.user, event=self.event)
+            PlayerScore.objects.create(player=self.player, event=self.event)
 
     def test_create_player_score_without_points(self):
         """Testa a criação de uma pontuação de jogador sem pontos"""
         player_score = PlayerScore.objects.create(
-            user=self.user, event=self.event, sumula=self.sumula)
+            player=self.player, event=self.event, sumula=self.sumula)
         self.assertEqual(player_score.points, 0)
 
     def test_create_player_score_with_negative_points(self):
         """Testa a criação de uma pontuação de jogador com pontos negativos"""
         with self.assertRaises(IntegrityError):
             PlayerScore.objects.create(
-                user=self.user, event=self.event, sumula=self.sumula, points=-10)
+                player=self.player, event=self.event, sumula=self.sumula, points=-10)
 
     def test_delete_player_score(self):
         """Testa a deleção de uma pontuação de jogador"""
         self.player_score.delete()
         with self.assertRaises(PlayerScore.DoesNotExist):
             PlayerScore.objects.get(
-                user=self.user, event=self.event, sumula=self.sumula)
+                player=self.player, event=self.event, sumula=self.sumula)
 
     def test_player_score_str(self):
         """Testa a representação de uma pontuação de jogador"""
@@ -238,6 +247,7 @@ class PlayerScoreTest(TestCase):
     def tearDown(self):
         self.token.delete()
         self.user.delete()
+        self.player.delete()
         self.event.delete()
         self.sumula.delete()
         if self.player_score.id is not None:
@@ -245,71 +255,66 @@ class PlayerScoreTest(TestCase):
         return super().tearDown()
 
 
-class PlayerTotalScoreTest(TestCase):
+class PlayerTest(TestCase):
+    def create_unique_email(self):
+        self.unique_email = f'{uuid.uuid4()}@gmail.com'
+
+    def create_unique_username(self):
+        self.unique_username = f'user_{uuid.uuid4().hex[:10]}'
+
     def setUp(self):
+        self.create_unique_email()
+        self.create_unique_username()
         self.token = Token.objects.create()
-        self.user = User.objects.create(
-            email='user1@gmail.com', username='user1', first_name='John', last_name='Doe')
-        self.user_2 = User.objects.create(username='user2')
+
         self.event = Event.objects.create(name='Evento 1', token=self.token)
-        self.player_total_score = PlayerTotalScore.objects.create(
-            user=self.user, event=self.event, total_points=0)
+        self.user = User.objects.create(
+            username=self.unique_username, email='test@user1.com', first_name='Test', last_name='User')
+        self.player = Player.objects.create(
+            user=self.user, event=self.event, registration_email=self.unique_email)
+        self.sumula = Sumula.objects.create(name='Sumula 1', event=self.event)
 
-    def test_create_player_total_score(self):
-        """Testa a criação de uma pontuação total de jogador"""
-        self.assertEqual(self.player_total_score.user, self.user)
-        self.assertEqual(self.player_total_score.event, self.event)
-        self.assertEqual(self.player_total_score.total_points, 0)
+    def test_create_player(self):
+        self.assertIsNotNone(self.user)
+        self.assertIsNotNone(self.player)
+        self.assertEqual(self.player.registration_email, self.unique_email)
+        self.assertEqual(self.player.user.username, self.unique_username)
 
-    def test_create_player_total_score_without_user(self):
-        """Testa a criação de uma pontuação total de jogador sem usuário"""
-        with self.assertRaises(IntegrityError):
-            PlayerTotalScore.objects.create(event=self.event, total_points=0)
+    def test_update_total_score(self):
+        self.assertEqual(self.player.total_score, 0)
 
-    def test_create_player_total_score_without_event(self):
-        """Testa a criação de uma pontuação total de jogador sem evento"""
-        with self.assertRaises(IntegrityError):
-            PlayerTotalScore.objects.create(user=self.user, total_points=0)
+        # Create player scores
+        PlayerScore.objects.create(
+            player=self.player, event=self.event, sumula=self.sumula, points=10)
+        PlayerScore.objects.create(
+            player=self.player, event=self.event, sumula=self.sumula, points=20)
 
-    def test_create_player_total_score_without_points(self):
-        """Testa a criação de uma pontuação total de jogador sem pontos"""
-        player_total_score = PlayerTotalScore.objects.create(
-            user=self.user_2, event=self.event)
-        self.assertEqual(player_total_score.total_points, 0)
+        # Check if total score is updated
+        self.assertEqual(self.player.total_score, 30)
 
-    def test_create_player_total_score_with_negative_points(self):
-        """Testa a criação de uma pontuação total de jogador com pontos negativos"""
-        with self.assertRaises(IntegrityError):
-            PlayerTotalScore.objects.create(
-                user=self.user, event=self.event, total_points=-10)
+    def test_update_total_score_alredy_with_score(self):
+        self.assertEqual(self.player.total_score, 0)
 
-    def test_try_to_create_duplicate_player_total_score(self):
-        """Testa a criação de uma pontuação total de jogador duplicada"""
-        with self.assertRaises(IntegrityError):
-            PlayerTotalScore.objects.create(
-                user=self.user, event=self.event, total_points=0)
+        # Create player scores
+        PlayerScore.objects.create(
+            player=self.player, event=self.event, sumula=self.sumula, points=10)
+        PlayerScore.objects.create(
+            player=self.player, event=self.event, sumula=self.sumula, points=20)
 
-    def test_edit_total_points(self):
-        """Testa a edição da pontuação total de jogador"""
-        self.player_total_score.total_points = 10
-        self.player_total_score.save()
-        self.assertEqual(self.player_total_score.total_points, 10)
+        # Check if total score is updated
+        self.assertEqual(self.player.total_score, 30)
 
-    def test_delete_player_total_score(self):
-        """Testa a deleção de uma pontuação total de jogador"""
-        self.player_total_score.delete()
-        with self.assertRaises(PlayerTotalScore.DoesNotExist):
-            PlayerTotalScore.objects.get(user=self.user, event=self.event)
+        # Create another player score
+        PlayerScore.objects.create(
+            player=self.player, event=self.event, sumula=self.sumula, points=5)
 
-    def test_player_total_score_str(self):
-        """Testa a representação de uma pontuação total de jogador"""
-        self.assertEqual(str(self.player_total_score), '0')
+        # Check if total score is updated
+        self.assertEqual(self.player.total_score, 35)
 
     def tearDown(self):
-        self.user.delete()
-        self.user_2.delete()
         self.token.delete()
+        self.user.delete()
         self.event.delete()
-        if self.player_total_score.id is not None:
-            self.player_total_score.delete()
-        return super().tearDown()
+        self.player.delete()
+        self.unique_email = None
+        self.sumula.delete()

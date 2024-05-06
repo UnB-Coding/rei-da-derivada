@@ -2,7 +2,6 @@ from django.db import models
 from users.models import User
 import string
 import random
-
 TOKEN_LENGTH = 8
 
 
@@ -54,10 +53,9 @@ class Event (models.Model):
     """
     token = models.OneToOneField(
         Token, on_delete=models.CASCADE, related_name='event')
-    name = models.CharField(default='', max_length=64)
+    name = models.CharField(default='', max_length=64, blank=True, null=True)
     team_members_token = models.CharField(
         default='', max_length=TOKEN_LENGTH, unique=True)
-    
 
     class Meta:
         verbose_name = ("Evento")
@@ -84,14 +82,15 @@ class Event (models.Model):
 
 class Sumula (models.Model):
     """Modelo de Sumula.
-    - referee: ManyToManyField para User
+    - referee: ManyToManyField para User (related_name='sumulas')
     - event: ForeignKey para Event
     - name: CharField com o nome da sumula
     """
     referee = models.ManyToManyField(User, related_name='sumulas', blank=True)
     event = models.ForeignKey(
-        Event, on_delete=models.CASCADE, related_name='event_sumulas')
+        Event, on_delete=models.CASCADE, related_name='sumulas')
     name = models.CharField(default='', max_length=64)
+    active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = ("Sumula")
@@ -101,21 +100,54 @@ class Sumula (models.Model):
         return self.name
 
 
+class Player(models.Model):
+    """
+    This model is used to store player information.
+    params:
+    - user: OneToOneField to User
+    - event: ForeignKey to Event
+    - registration_email: EmailField
+    - total_score: IntegerField
+    """
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='player')
+    total_score = models.PositiveSmallIntegerField(default=0)
+    registration_email = models.EmailField(blank=False, unique=True)
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='players')
+
+    class Meta:
+        verbose_name = ("Player")
+        verbose_name_plural = ("Players")
+        unique_together = ['registration_email', 'event']
+
+    def update_total_score(self, event):
+        """ Calculate the total score of the player for an event. """
+        self.total_score = PlayerScore.objects.filter(
+            player=self, event=event
+        ).aggregate(total=models.Sum('points'))['total'] or 0
+        self.save()
+
+    def __str__(self) -> str:
+        return self.user.__str__()
+
+
 class PlayerScore(models.Model):
     """ Modelo para salvar pontuacao dos players.
     fields:
-    - user: ForeignKey para User
+    - player: ForeignKey para Player
     - event: ForeignKey para Event
     - sumula: ForeignKey para Sumula
     - points: IntegerField com a pontuacao do player
     """
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='player_score')
+    player = models.ForeignKey(
+        Player, on_delete=models.CASCADE, related_name='scores')
     event = models.ForeignKey(
-        Event, on_delete=models.CASCADE, related_name='player_score')
+        Event, on_delete=models.CASCADE, related_name='scores')
     sumula = models.ForeignKey(
-        Sumula, on_delete=models.CASCADE, related_name='player_score')
-    points = models.PositiveSmallIntegerField(default=0)
+        Sumula, on_delete=models.CASCADE, related_name='scores')
+    points = models.PositiveSmallIntegerField(
+        default=0, blank=False, null=False)
 
     class Meta:
         verbose_name = ("PlayerScore")
@@ -124,25 +156,8 @@ class PlayerScore(models.Model):
     def __str__(self):
         return str(self.points)
 
+    def save(self, *args, **kwargs) -> None:
+        super(PlayerScore, self).save(*args, **kwargs)
 
-class PlayerTotalScore(models.Model):
-    """Armaneza a pontuacao total de um usuario em um evento.
-    Apenas um PlayerTotalScore por usuario e evento é permitido.
-    fields:
-    - user: ForeignKey para User
-    - event: ForeignKey para Event
-    - total_points: IntegerField com a pontuacao total do usuario
-    """
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='total_score')
-    event = models.ForeignKey(
-        Event, on_delete=models.CASCADE, related_name='total_score')
-    total_points = models.PositiveSmallIntegerField(default=0)
-
-    class Meta:
-        verbose_name = ("PlayerTotalScore")
-        verbose_name_plural = ("PlayerTotalScores")
-        unique_together = ['user', 'event']
-
-    def __str__(self):
-        return str(self.total_points)
+        if self.player is not None and self.event is not None:
+            self.player.update_total_score(self.event)
