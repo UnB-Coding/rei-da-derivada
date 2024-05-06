@@ -82,7 +82,7 @@ class Event (models.Model):
 
 class Sumula (models.Model):
     """Modelo de Sumula.
-    - referee: ManyToManyField para User
+    - referee: ManyToManyField para User (related_name='sumulas')
     - event: ForeignKey para Event
     - name: CharField com o nome da sumula
     """

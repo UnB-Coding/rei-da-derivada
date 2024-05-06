@@ -14,7 +14,7 @@ from ..swagger import Errors
 
 
 class HasSumulaPermission(BasePermission):
-    def has_permission(self, request, view):
+    def has_permission(self, request, view) -> bool:
         if request.method == 'POST':
             return request.user.has_perm('api.add_sumula')
         elif request.method == 'GET':
@@ -37,6 +37,14 @@ class SumulaView(APIView):
             player_score = PlayerScore.objects.create(
                 player=player, sumula=sumula, points=0, event=event)
             player_score.save()
+
+    def add_referee(self, sumula: Sumula, referees: list) -> None:
+        """Adiciona um árbitro a uma sumula."""
+        for referee in referees:
+            user = User.objects.filter(id=referee['id']).first()
+            if not user:
+                continue
+            sumula.referee.add(user)
 
     @swagger_auto_schema(
         operation_summary="Cria uma nova sumula.",
@@ -67,7 +75,7 @@ class SumulaView(APIView):
         responses={201: openapi.Response(
             'Created', SumulaSerializer), **Errors([400]).retrieve_erros()}
     )
-    def post(self, request: request.Request, *args, **kwargs):
+    def post(self, request: request.Request, *args, **kwargs) -> Response:
         """Cria uma nova sumula e retorna a sumula criada.
 
         Permissões necessárias: IsAuthenticated, HasSumulaPermission
@@ -80,10 +88,12 @@ class SumulaView(APIView):
 
         if not event:
             return handle_400_error("Evento não encontrado!")
+
         players = request.data['players']
         for player in players:
             if 'user_id' not in player:
                 return handle_400_error("Dados inválidos!")
+
         sumula = Sumula.objects.create(event=event)
         self.create_players_score(players=players, sumula=sumula, event=event)
         data = SumulaSerializer(sumula).data
@@ -95,9 +105,9 @@ class SumulaView(APIView):
         operation_description="Retorna todas as sumulas associadas a um evento com seus jogadores e pontuações.",
         security=[{'Bearer': []}],
         manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, description="Id do evento associado a sumula.", type=openapi.TYPE_INTEGER, required=True)],
+            'event_id', openapi.IN_QUERY, description="Id do evento associado às sumulas.", type=openapi.TYPE_INTEGER, required=True)],
         responses={200: openapi.Response('OK', SumulaSerializer), **Errors([400]).retrieve_erros()})
-    def get(self, request: request.Request, *args, **kwargs):
+    def get(self, request: request.Request, *args, **kwargs) -> Response:
         """Retorna todas as sumulas associadas a um evento."""
         event_id = request.query_params.get('event_id')
         if not event_id:
@@ -116,16 +126,36 @@ class SumulaView(APIView):
                          security=[{'Bearer': []}],
                          request_body=SumulaSerializer,
                          responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
-    def put(self, request: request.Request, *args, **kwargs):
-        """Atualiza uma sumula."""
-        if not request.data or not isinstance(request.data, dict) or 'sumula_id' not in request.data.keys():
+    def put(self, request: request.Request, *args, **kwargs) -> Response:
+        """Atualiza uma sumula
+        Pega o id da sumula a ser atualizada e atualiza os dados associados a ela.
+        Pega uma lista de jogadores e suas pontuações e atualiza as pontuações dos jogadores associados a sumula.
+        Marca a sumula como encerrada.
+        """
+
+        if not request.data or not isinstance(request.data, list) or 'id' not in request.data[0]:
             return handle_400_error("Dados inválidos!")
-        # Necessario mudar isso para request.get('sumula_id') para pegar o id da query
-        sumula_id = request.query_params.get('sumula_id')
+
+        sumula_id = request.data[0]['id']
         sumula = Sumula.objects.filter(id=sumula_id).first()
         if not sumula:
             return handle_400_error("Sumula não encontrada!")
-        # sumula.active = False
+
+        sumula.name = request.data[0]['name']
+        referees = request.data[0]['referee']
+        self.add_referee(sumula, referees)
+
+        players_score = request.data[0]['players_score']
+        for player_score in players_score:
+            id = player_score['id']
+            player_score_obj = PlayerScore.objects.filter(
+                id=id).first()
+            if not player_score_obj:
+                return handle_400_error("Objeto de pontuação de jogador não encontrado!")
+            player_score_obj.points = player_score['points']
+            player_score_obj.save()
+
+        sumula.active = False
         sumula.save()
         return response.Response(status=status.HTTP_200_OK)
 
@@ -135,7 +165,7 @@ class ActiveSumulaView(APIView):
                          operation_summary="Retorna todas as sumulas ativas associadas a um evento.",
                          operation_description="Retorna todas as sumulas ativas associadas a um evento, com seus jogadores e pontuações.",
                          manual_parameters=[openapi.Parameter(
-                             'event_id', openapi.IN_QUERY, description="Id do evento associado a sumula.", type=openapi.TYPE_INTEGER, required=True)],
+                             'event_id', openapi.IN_QUERY, description="Id do evento associado às sumulas.", type=openapi.TYPE_INTEGER, required=True)],
                          responses={200: openapi.Response(
                              'OK', SumulaSerializer), **Errors([400]).retrieve_erros()}
                          )
