@@ -49,11 +49,11 @@ class SumulaView(APIView):
     def update_player_score(self, players_score: list[dict]) -> bool:
         """Atualiza a pontuação de um jogador."""
         for player_score in players_score:
-            id = player_score.get('id')
-            if id is None:
+            player_score_id = player_score.get('id')
+            if player_score_id is None:
                 return False
             player_score_obj = PlayerScore.objects.filter(
-                id=id).first()
+                id=player_score_id).first()
             if not player_score_obj:
                 return False
             player_score_obj.points = player_score['points']
@@ -160,7 +160,7 @@ class SumulaView(APIView):
         self.add_referee(sumula, referees)
 
         players_score = request.data[0]['players_score']
-        
+
         if not self.update_player_score(players_score):
             return handle_400_error("Dados inválidos!")
 
