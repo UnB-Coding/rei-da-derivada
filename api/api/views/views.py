@@ -167,22 +167,33 @@ class EventView(APIView):
 class CanViewPlayers(BasePermission):
     def has_permission(self, request, view):
         if request.method == 'GET':
-            return request.user.has_perm('api.view_players_score')
+            return request.user.has_perm('api.view_player')
         return True
 
 
-""" class GetAllPlayers(APIView):
+class GetAllPlayersView(APIView):
 
     permission_classes = [IsAuthenticated, CanViewPlayers]
 
     @ swagger_auto_schema(security=[{'Bearer': []}],
-                          responses={200: openapi.Response(200, UserSerializer), **Errors([400]).retrieve_erros()})
+                          manual_parameters=[openapi.Parameter(
+                              'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
+                          responses={200: openapi.Response(200, PlayerSerializer), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs):
         event_id = request.query_params.get('event_id')
+        if not event_id:
+            return handle_400_error('event_id é obrigatório!')
         event = Event.objects.filter(id=event_id).first()
+        if not event:
+            return handle_400_error('Evento não encontrado!')
+
         players = Player.objects.filter(event=event)
-        users = []
+        if not players:
+            return response.Response(status=status.HTTP_200_OK, data=['Nenhum jogador encontrado!'])
+        players_list = []
         for player in players:
-            users.append(player.user)
-        data = UserSerializer(users, many=True).data
-        return response.Response(status=status.HTTP_200_OK, data=data) """
+            players_list.append(player)
+
+        data = PlayerSerializer(players_list, many=True).data
+
+        return response.Response(status=status.HTTP_200_OK, data=data)

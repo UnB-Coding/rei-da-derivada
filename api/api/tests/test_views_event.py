@@ -177,15 +177,3 @@ class EventViewTest(APITestCase):
         self.client.force_authenticate(user=None)
         if Event.objects.exists():
             Event.objects.all().delete()
-
-
-""" class SumulaViewTest(APITestCase):
-    def setUp(self):
-        self.user = User.objects.create(
-            username='testuser', name='Test User', email='testuser@email', uuid='123')
-
-        self.token = Token.objects.create()
-        self.event = Event.objects.create(token=self.token, name='Test Event')
-        self.group = Group.objects.create(name='App_Admin')
-        self.sumula_permission = get_permissions(get_content_type(Sumula))
-        self.group.permissions.set(self.sumula_permission) """
