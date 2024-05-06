@@ -254,6 +254,22 @@ class SumulaViewTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data['errors'], 'Sumula não encontrada!')
 
+    def test_update_sumula_without_player_score_id(self):
+        data = self.data
+        data[0]['players_score'][0].pop('id')
+        self.client.force_authenticate(user=self.user)
+        response = self.client.put(self.url_update, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['errors'], 'Dados inválidos!')
+
+    def test_update_sumula_with_i_player_score_id_not_found(self):
+        data = self.data
+        data[0]['players_score'][0]['id'] = 100
+        self.client.force_authenticate(user=self.user)
+        response = self.client.put(self.url_update, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data['errors'], 'Dados inválidos!')
+
     def tearDown(self):
         User.objects.all().delete()
         Sumula.objects.all().delete()

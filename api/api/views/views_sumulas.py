@@ -46,6 +46,20 @@ class SumulaView(APIView):
                 continue
             sumula.referee.add(user)
 
+    def update_player_score(self, players_score: list[dict]) -> bool:
+        """Atualiza a pontuação de um jogador."""
+        for player_score in players_score:
+            id = player_score.get('id')
+            if id is None:
+                return False
+            player_score_obj = PlayerScore.objects.filter(
+                id=id).first()
+            if not player_score_obj:
+                return False
+            player_score_obj.points = player_score['points']
+            player_score_obj.save()
+        return True
+
     @swagger_auto_schema(
         operation_summary="Cria uma nova sumula.",
         operation_id='create_sumula',
@@ -146,14 +160,9 @@ class SumulaView(APIView):
         self.add_referee(sumula, referees)
 
         players_score = request.data[0]['players_score']
-        for player_score in players_score:
-            id = player_score['id']
-            player_score_obj = PlayerScore.objects.filter(
-                id=id).first()
-            if not player_score_obj:
-                return handle_400_error("Objeto de pontuação de jogador não encontrado!")
-            player_score_obj.points = player_score['points']
-            player_score_obj.save()
+        
+        if not self.update_player_score(players_score):
+            return handle_400_error("Dados inválidos!")
 
         sumula.active = False
         sumula.save()
