@@ -10,7 +10,7 @@ class UserSerializer(ModelSerializer):
     """
     class Meta:
         model = User
-        fields = ['first_name', 'last_name', 'id']
+        fields = ['id', 'first_name', 'last_name']
 
 
 class PlayerSerializer(ModelSerializer):
@@ -21,8 +21,7 @@ class PlayerSerializer(ModelSerializer):
 
     class Meta:
         model = Player
-        fields = ['user', 'event',
-                  'total_score', 'registration_email', 'id']
+        fields = ['id', 'total_score', 'registration_email', 'event', 'user']
 
 
 class TokenSerializer(ModelSerializer):
@@ -34,7 +33,7 @@ class TokenSerializer(ModelSerializer):
 class EventSerializer(ModelSerializer):
     class Meta:
         model = Event
-        fields = ['name', 'id']
+        fields = ['id', 'name']
 
 
 class PlayerScoreSerializer(ModelSerializer):
@@ -42,7 +41,7 @@ class PlayerScoreSerializer(ModelSerializer):
 
     class Meta:
         model = PlayerScore
-        fields = ['player', 'event', 'sumula', 'points']
+        fields = ['id', 'player', 'sumula', 'points']
 
 
 class PlayerScoreSerializerForSumula(ModelSerializer):
@@ -50,7 +49,7 @@ class PlayerScoreSerializerForSumula(ModelSerializer):
 
     class Meta:
         model = PlayerScore
-        fields = ['player', 'points']
+        fields = ['id', 'points', 'player']
 
 
 class SumulaSerializer(ModelSerializer):
@@ -64,4 +63,4 @@ class SumulaSerializer(ModelSerializer):
 
     class Meta:
         model = Sumula
-        fields = ['id', 'name', 'players_score', 'active', 'referee']
+        fields = ['id', 'active', 'referee', 'name', 'players_score']

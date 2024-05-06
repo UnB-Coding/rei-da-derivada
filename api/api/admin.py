@@ -32,9 +32,14 @@ class SumulaAdmin(admin.ModelAdmin):
         return ', '.join(scores)
     player_scores.short_description = 'Player Scores'
 
-    list_display = ['event', 'name', 'referee', 'id', 'player_scores']
+    list_display = ['event', 'name', 'referee',
+                    'id', 'player_scores', 'active']
     search_fields = ['referee__username', 'event__name', 'name']
-    fields = ['referee', 'event', 'name', 'player_scores']
+    fields = ['referee', 'event', 'name']
+
+    """ def get_readonly_fields(self, request, obj=None):
+        readonly_fields = super().get_readonly_fields(request, obj)
+        return readonly_fields + ['player_scores'] """
 
 
 @admin.register(PlayerScore)
