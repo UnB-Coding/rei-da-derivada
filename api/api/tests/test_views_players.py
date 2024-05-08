@@ -11,7 +11,7 @@ from ..utils import get_permissions, get_content_type
 from django.contrib.auth.models import Group
 
 
-class GetAllPlayersViewTest(APITestCase):
+class PlayersViewTest(APITestCase):
     def create_unique_email(self):
         return f'{uuid.uuid4()}@gmail.com'
 
@@ -96,7 +96,7 @@ class GetAllPlayersViewTest(APITestCase):
         url = reverse('api:players')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        # self.assertEqual(response.data['detail'], 'event_id is required')
+        # self.assertEqual(response.data['errors'], 'event_id is required')
 
     def test_get_all_players_without_permission(self):
         self.client.force_authenticate(user=self.user)
@@ -117,3 +117,112 @@ class GetAllPlayersViewTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0], 'Nenhum jogador encontrado!')
+
+    def tearDown(self):
+        User.objects.all().delete()
+        Sumula.objects.all().delete()
+        Event.objects.all().delete()
+        Token.objects.all().delete()
+        Player.objects.all().delete()
+        Group.objects.all().delete()
+        self.data = None
+
+
+class GetCurrentPlayerViewTest(APITestCase):
+    def create_unique_email(self):
+        return f'{uuid.uuid4()}@gmail.com'
+
+    def create_unique_username(self):
+        return f'user_{uuid.uuid4().hex[:10]}'
+
+    def generate_random_name(self):
+        names = ['João', 'José', 'Pedro', 'Paulo', 'Lucas', 'Mário', 'Luiz']
+        return names[random.randint(0, 6)]
+
+    def setupUser(self):
+        self.user = User.objects.create(
+            username=self.create_unique_username(), email=f'{uuid.uuid4()}@gmail.com',
+            first_name=self.generate_random_name(), last_name=self.generate_random_name())
+
+    def setUpEvent(self):
+        self.token = Token.objects.create()
+        self.event = Event.objects.create(name='Evento 1', token=self.token)
+
+    def setUpPlayers(self):
+        self.player = Player.objects.create(
+            user=self.user, event=self.event, registration_email=self.create_unique_email())
+
+    def setUpPermissions(self):
+        self.player_content_type = get_content_type(Player)
+        self.permission = get_permissions(
+            self.player_content_type).filter(codename__contains='view')
+        self.group = Group.objects.create(name='Grupo_teste')
+        self.group.permissions.set(self.permission)
+        self.user.groups.add(self.group)
+
+    def setUp(self):
+        self.setUpEvent()
+        self.setupUser()
+        self.setUpPlayers()
+        self.setUpPermissions()
+        self.client = APIClient()
+
+    def test_get_player(self):
+        self.client.force_authenticate(user=self.user)
+        url = reverse('api:player')
+        response = self.client.get(url, {'event_id': self.event.id})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {
+            'id': self.player.id,
+            'total_score': self.player.total_score,
+            'registration_email': self.player.registration_email,
+            'event': self.event.id,
+            'user': {
+                'id': self.user.id,
+                'first_name': self.user.first_name,
+                'last_name': self.user.last_name
+            },
+        })
+
+    def test_get_player_without_event_id(self):
+        self.client.force_authenticate(user=self.user)
+        url = reverse('api:player')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, {'errors': 'event_id é obrigatório!'})
+
+    def test_get_player_with_invalid_event_id(self):
+        self.client.force_authenticate(user=self.user)
+        url = reverse('api:player')
+        response = self.client.get(url, {'event_id': 100})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, {'errors': 'Evento não encontrado!'})
+
+    def test_get_player_without_permission(self):
+        self.client.force_authenticate(user=self.user)
+        Group.objects.all().delete()
+        url = reverse('api:player')
+        response = self.client.get(url, {'event_id': self.event.id})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_player_unauthenticated(self):
+        url = reverse('api:player')
+        response = self.client.get(url, {'event_id': self.event.id})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_player_without_player_associated(self):
+        self.client.force_authenticate(user=self.user)
+        Player.objects.all().delete()
+        url = reverse('api:player')
+        response = self.client.get(url, {'event_id': self.event.id})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, {'errors': 'Jogador não encontrado!'})
+
+    def tearDown(self):
+        User.objects.all().delete()
+        Sumula.objects.all().delete()
+        Event.objects.all().delete()
+        Token.objects.all().delete()
+        Player.objects.all().delete()
+        Group.objects.all().delete()
+        self.client = None
