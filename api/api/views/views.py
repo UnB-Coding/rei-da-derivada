@@ -164,25 +164,3 @@ class EventView(APIView):
         return response.Response(status=status.HTTP_200_OK)
 
 
-class CanViewPlayers(BasePermission):
-    def has_permission(self, request, view):
-        if request.method == 'GET':
-            return request.user.has_perm('api.view_players_score')
-        return True
-
-
-""" class GetAllPlayers(APIView):
-
-    permission_classes = [IsAuthenticated, CanViewPlayers]
-
-    @ swagger_auto_schema(security=[{'Bearer': []}],
-                          responses={200: openapi.Response(200, UserSerializer), **Errors([400]).retrieve_erros()})
-    def get(self, request: request.Request, *args, **kwargs):
-        event_id = request.query_params.get('event_id')
-        event = Event.objects.filter(id=event_id).first()
-        players = Player.objects.filter(event=event)
-        users = []
-        for player in players:
-            users.append(player.user)
-        data = UserSerializer(users, many=True).data
-        return response.Response(status=status.HTTP_200_OK, data=data) """
