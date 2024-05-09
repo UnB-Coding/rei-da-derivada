@@ -34,8 +34,8 @@ class Token (models.Model):
 
     def generate_token(self) -> str:
         """Gera um token aleatório de TOKEN_LENGTH caracteres."""
-        self.token_code = ''.join(random.choices(
-            string.ascii_letters + string.digits, k=TOKEN_LENGTH))
+        self.token_code = ''.join(
+            random.choices(string.digits, k=TOKEN_LENGTH))
         return self.token_code
 
     def save(self, *args, **kwargs) -> None:
@@ -54,8 +54,7 @@ class Event (models.Model):
     token = models.OneToOneField(
         Token, on_delete=models.CASCADE, related_name='event')
     name = models.CharField(default='', max_length=64, blank=True, null=True)
-    team_members_token = models.CharField(
-        default='', max_length=TOKEN_LENGTH, unique=True)
+    active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = ("Evento")
@@ -66,18 +65,6 @@ class Event (models.Model):
 
     def __token__(self):
         return self.token.token_code
-
-    def generate_team_members_token(self) -> str:
-        """Gera um token aleatório de TOKEN_LENGTH caracteres."""
-        self.team_members_token = ''.join(random.choices(
-            string.ascii_letters + string.digits, k=TOKEN_LENGTH))
-        return self.team_members_token
-
-    def save(self, *args, **kwargs) -> None:
-        """Sobrescreve o método save para gerar um token caso não exista."""
-        if not self.team_members_token:
-            self.generate_team_members_token()
-        super(Event, self).save(*args, **kwargs)
 
 
 class Sumula (models.Model):
