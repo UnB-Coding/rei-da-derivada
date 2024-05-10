@@ -59,6 +59,20 @@ class Event (models.Model):
     class Meta:
         verbose_name = ("Evento")
         verbose_name_plural = ("Eventos")
+        permissions = [
+            ("add_sumula_event", "Can add event sumula"),
+            ("change_sumula_event", "Can change event sumula"),
+            ("view_sumula_event", "Can view event sumula"),
+            ("delete_sumula_event", "Can delete event sumula"),
+            ("add_player_event", "Can add event player"),
+            ("change_player_event", "Can change event player"),
+            ("view_player_event", "Can view event player"),
+            ("delete_player_event", "Can delete event player"),
+            ("add_player_score_event", "Can add event player_score"),
+            ("change_player_score_event", "Can change event player_score"),
+            ("view_player_score_event", "Can view event player_score"),
+            ("delete_player_score_event", "Can delete event player_score"),
+        ]
 
     def __str__(self):
         return self.name
