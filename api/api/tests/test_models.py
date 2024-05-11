@@ -62,6 +62,10 @@ class TokenTest(TestCase):
         """Testa a representação de um token"""
         self.assertEqual(self.token.__str__(), (self.token.token_code))
 
+    def tearDown(self) -> None:
+        if Token.objects.all().count() > 0:
+            Token.objects.all().delete()
+
 
 class EventTest(TestCase):
     def setUp(self):
@@ -114,6 +118,11 @@ class EventTest(TestCase):
         """Testa a representação do token de um evento"""
         event = Event.objects.create(name='Evento 1', token=self.token)
         self.assertEqual(event.__token__(), self.token.token_code)
+
+    def tearDown(self) -> None:
+        self.token.delete()
+        if Event.objects.all().count() > 0:
+            Event.objects.all().delete()
 
 
 class SumulaTest(TestCase):
