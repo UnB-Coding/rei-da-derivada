@@ -137,6 +137,7 @@ class SumulaViewTest(APITestCase):
 
     def setUpGroup(self):
         self.group_app_admin = Group.objects.create(name='app_admin')
+        self.group_event_admin = Group.objects.create(name='event_admin')
         self.group_staff_manager = Group.objects.create(name='staff_manager')
         self.group_staff_member = Group.objects.create(name='staff_member')
         self.group_player = Group.objects.create(name='player')
@@ -147,7 +148,7 @@ class SumulaViewTest(APITestCase):
         assign_permissions(self.user_staff_member,
                            self.group_staff_member, self.event)
         assign_permissions(self.user_app_admin,
-                           self.group_app_admin, self.event)
+                           self.group_event_admin, self.event)
 
     def setUpEvent(self):
         self.token = Token.objects.create()

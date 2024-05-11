@@ -9,6 +9,8 @@ from users.models import User
 import uuid
 from ..utils import get_permissions, get_content_type
 from django.contrib.auth.models import Group
+from ..permissions import assign_permissions
+from guardian.shortcuts import remove_perm, get_perms
 
 
 class PlayersViewTest(APITestCase):
@@ -18,6 +20,11 @@ class PlayersViewTest(APITestCase):
     def create_unique_username(self):
         return f'user_{uuid.uuid4().hex[:10]}'
 
+    def remove_permissions(self, user, event):
+        perms = get_perms(user, event)
+        for perm in perms:
+            remove_perm(perm, user, event)
+
     def generate_random_name(self):
         names = ['João', 'José', 'Pedro', 'Paulo', 'Lucas', 'Mário', 'Luiz']
         return names[random.randint(0, 6)]
@@ -25,6 +32,10 @@ class PlayersViewTest(APITestCase):
     def setupUser(self):
         self.admin = User.objects.create(
             username='admin', email=f'{uuid.uuid4()}@gmail.com', first_name='Admin', last_name='Admin')
+        self.user_staff_manager = User.objects.create(
+            username='staff_manager', email=f'{uuid.uuid4()}@gmail.com', first_name='Staff', last_name='Manager')
+        self.user_staff_member = User.objects.create(
+            username='staff_member', email=f'{uuid.uuid4()}@gmail.com', first_name='Staff', last_name='Member')
         self.user = User.objects.create(
             username=self.create_unique_username(), email=f'{uuid.uuid4()}@gmail.com', first_name=self.generate_random_name(), last_name=self.generate_random_name())
         self.user2 = User.objects.create(
@@ -50,17 +61,27 @@ class PlayersViewTest(APITestCase):
         self.player4 = Player.objects.create(
             user=self.user4, event=self.event, registration_email=self.create_unique_email())
 
+    def setUpGroup(self):
+        self.group_app_admin = Group.objects.create(name='app_admin')
+        self.group_event_admin = Group.objects.create(name='event_admin')
+        self.group_staff_manager = Group.objects.create(name='staff_manager')
+        self.group_staff_member = Group.objects.create(name='staff_member')
+        self.group_player = Group.objects.create(name='player')
+
     def setUpPermissions(self):
-        self.player_content_type = get_content_type(Player)
-        self.permission = get_permissions(self.player_content_type)
-        self.group = Group.objects.create(name='Grupo_teste')
-        self.group.permissions.set(self.permission)
-        self.admin.groups.add(self.group)
+        assign_permissions(self.user_staff_manager,
+                           self.group_staff_manager, self.event)
+        assign_permissions(self.user_staff_member,
+                           self.group_staff_member, self.event)
+        assign_permissions(self.admin,
+                           self.group_event_admin, self.event)
+        assign_permissions(self.user, self.group_player, self.event)
 
     def setUp(self):
         self.setUpEvent()
         self.setupUser()
         self.setUpPlayers()
+        self.setUpGroup()
         self.setUpPermissions()
         self.client = APIClient()
         self.url = f"{reverse('api:players')}?event_id={self.event.id}"
@@ -99,6 +120,7 @@ class PlayersViewTest(APITestCase):
         # self.assertEqual(response.data['errors'], 'event_id is required')
 
     def test_get_all_players_without_permission(self):
+        self.remove_permissions(self.user, self.event)
         self.client.force_authenticate(user=self.user)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -143,6 +165,12 @@ class GetCurrentPlayerViewTest(APITestCase):
         self.user = User.objects.create(
             username=self.create_unique_username(), email=f'{uuid.uuid4()}@gmail.com',
             first_name=self.generate_random_name(), last_name=self.generate_random_name())
+        self.user_staff_manager = User.objects.create(
+            username='staff_manager', email=f'{uuid.uuid4()}@gmail.com')
+        self.user_staff_member = User.objects.create(
+            username='staff_member', email=f'{uuid.uuid4()}@gmail.com')
+        self.admin = User.objects.create(
+            username='admin', email=f'{uuid.uuid4()}@gmail.com')
 
     def setUpEvent(self):
         self.token = Token.objects.create()
@@ -152,25 +180,39 @@ class GetCurrentPlayerViewTest(APITestCase):
         self.player = Player.objects.create(
             user=self.user, event=self.event, registration_email=self.create_unique_email())
 
+    def setUpGroup(self):
+        self.group_app_admin = Group.objects.create(name='app_admin')
+        self.group_event_admin = Group.objects.create(name='event_admin')
+        self.group_staff_manager = Group.objects.create(name='staff_manager')
+        self.group_staff_member = Group.objects.create(name='staff_member')
+        self.group_player = Group.objects.create(name='player')
+
     def setUpPermissions(self):
-        self.player_content_type = get_content_type(Player)
-        self.permission = get_permissions(
-            self.player_content_type).filter(codename__contains='view')
-        self.group = Group.objects.create(name='Grupo_teste')
-        self.group.permissions.set(self.permission)
-        self.user.groups.add(self.group)
+        assign_permissions(self.user_staff_manager,
+                           self.group_staff_manager, self.event)
+        assign_permissions(self.user_staff_member,
+                           self.group_staff_member, self.event)
+        assign_permissions(self.admin,
+                           self.group_event_admin, self.event)
+        assign_permissions(self.user, self.group_player, self.event)
 
     def setUp(self):
         self.setUpEvent()
         self.setupUser()
         self.setUpPlayers()
+        self.setUpGroup()
         self.setUpPermissions()
+        self.url = f"{reverse('api:player')}?event_id={self.event.id}"
         self.client = APIClient()
+
+    def remove_permissions(self, user, event):
+        perms = get_perms(user, event)
+        for perm in perms:
+            remove_perm(perm, user, event)
 
     def test_get_player(self):
         self.client.force_authenticate(user=self.user)
-        url = reverse('api:player')
-        response = self.client.get(url, {'event_id': self.event.id})
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, {
             'id': self.player.id,
@@ -186,37 +228,37 @@ class GetCurrentPlayerViewTest(APITestCase):
 
     def test_get_player_without_event_id(self):
         self.client.force_authenticate(user=self.user)
-        url = reverse('api:player')
+        url = f"{reverse('api:player')}?event_id="
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data, {'errors': 'event_id é obrigatório!'})
+        self.assertEqual(
+            response.data, {'errors': "['event_id é obrigatório!']"})
 
     def test_get_player_with_invalid_event_id(self):
         self.client.force_authenticate(user=self.user)
-        url = reverse('api:player')
-        response = self.client.get(url, {'event_id': 100})
+        url = f"{reverse('api:player')}?event_id=100"
+        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data, {'errors': 'Evento não encontrado!'})
+        self.assertEqual(
+            response.data, {'errors': "['Evento não encontrado!']"})
 
     def test_get_player_without_permission(self):
+        self.remove_permissions(self.user, self.event)
         self.client.force_authenticate(user=self.user)
-        Group.objects.all().delete()
-        url = reverse('api:player')
-        response = self.client.get(url, {'event_id': self.event.id})
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_get_player_unauthenticated(self):
         url = reverse('api:player')
-        response = self.client.get(url, {'event_id': self.event.id})
+        response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_get_player_without_player_associated(self):
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.admin)
         Player.objects.all().delete()
-        url = reverse('api:player')
-        response = self.client.get(url, {'event_id': self.event.id})
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data, {'errors': 'Jogador não encontrado!'})
+        self.assertEqual(response.data,  {'errors': 'Jogador não encontrado!'})
 
     def tearDown(self):
         User.objects.all().delete()

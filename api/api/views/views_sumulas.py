@@ -1,6 +1,4 @@
-from typing import Optional
 from django.forms import ValidationError
-from requests import Response
 from django.contrib.auth.models import Group
 from rest_framework import status, request, response
 from rest_framework.views import APIView
@@ -8,15 +6,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from api.models import Event, Sumula, PlayerScore, Player
 from users.models import User
-from ..serializers import PlayerSerializer, PlayerSerializerForSumula, SumulaSerialiazerForPost, SumulaSerializer
+from ..serializers import SumulaSerializer
 from rest_framework.permissions import BasePermission
 from ..utils import handle_400_error
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from ..swagger import Errors
-from ..permissions import assign_permissions
 from rest_framework.exceptions import NotFound
-from guardian.shortcuts import get_perms
 EVENT_NOT_FOUND_ERROR_MESSAGE = "Evento não encontrado!"
 EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE = "Id do evento não fornecido!"
 SUMULA_NOT_FOUND_ERROR_MESSAGE = "Sumula não encontrada!"
@@ -231,6 +227,8 @@ class SumulaView(APIView):
 
 
 class ActiveSumulaView(APIView):
+    permission_classes = [IsAuthenticated, HasSumulaPermission]
+
     @ swagger_auto_schema(operation_id='get_active_sumulas',
                           operation_summary="Retorna todas as sumulas ativas associadas a um evento.",
                           operation_description="Retorna todas as sumulas ativas associadas a um evento, com seus jogadores e pontuações.",
@@ -253,6 +251,9 @@ class ActiveSumulaView(APIView):
         """ Verifica se o evento existe e se o usuário tem permissão para acessá-lo.
         Retorna o evento associado ao id fornecido.
         """
+        if 'event_id' not in self.request.query_params:
+            raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
+
         event_id = self.request.query_params.get('event_id')
         if not event_id:
             raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
