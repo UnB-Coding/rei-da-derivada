@@ -31,4 +31,4 @@ class UserAdmin(admin.ModelAdmin):
                     'first_name', 'last_name', 'is_active', 'group']
     search_fields = ['email']
     fields = [('first_name', 'last_name'), 'email', 'username', 'is_active', 'is_staff',
-              'is_superuser', 'groups', 'user_permissions']
+              'is_superuser', 'groups', 'user_permissions', 'password']

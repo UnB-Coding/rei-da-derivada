@@ -50,6 +50,7 @@ class Event (models.Model):
      fields:
     - token: ForeignKey para Token
     - name: CharField com o nome do evento
+    - active: BooleanField que indica se o evento está ativo ou não
     """
     token = models.OneToOneField(
         Token, on_delete=models.CASCADE, related_name='event')
@@ -59,6 +60,20 @@ class Event (models.Model):
     class Meta:
         verbose_name = ("Evento")
         verbose_name_plural = ("Eventos")
+        permissions = [
+            ("add_sumula_event", "Can add sumula"),
+            ("change_sumula_event", "Can change sumula"),
+            ("view_sumula_event", "Can view sumula"),
+            ("delete_sumula_event", "Can delete sumula"),
+            ("add_player_event", "Can add player"),
+            ("change_player_event", "Can change player"),
+            ("view_player_event", "Can view player"),
+            ("delete_player_event", "Can delete player"),
+            ("add_player_score_event", "Can add player_score"),
+            ("change_player_score_event", "Can change player_score"),
+            ("view_player_score_event", "Can view player_score"),
+            ("delete_player_score_event", "Can delete player_score"),
+        ]
 
     def __str__(self):
         return self.name

@@ -44,7 +44,8 @@ INSTALLED_APPS = [
     # 'utils',
     'rest_framework',
     'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist'
+    'rest_framework_simplejwt.token_blacklist',
+    'guardian',
 ]
 
 # Authentication
@@ -165,3 +166,7 @@ SIMPLE_JWT = {
 
     "TOKEN_REFRESH_SERIALIZER": "users.simplejwt.serializers.RefreshJWTSerializer"
 }
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',  # this is default
+    'guardian.backends.ObjectPermissionBackend',
+)

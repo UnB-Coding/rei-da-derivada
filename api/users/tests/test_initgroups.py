@@ -30,7 +30,7 @@ class CreateGroupsTestCase(TestCase):
     @patch('builtins.print')
     def test_group_creation(self, mock_print):
         """ Testa se os grupos são criados corretamente."""
-        GROUPS = "App_Admin,Event_Admin,Staff_Manager,Staff_Member,Player"
+        GROUPS = "app_admin,event_admin,staff_manager,staff_member,player"
         self.command.handle()
         for group_name in GROUPS.split(','):
             self.assertTrue(Group.objects.filter(name=group_name).exists())
@@ -61,88 +61,3 @@ class CreateGroupsTestCase(TestCase):
             for permission in self.command.permissions[key]:
                 self.assertTrue(group.permissions.filter(
                     codename=permission.codename).exists())
-
-    def test_permissions_Event_Admin(self):
-        """ Testa se as permissões do grupo Event_Admin estão corretas.
-        O grupo Event_Admin deve ter permissões de alterar, deletar e visualizar eventos e todas as permissões de sumula, player_score e player.
-        """
-        group = Group.objects.create(name='Event_Admin')
-        self.command.add_permissions(group)
-
-        should_exist = {
-            'event': lambda permission: 'change' in permission.codename or 'delete' in permission.codename or 'view' in permission.codename,
-            'sumula': lambda permission: True,
-            'player_score': lambda permission: True,
-            'player': lambda permission: True,
-            'token': lambda permission: False,
-        }
-
-        for key in self.command.permissions:
-            for permission in self.command.permissions[key]:
-                if should_exist[key](permission):
-                    self.assertTrue(group.permissions.filter(
-                        codename=permission.codename).exists())
-                else:
-                    self.assertFalse(group.permissions.filter(
-                        codename=permission.codename).exists())
-
-    def test_permissions_Staff_Manager(self):
-        group = Group.objects.create(name='Staff_Manager')
-        self.command.add_permissions(group)
-
-        should_exist = {
-            'event': lambda permission: 'view' in permission.codename,
-            'sumula': lambda permission: True,
-            'player_score': lambda permission: True,
-            'player': lambda permission: 'view' in permission.codename or 'change' in permission.codename,
-            'token': lambda permission: False,
-        }
-
-        for key in self.command.permissions:
-            for permission in self.command.permissions[key]:
-                if should_exist[key](permission):
-                    self.assertTrue(group.permissions.filter(
-                        codename=permission.codename).exists())
-                else:
-                    self.assertFalse(group.permissions.filter(
-                        codename=permission.codename).exists())
-
-    def test_permissions_Staff_Member(self):
-        group = Group.objects.create(name='Staff_Member')
-        self.command.add_permissions(group)
-
-        should_exist = {
-            'event': lambda permission: 'view' in permission.codename,
-            'sumula': lambda permission: 'change' in permission.codename or 'view' in permission.codename,
-            'player_score': lambda permission: 'view' in permission.codename or 'change' in permission.codename,
-            'player': lambda permission: 'view' in permission.codename or 'change' in permission.codename,
-            'token': lambda permission: False,
-        }
-        for key in self.command.permissions:
-            for permission in self.command.permissions[key]:
-                if should_exist[key](permission):
-                    self.assertTrue(group.permissions.filter(
-                        codename=permission.codename).exists())
-                else:
-                    self.assertFalse(group.permissions.filter(
-                        codename=permission.codename).exists())
-
-    def test_permissions_Player(self):
-        group = Group.objects.create(name='Player')
-        self.command.add_permissions(group)
-
-        should_exist = {
-            'event': lambda permission: 'view' in permission.codename,
-            'sumula': lambda permission: False,
-            'player_score': lambda permission: 'view' in permission.codename,
-            'player': lambda permission: 'view' in permission.codename,
-            'token': lambda permission: False,
-        }
-        for key in self.command.permissions:
-            for permission in self.command.permissions[key]:
-                if should_exist[key](permission):
-                    self.assertTrue(group.permissions.filter(
-                        codename=permission.codename).exists())
-                else:
-                    self.assertFalse(group.permissions.filter(
-                        codename=permission.codename).exists())
