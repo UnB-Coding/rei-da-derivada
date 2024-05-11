@@ -9,6 +9,9 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import Permission
 from ..utils import get_permissions, get_content_type
 from guardian.shortcuts import get_perms, assign_perm, remove_perm
+from ..permissions import assign_permissions
+import uuid
+from django.db.models import Q
 
 
 class TokenViewTest(APITestCase):
@@ -90,17 +93,16 @@ class EventViewTest(APITestCase):
 
     def test_create_event(self):
         """Test creating a new event with a valid token."""
-
         url = reverse('api:event')
         data = {'token_code': self.token.token_code}
         self.client.force_authenticate(user=self.user)
         response = self.client.post(url, data, format='json')
-
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['name'], '')
-        self.assertEqual(response.data['id'], 2)
-        self.assertEqual(Event.objects.count(), 2)
-        event = Event.objects.get(id=2)
+        event_id = response.data['id']
+        self.assertIsNotNone(event_id)
+        self.assertTrue(Event.objects.filter(id=event_id).exists())
+        event = Event.objects.get(id=event_id)
         self.assertEqual(event.token, self.token)
         for permission in self.permission:
             if permission.codename != 'add_event':
@@ -173,7 +175,7 @@ class EventViewTest(APITestCase):
         data = {'token_code': self.token2.token_code}
 
         remove_perm('delete_event', self.user, self.event)
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.user)  # type: ignore
 
         response = self.client.delete(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -199,3 +201,77 @@ class EventViewTest(APITestCase):
         self.client.force_authenticate(user=None)
         if Event.objects.exists():
             Event.objects.all().delete()
+
+
+class StaffViewTest(APITestCase):
+    def create_unique_email(self):
+        return f'{uuid.uuid4()}@gmail.com'
+
+    def create_unique_username(self):
+        return f'user_{uuid.uuid4().hex[:10]}'
+
+    def setUpUser(self):
+        self.user = User.objects.create(
+            username=self.create_unique_username(), email=self.create_unique_email())
+
+    def setUpEvent(self):
+        self.token = Token.objects.create()
+        self.event = Event.objects.create(name='Evento 1', token=self.token)
+
+    def setUpGroup(self):
+        self.group = Group.objects.create(name='staff_member')
+        self.user.groups.add(self.group)
+
+    def setUpPermissions(self):
+        self.content_type = ContentType.objects.get_for_model(Event)
+        self.permission = Permission.objects.filter(
+            content_type=self.content_type).filter(Q(codename__icontains='view') | Q(codename__icontains='change')).exclude(codename__icontains='change_event')
+
+    def setUp(self):
+        self.setUpUser()
+        self.setUpEvent()
+        self.setUpGroup()
+        self.setUpPermissions()
+
+    def test_add_staff_member(self):
+        """Test adding a staff member to an event."""
+        url = reverse('api:staff')
+        data = {'token_code': self.token.token_code}
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for permission in self.permission:
+            self.assertTrue(self.user.has_perm(
+                permission.codename, self.event))
+
+    def test_add_staff_member_without_token(self):
+        """Test adding a staff member without a token."""
+        url = reverse('api:staff')
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_add_staff_member_with_invalid_token(self):
+        """Test adding a staff member with an invalid token."""
+        url = reverse('api:staff')
+        data = {'token_code': 'invalid_token'}
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_add_staff_member_with_unauthenticated_user(self):
+        """Test adding a staff member without authentication."""
+        url = reverse('api:staff')
+        data = {'token_code': self.token.token_code}
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def tearDown(self):
+        self.user.delete()
+        self.event.delete()
+        self.group.delete()
+        self.permission.delete()
+        self.client.logout()
+        self.client.force_authenticate(user=None)
+        if Token.objects.exists():
+            Token.objects.all().delete()

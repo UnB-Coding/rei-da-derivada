@@ -2,18 +2,17 @@ from typing import Optional
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from api.models import Token, Event, Sumula, PlayerScore, Player
-from users.models import User
-from ..serializers import TokenSerializer, EventSerializer, PlayerSerializer, PlayerScoreSerializer, SumulaSerializer, UserSerializer
+from api.models import Token, Event
+from ..serializers import TokenSerializer, EventSerializer
 from rest_framework.permissions import BasePermission
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from ..utils import handle_400_error
 from ..swagger import Errors
 from django.contrib.auth.models import Group
-from ..permissions import AddPermissions
+from ..permissions import assign_permissions
 from guardian.shortcuts import get_perms, remove_perm, assign_perm
-from django.http import Http404
+
 TOKEN_NOT_PROVIDED_ERROR_MESSAGE = "Token não fornecido!"
 TOKEN_NOT_FOUND_ERROR_MESSAGE = "Token não encontrado!"
 TOKEN_ALREADY_USED_ERROR_MESSAGE = "Token já utilizado para criação de evento!"
@@ -66,16 +65,16 @@ class EventView(APIView):
     """Lida com os requests relacionados a eventos."""
     permission_classes = [IsAuthenticated, EventPermissions]
 
-    def get_object(self):
+    def get_object(self) -> Event | Exception:
         token_code = self.request.data.get('token_code')
         if not token_code:
-            raise handle_400_error(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
-        token = self.get_token(token_code)
-        if not token:
-            raise handle_400_error(TOKEN_NOT_FOUND_ERROR_MESSAGE)
-        event = self.get_event_by_token(token)
+            raise Exception(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
+        self.token = self.get_token(token_code)
+        if not self.token:
+            raise Exception(TOKEN_NOT_FOUND_ERROR_MESSAGE)
+        event = self.get_event_by_token(self.token)
         if not event:
-            raise handle_400_error(EVENT_DOES_NOT_EXIST_ERROR_MESSAGE)
+            raise Exception(EVENT_NOT_FOUND_ERROR_MESSAGE)
         return event
 
     def get_token(self, token_code: str) -> Optional[Token]:
@@ -133,7 +132,10 @@ class EventView(APIView):
 
         event = Event.objects.create(token=token)
         group = Group.objects.get(name='event_admin')
-        AddPermissions().assign_permissions(user=request.user, group=group, event=event)
+        try:
+            assign_permissions(user=request.user, group=group, event=event)
+        except Exception as e:
+            return handle_400_error(str(e))
         # permisions = get_perms(request.user, event)
         """ print("PERMISSÕES DO USUÁRIO ADMIN:", permisions) """
         data = EventSerializer(event).data
@@ -154,36 +156,41 @@ class EventView(APIView):
         responses={200: openapi.Response(
             'OK', EventSerializer), **Errors([400]).retrieve_erros()}
     )
-    def delete(self, request, *args, **kwargs):
+    def delete(self, request: request.Request, *args, **kwargs):
         """Deleta um evento associado a um token e retorna o evento deletado.
+
         Caso o token não tenha um evento associado, retorna um erro 400.
 
         Permissões necessárias: IsAthenticated ,EventPermissions
         """
-        if 'token_code' not in request.data:
-            return handle_400_error(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
-
-        token_code = request.data['token_code']
-
-        if not self.token_code_exists(token_code):
-            return handle_400_error(TOKEN_NOT_FOUND_ERROR_MESSAGE)
-        user = request.user
-
-        token = self.get_token(token_code)
-        if not token:
-            return handle_400_error(TOKEN_NOT_FOUND_ERROR_MESSAGE)
-        event = self.get_event_by_token(token)
-        if not event:
-            return handle_400_error(EVENT_DOES_NOT_EXIST_ERROR_MESSAGE)
+        try:
+            event = self.get_object()
+        except Exception as e:
+            return handle_400_error(str(e))
 
         self.check_object_permissions(request, event)
         event.delete()
-        token.used = False
+        self.token.used = False
+        self.token.save()
         return response.Response(status=status.HTTP_200_OK)
+
+
+class StaffPermissions(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if Group.objects.get(name='app_admin') in request.user.groups.all():
+            return True
 
 
 class StaffView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get_token(self, token_code: str) -> Optional[Token]:
+        """Retorna um token com o código-token fornecido."""
+        return Token.objects.filter(token_code=token_code).first()
+
+    def get_event_by_token(self, token: Token) -> Optional[Event]:
+        """Retorna um evento com o token fornecido."""
+        return Event.objects.filter(token=token).first()
 
     @ swagger_auto_schema(
         operation_description="Adiciona um novo membro da equipe ao evento.",
@@ -194,23 +201,20 @@ class StaffView(APIView):
     )
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Adiciona um novo membro da equipe ao evento."""
-        user = request.user
-        token_code = request.data.get('token_code')
+        if request.data is None or 'token_code' not in request.data:
+            return handle_400_error(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
+        token_code = request.data['token_code']
         if not token_code:
             return handle_400_error(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
-        token = Token.objects.filter(token_code=token_code).first()
+
+        token = self.get_token(token_code)
         if not token:
             return handle_400_error(TOKEN_NOT_FOUND_ERROR_MESSAGE)
-        event = Event.objects.filter(token=token).first()
+        event = self.get_event_by_token(token)
         if not event:
             return handle_400_error(EVENT_NOT_FOUND_ERROR_MESSAGE)
 
         group = Group.objects.get(name='staff_member')
-        print("PERMISSOES ANTES:", user.get_all_permissions())
-        permissions = AddPermissions()
-        permissions.assign_permissions(user=user, group=group, event=event)
-        user_permissions = get_perms(user, event)
-        print("PERMISSÕES DO USUÁRIO:", user_permissions)
-        for pe in user_permissions:
-            print("PERMISSÃO DO USUÁRIO:", pe)
+        assign_permissions(user=request.user, group=group, event=event)
+
         return response.Response(status=status.HTTP_200_OK, data={'message': 'Membro da equipe adicionado com sucesso!'})
