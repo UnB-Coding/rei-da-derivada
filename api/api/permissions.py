@@ -17,14 +17,14 @@ def assign_permissions(user: User, group: Group, event: Event) -> Optional[Excep
         group (Group): Grupo do usuário
         event (Event): Evento ao qual as permissões serão atribuídas
     """
-    permissions = add_permissions(group)
+    permissions = filter_permissions(group)
     if permissions is None:
         return Exception(f"Group {group} not found")
     for permission in permissions:
         assign_perm(permission, user, event)
 
 
-def add_permissions(group: Group) -> Optional[QuerySet[Permission]]:
+def filter_permissions(group: Group) -> Optional[QuerySet[Permission]]:
     content_type = get_content_type(Event)
     permissions = get_permissions(content_type)
 

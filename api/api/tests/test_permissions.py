@@ -1,7 +1,7 @@
 from django.contrib.auth.models import Permission, Group
 from users.models import User
 from ..models import Event, Token
-from ..permissions import add_permissions, assign_permissions
+from ..permissions import filter_permissions, assign_permissions
 import uuid
 from django.db.models import QuerySet
 from django.test import TestCase
@@ -47,11 +47,11 @@ class AddPermissionsTestCase(TestCase):
         self.setUpGroups()
         self.setUpUser()
 
-    def test_add_permissions_groups(self):
+    def test_filter_permissions_groups(self):
         """Testa a atribuição de permissões aos grupos."""
         for group_name, expected_permissions in EXPECTED_PERMISSIONS.items():
             group = getattr(self, f'group_{group_name}')
-            permissions = add_permissions(group)
+            permissions = filter_permissions(group)
             self.assertIsNotNone(permissions)
             self.assertIsInstance(permissions, QuerySet[Permission])
             for permission in permissions:
@@ -65,9 +65,9 @@ class AddPermissionsTestCase(TestCase):
             self.verify_permissions(
                 self.user, self.event, expected_permissions)
 
-    def test_add_permissions_invalid_group(self):
+    def test_filter_permissions_invalid_group(self):
         invalid_group = Group.objects.create(name='invalid_group')
-        permissions = add_permissions(invalid_group)
+        permissions = filter_permissions(invalid_group)
         self.assertIsNone(permissions)
 
     def verify_permissions(self, user, obj, expected_permissions):
