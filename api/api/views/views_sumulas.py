@@ -98,7 +98,7 @@ class SumulaView(APIView):
         try:
             self.check_object_permissions(self.request, event)
         except PermissionDenied as e:
-            return response.Response(status=status.HTTP_403_FORBIDDEN, data=str(e))
+            return response.Response(status=status.HTTP_403_FORBIDDEN, data="Acesso negado!")
 
         players = request.data['players']
         for player in players:
