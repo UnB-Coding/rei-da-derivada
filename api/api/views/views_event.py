@@ -107,7 +107,7 @@ class EventView(APIView):
         responses={200: openapi.Response(
             'OK', EventSerializer), **Errors([400]).retrieve_erros()}
     )
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs) -> response.Response:
         """Cria um novo evento associado a um token e retorna o evento criado.
         Caso o token já tenha sido utilizado ou já exista um evento associado ao token, retorna um erro 400.
 
