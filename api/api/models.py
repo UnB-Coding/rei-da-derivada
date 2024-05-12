@@ -34,8 +34,8 @@ class Token (models.Model):
 
     def generate_token(self) -> str:
         """Gera um token aleatório de TOKEN_LENGTH caracteres."""
-        self.token_code = ''.join(random.choices(
-            string.ascii_letters + string.digits, k=TOKEN_LENGTH))
+        self.token_code = ''.join(
+            random.choices(string.digits, k=TOKEN_LENGTH))
         return self.token_code
 
     def save(self, *args, **kwargs) -> None:
@@ -50,34 +50,36 @@ class Event (models.Model):
      fields:
     - token: ForeignKey para Token
     - name: CharField com o nome do evento
+    - active: BooleanField que indica se o evento está ativo ou não
     """
     token = models.OneToOneField(
         Token, on_delete=models.CASCADE, related_name='event')
     name = models.CharField(default='', max_length=64, blank=True, null=True)
-    team_members_token = models.CharField(
-        default='', max_length=TOKEN_LENGTH, unique=True)
+    active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = ("Evento")
         verbose_name_plural = ("Eventos")
+        permissions = [
+            ("add_sumula_event", "Can add sumula"),
+            ("change_sumula_event", "Can change sumula"),
+            ("view_sumula_event", "Can view sumula"),
+            ("delete_sumula_event", "Can delete sumula"),
+            ("add_player_event", "Can add player"),
+            ("change_player_event", "Can change player"),
+            ("view_player_event", "Can view player"),
+            ("delete_player_event", "Can delete player"),
+            ("add_player_score_event", "Can add player_score"),
+            ("change_player_score_event", "Can change player_score"),
+            ("view_player_score_event", "Can view player_score"),
+            ("delete_player_score_event", "Can delete player_score"),
+        ]
 
     def __str__(self):
         return self.name
 
     def __token__(self):
         return self.token.token_code
-
-    def generate_team_members_token(self) -> str:
-        """Gera um token aleatório de TOKEN_LENGTH caracteres."""
-        self.team_members_token = ''.join(random.choices(
-            string.ascii_letters + string.digits, k=TOKEN_LENGTH))
-        return self.team_members_token
-
-    def save(self, *args, **kwargs) -> None:
-        """Sobrescreve o método save para gerar um token caso não exista."""
-        if not self.team_members_token:
-            self.generate_team_members_token()
-        super(Event, self).save(*args, **kwargs)
 
 
 class Sumula (models.Model):

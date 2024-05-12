@@ -15,6 +15,9 @@ class UserSessionRegisterTests(APITestCase):
     ```
     """
 
+    def setUp(self) -> None:
+        User.objects.get(username='AnonymousUser').delete()
+
     def make_register_post_request(self, access_token: str | None = None, provider: str | None = None) -> HttpResponse:
         """
         Método para fazer uma requisição POST para a rota de registro de usuários.
@@ -159,3 +162,6 @@ class UserSessionRegisterTests(APITestCase):
 
         self.assertFalse("refresh" in response.cookies)
         self.assertFalse("refresh" in response.data)
+
+    def tearDown(self) -> None:
+        User.objects.all().delete()
