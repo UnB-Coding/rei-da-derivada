@@ -229,6 +229,17 @@ class SumulaViewTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 3)
 
+    def test_get_finished_sumulas(self):
+        self.sumula.active = False
+        self.sumula.save()
+        self.sumula2.active = False
+        self.sumula2.save()
+        url = f"{reverse('api:sumula-encerradas')}?event_id={self.event.id}"
+        self.client.force_authenticate(user=self.user_staff_manager)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+
     def test_get_sumulas_unauthenticated(self):
         response = self.client.get(self.url_get)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
