@@ -21,7 +21,7 @@ class PlayerSerializer(ModelSerializer):
 
     class Meta:
         model = Player
-        fields = ['id', 'total_score', 'registration_email', 'event', 'user']
+        fields = ['id', 'total_score', 'event', 'user']
 
 
 class TokenSerializer(ModelSerializer):
