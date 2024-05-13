@@ -193,7 +193,10 @@ class StaffView(APIView):
         return Event.objects.filter(token=token).first()
 
     @ swagger_auto_schema(
-        operation_description="Adiciona um novo membro da equipe ao evento.",
+        operation_description="""Adiciona um novo membro da equipe ao evento.
+        Este usuário terá permissões de Staff Member no evento associado ao token fornecido.
+        """,
+        operation_summary="Adiciona um novo membro da equipe ao evento.",
         operation_id="add_staff_member",
         request_body=TokenSerializer,
         responses={200: openapi.Response(
