@@ -94,19 +94,13 @@ class PlayersViewTest(APITestCase):
 
         expected_user_ids = [self.user.id,
                              self.user2.id, self.user3.id, self.user4.id]
-        expected_registration_emails = [self.player.registration_email, self.player2.registration_email,
-                                        self.player3.registration_email, self.player4.registration_email]
 
         returned_user_ids = [player['user']['id'] for player in response.data]
         returned_event_ids = [player['event'] for player in response.data]
-        returned_registration_emails = [
-            player['registration_email'] for player in response.data]
 
         self.assertCountEqual(returned_user_ids, expected_user_ids)
         self.assertTrue(
             all(event_id == self.event.id for event_id in returned_event_ids))
-        self.assertCountEqual(returned_registration_emails,
-                              expected_registration_emails)
 
     def test_get_all_players_unauthenticated(self):
         response = self.client.get(self.url)
@@ -217,7 +211,6 @@ class GetCurrentPlayerViewTest(APITestCase):
         self.assertEqual(response.data, {
             'id': self.player.id,
             'total_score': self.player.total_score,
-            'registration_email': self.player.registration_email,
             'event': self.event.id,
             'user': {
                 'id': self.user.id,

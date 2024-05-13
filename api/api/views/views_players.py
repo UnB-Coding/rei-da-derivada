@@ -3,9 +3,8 @@ from django.forms import ValidationError
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from api.models import Event, Sumula, PlayerScore, Player
-from users.models import User
-from ..serializers import PlayerSerializer, PlayerScoreSerializer, SumulaSerializer, UserSerializer
+from api.models import Event, Player
+from ..serializers import PlayerSerializer
 from rest_framework.permissions import BasePermission
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -57,10 +56,10 @@ class PlayersView(APIView):
         return response.Response(status=status.HTTP_200_OK, data=data)
 
     def get_object(self) -> Event:
-        if 'event_id' not in self.request.query_params:
+        if 'event_id' not in self.request.query_params:  # type: ignore
             raise ValidationError('Dados inválidos!')
 
-        event_id = self.request.query_params.get('event_id')
+        event_id = self.request.query_params.get('event_id')  # type: ignore
         if not event_id:
             raise ValidationError('event_id é obrigatório!')
         event = Event.objects.filter(id=event_id).first()
@@ -96,10 +95,10 @@ class GetCurrentPlayer(APIView):
         return response.Response(status=status.HTTP_200_OK, data=data)
 
     def get_object(self) -> Event:
-        if 'event_id' not in self.request.query_params:
+        if 'event_id' not in self.request.query_params: # type: ignore
             raise ValidationError('Dados inválidos!')
 
-        event_id = self.request.query_params.get('event_id')
+        event_id = self.request.query_params.get('event_id') # type: ignore
         if not event_id:
             raise ValidationError('event_id é obrigatório!')
         event = Event.objects.filter(id=event_id).first()
