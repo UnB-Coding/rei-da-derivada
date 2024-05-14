@@ -15,5 +15,6 @@ urlpatterns = [
     path('players/', PlayersView.as_view(), name='players'),
     path('player/', GetCurrentPlayer.as_view(), name='player'),
     path('staff/', StaffView.as_view(), name='staff'),
-    re_path(r'^upload/(?P<filename>[^/]+)$', AddPlayers.as_view())
+    re_path(r'^upload/(?P<filename>[^/]+)$',
+            AddPlayers.as_view(), name='upload')
 ]

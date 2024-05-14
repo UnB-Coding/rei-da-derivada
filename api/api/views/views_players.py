@@ -1,9 +1,11 @@
+from io import StringIO
 from typing import Optional
 from django.forms import ValidationError
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.parsers import FileUploadParser
+from rest_framework.parsers import FileUploadParser, MultiPartParser
+from django.core.files.uploadedfile import SimpleUploadedFile
 from api.models import Event, Player
 from users.models import User
 from ..serializers import PlayerSerializer, PlayerScoreSerializer, SumulaSerializer, UserSerializer
@@ -13,7 +15,6 @@ from drf_yasg.utils import swagger_auto_schema
 from ..utils import handle_400_error
 from ..swagger import Errors
 import pandas as pd
-import os
 
 
 class PlayersPermission(BasePermission):
@@ -113,7 +114,7 @@ class GetCurrentPlayer(APIView):
 
 class AddPlayers(APIView):
     # permission_classes = [IsAuthenticated, PlayersPermission]
-    parser_classes = [FileUploadParser]
+    parser_classes = [MultiPartParser]
 
     @swagger_auto_schema(
         operation_description='Adiciona os jogadores ao evento através do excel fornecido pelo administrador com os participantes do evento.',
@@ -164,10 +165,14 @@ class AddPlayers(APIView):
     def createData(self, extension, file) -> Optional[pd.DataFrame]:
         data = None
         if extension == 'csv':
-            data = pd.read_csv(file)
-        else:
-            data = pd.read_excel(file)
+            # Lê os dados do arquivo como uma string
+            file_data = file.read().decode('utf-8')
+            # Converte a string em um StringIO, que pode ser lido pelo pandas
+            csv_data = StringIO(file_data)
+            data = pd.read_csv(csv_data, header=0, encoding='utf-8')
 
+        elif extension == 'xlsx' or extension == 'xls':
+            data = pd.read_excel(file)
         return data
 
     def get_excel_file(self):

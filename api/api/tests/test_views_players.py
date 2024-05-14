@@ -1,16 +1,21 @@
+import io
 import random
+from unittest.mock import MagicMock
 from rest_framework.test import APITestCase
 from django.urls import reverse
-from django.utils.crypto import get_random_string
 from rest_framework import status
 from rest_framework.test import APIClient
 from api.models import Sumula, Event,  Token, Player
 from users.models import User
 import uuid
-from ..utils import get_permissions, get_content_type
+from django.core.files.uploadedfile import UploadedFile, SimpleUploadedFile
 from django.contrib.auth.models import Group
 from ..permissions import assign_permissions
 from guardian.shortcuts import remove_perm, get_perms
+from decouple import config
+import pandas as pd
+XLSX_PATH = config("XLSX_FILE_PATH")
+CSV_PATH = config("CSV_FILE_PATH")
 
 
 class PlayersViewTest(APITestCase):
@@ -268,3 +273,89 @@ class GetCurrentPlayerViewTest(APITestCase):
         Player.objects.all().delete()
         Group.objects.all().delete()
         self.client = None
+
+
+class AddPlayersViewTest(APITestCase):
+    def create_unique_email(self):
+        return f'{uuid.uuid4()}@gmail.com'
+
+    def create_unique_username(self):
+        return f'user_{uuid.uuid4().hex[:10]}'
+
+    def generate_random_name(self):
+        names = ['João', 'José', 'Pedro', 'Paulo', 'Lucas', 'Mário', 'Luiz']
+        return names[random.randint(0, 6)]
+
+    def setupUser(self):
+        self.admin = User.objects.create(
+            username='admin', email=f'{uuid.uuid4()}@gmail.com', first_name='Admin', last_name='Admin')
+
+    def setUpEvent(self):
+        self.token = Token.objects.create()
+        self.event = Event.objects.create(name='Evento 1', token=self.token)
+
+    def setUpGroup(self):
+        self.group_app_admin = Group.objects.create(name='app_admin')
+        self.group_event_admin = Group.objects.create(name='event_admin')
+        self.group_staff_manager = Group.objects.create(name='staff_manager')
+        self.group_staff_member = Group.objects.create(name='staff_member')
+        self.group_player = Group.objects.create(name='player')
+
+    def setUpPermissions(self):
+        assign_permissions(self.admin,
+                           self.group_event_admin, self.event)
+
+    def setUpFiles(self):
+        # Setup Excel file
+        self.excel_file = open(XLSX_PATH, 'rb')
+        self.excel_content = self.excel_file.read()
+        self.excel_uploaded_file = SimpleUploadedFile(
+            "Exemplo.xlsx", self.excel_content, content_type="multipart/form-data")
+        # Setup CSV file
+        self.csv_file = open(
+            '/usr/src/api/config/files_tests/excel/Exemplo.csv', 'r')
+        self.csv_content = self.csv_file.read()
+        self.csv_uploaded_file = SimpleUploadedFile(
+            "Exemplo.csv", self.csv_content.encode('utf-8'), content_type="multipart/form-data")
+
+    def setUpUrl(self):
+        self.url_csv = f"{reverse('api:upload', kwargs={'filename': 'participantes.csv'})}?event_id={self.event.id}"
+        self.url_excel = f"{reverse('api:upload', kwargs={'filename': 'participantes.xlsx'})}?event_id={self.event.id}"
+
+    def setUp(self):
+        self.setUpEvent()
+        self.setupUser()
+        self.setUpGroup()
+        self.setUpPermissions()
+        self.setUpFiles()
+        self.setUpUrl()
+        self.client = APIClient()
+
+    def test_add_players_csv(self):
+        self.client.force_authenticate(user=self.admin)
+
+        data = {'file': self.csv_uploaded_file}
+
+        response = self.client.post(self.url_csv, data, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data, 'Jogadores adicionados com sucesso!')
+
+        players = Player.objects.filter(event=self.event)
+        self.assertEqual(players.count(), 10)
+
+    def test_add_players_excel(self):
+        self.client.force_authenticate(user=self.admin)
+        data = {'file': self.excel_uploaded_file}
+        response = self.client.post(self.url_excel, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data, 'Jogadores adicionados com sucesso!')
+        players = Player.objects.filter(event=self.event)
+        self.assertEqual(players.count(), 10)
+
+    def tearDown(self):
+        User.objects.all().delete()
+        Event.objects.all().delete()
+        Player.objects.all().delete()
+        Group.objects.all().delete()
+        self.data = None
