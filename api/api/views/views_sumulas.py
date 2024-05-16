@@ -263,3 +263,42 @@ class ActiveSumulaView(APIView):
         # Verifica se o usuário tem permissão para acessar o evento
         self.check_object_permissions(self.request, event)
         return event
+
+
+class FinishedSumulaView(APIView):
+    permission_classes = [IsAuthenticated, HasSumulaPermission]
+
+    @ swagger_auto_schema(operation_id='get_sumulas_encerradas',
+                          operation_summary="Retorna todas as sumulas encerradas associadas a um evento.",
+                          operation_description="Retorna todas as sumulas encerradas associadas a um evento, com seus jogadores e pontuações.",
+                          manual_parameters=[openapi.Parameter(
+                              'event_id', openapi.IN_QUERY, description="Id do evento associado às sumulas.", type=openapi.TYPE_INTEGER, required=True)],
+                          responses={200: openapi.Response(
+                              'OK', SumulaSerializer), **Errors([400]).retrieve_erros()}
+                          )
+    def get(self, request: request.Request):
+        """Retorna todas as sumulas encerradas."""
+        try:
+            event = self.get_object()
+        except Exception as e:
+            return handle_400_error(str(e))
+        sumulas = Sumula.objects.filter(event=event, active=False)
+        data = SumulaSerializer(sumulas, many=True).data
+        return response.Response(status=status.HTTP_200_OK, data=data)
+
+    def get_object(self) -> Event:
+        """ Verifica se o evento existe e se o usuário tem permissão para acessá-lo.
+        Retorna o evento associado ao id fornecido.
+        """
+        if 'event_id' not in self.request.query_params:
+            raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
+
+        event_id = self.request.query_params.get('event_id')
+        if not event_id:
+            raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
+        event = Event.objects.filter(id=event_id).first()
+        if not event:
+            raise NotFound(EVENT_NOT_FOUND_ERROR_MESSAGE)
+        # Verifica se o usuário tem permissão para acessar o evento
+        self.check_object_permissions(self.request, event)
+        return event

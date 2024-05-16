@@ -61,10 +61,10 @@ class PlayersView(APIView):
         return response.Response(status=status.HTTP_200_OK, data=data)
 
     def get_object(self) -> Event:
-        if 'event_id' not in self.request.query_params:
+        if 'event_id' not in self.request.query_params:  # type: ignore
             raise ValidationError('Dados inválidos!')
 
-        event_id = self.request.query_params.get('event_id')
+        event_id = self.request.query_params.get('event_id')  # type: ignore
         if not event_id:
             raise ValidationError('event_id é obrigatório!')
         event = Event.objects.filter(id=event_id).first()
@@ -100,10 +100,10 @@ class GetCurrentPlayer(APIView):
         return response.Response(status=status.HTTP_200_OK, data=data)
 
     def get_object(self) -> Event:
-        if 'event_id' not in self.request.query_params:
+        if 'event_id' not in self.request.query_params: # type: ignore
             raise ValidationError('Dados inválidos!')
 
-        event_id = self.request.query_params.get('event_id')
+        event_id = self.request.query_params.get('event_id') # type: ignore
         if not event_id:
             raise ValidationError('event_id é obrigatório!')
         event = Event.objects.filter(id=event_id).first()
@@ -186,6 +186,7 @@ class AddPlayers(APIView):
     def get_object(self):
         if 'event_id' not in self.request.query_params:
             raise ValidationError('Dados inválidos!')
+
         event_id = self.request.query_params.get('event_id')
         if not event_id:
             raise ValidationError('event_id é obrigatório!')
