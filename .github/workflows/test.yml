@@ -26,6 +26,7 @@ jobs:
 
       - name: Run Tests
         run: |
+          docker exec api-django python config/excel.py
           docker exec api-django coverage run manage.py test
           docker exec api-django coverage report
           docker exec api-django coverage xml
