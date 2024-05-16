@@ -106,15 +106,22 @@ class Player(models.Model):
     """
     This model is used to store player information.
     params:
+    - full_name: CharField with the full name of the player
+    - social_name: CharField with the social name of the player
     - user: OneToOneField to User
     - event: ForeignKey to Event
     - registration_email: EmailField
     - total_score: IntegerField
     """
+    full_name = models.CharField(
+        default='', max_length=128, blank=True, null=True)
+    social_name = models.CharField(
+        default='', max_length=128, blank=True, null=True)
     user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name='player')
+        User, on_delete=models.CASCADE, related_name='player', null=True, blank=True)
     total_score = models.PositiveSmallIntegerField(default=0)
-    registration_email = models.EmailField(blank=False, unique=True)
+    registration_email = models.EmailField(
+        blank=False, unique=False, null=False)
     event = models.ForeignKey(
         Event, on_delete=models.CASCADE, related_name='players')
 
@@ -131,7 +138,7 @@ class Player(models.Model):
         self.save()
 
     def __str__(self) -> str:
-        return self.user.__str__()
+        return self.full_name
 
 
 class PlayerScore(models.Model):

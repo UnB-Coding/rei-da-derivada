@@ -1,27 +1,8 @@
-from rest_framework import status, response
-from django.contrib.contenttypes.models import ContentType
-from rest_framework import status, response
-from django.contrib.auth.models import Permission
+# from api.utils import generate_random_name, create_unique_email
+import os
+import pandas as pd
 import uuid
 import random
-
-
-def handle_400_error(error_msg: str) -> response.Response:
-    """ Função para lidar com erros 400."""
-    return response.Response(
-        {
-            "errors": error_msg
-        }, status.HTTP_400_BAD_REQUEST)
-
-
-def get_content_type(model):
-    """ Função para retornar o content type de um modelo."""
-    return ContentType.objects.get_for_model(model)
-
-
-def get_permissions(content_type):
-    """ Função para retornar as permissões de um content type."""
-    return Permission.objects.filter(content_type=content_type)
 
 
 def create_unique_email():
@@ -38,3 +19,19 @@ def generate_random_name():
     last_names = ['Silva', 'Oliveira', 'Martins', 'Souza', 'Costa', 'Santos', 'Pereira', 'Almeida', 'Carvalho', 'Ferreira', 'Rodrigues', 'Gomes', 'Alves', 'Lima', 'Araújo', 'Melo', 'Barbosa', 'Ribeiro', 'Albuquerque', 'Marques', 'Vieira', 'Correia', 'Cavalcanti', 'Dias', 'Castro', 'Campos', 'Cardoso', 'Nunes', 'Peixoto', 'Mendes', 'Leal', 'Guimarães', 'Barros', 'Freitas', 'Vasconcelos', 'Braga', 'Moraes', 'Moraes', 'Monteiro', 'Mendes', 'Leal', 'Guimarães', 'Barros', 'Freitas', 'Vasconcelos', 'Braga', 'Moraes', 'Moraes', 'Monteiro', 'Mendes', 'Leal', 'Guimarães', 'Barros', 'Freitas', 'Vasconcelos', 'Braga', 'Moraes', 'Moraes', 'Monteiro', 'Mendes', 'Leal', 'Guimarães', 'Barros', 'Freitas', 'Vasconcelos',
                   'Braga', 'Moraes', 'Moraes', 'Monteiro', 'Mendes', 'Leal', 'Guimarães', 'Barros', 'Freitas', 'Vasconcelos', 'Braga', 'Moraes', 'Moraes', 'Monteiro', 'Mendes', 'Leal', 'Guimarães', 'Barros', 'Freitas', 'Vasconcelos', 'Braga', 'Moraes', 'Moraes', 'Monteiro', 'Mendes', 'Leal', 'Guimarães', 'Barros', 'Freitas', 'Vasconcelos', 'Braga', 'Moraes', 'Moraes', 'Monteiro', 'Mendes', 'Leal', 'Guimarães', 'Barros', 'Freitas', 'Vasconcelos', 'Braga', 'Moraes', 'Moraes', 'Monteiro', 'Mendes', 'Leal', 'Guimarães', 'Barros', 'Freitas', 'Vasconcelos', 'Braga', 'Moraes', 'Moraes', 'Monteiro', 'Mendes', 'Leal', 'Guimarães', 'Barros', 'Freitas', 'Vasconcelos', 'Braga', 'Moraes', 'Moraes', 'Monteiro', 'Mendes', 'Leal']
     return f'{names[random.randint(0, len(names) - 1)]+" "+last_names[random.randint(0, len(last_names) - 1)]+" "+last_names[random.randint(0, len(last_names) - 1)]}'
+
+
+""" Função para popular o arquivo excel de testes.
+Nome completo, Nome social e email.
+"""
+data = {
+    'Nome Completo': [generate_random_name() for _ in range(10)],
+    'Nome Social': [generate_random_name() for _ in range(10)],
+    'E-mail': [create_unique_email() for _ in range(10)]
+}
+df = pd.DataFrame(data)
+df.to_csv('/usr/src/api/config/files_tests/excel/Exemplo.csv',
+          index=False, columns=['Nome Completo', 'Nome Social', 'E-mail'], sep=',', encoding='utf-8')
+df.to_excel(
+    '/usr/src/api/config/files_tests/excel/Exemplo.xlsx', index=False, columns=['Nome Completo', 'Nome Social', 'E-mail'])
+print('Arquivo excel populado com sucesso!')
