@@ -322,6 +322,11 @@ class AddPlayersViewTest(APITestCase):
         self.url_csv = f"{reverse('api:upload', kwargs={'filename': 'participantes.csv'})}?event_id={self.event.id}"
         self.url_excel = f"{reverse('api:upload', kwargs={'filename': 'participantes.xlsx'})}?event_id={self.event.id}"
 
+    def remove_permissions(self):
+        perm = get_perms(self.admin, self.event)
+        for p in perm:
+            remove_perm(p, self.admin, self.event)
+
     def setUp(self):
         self.setUpEvent()
         self.setupUser()
@@ -353,9 +358,38 @@ class AddPlayersViewTest(APITestCase):
         players = Player.objects.filter(event=self.event)
         self.assertEqual(players.count(), 10)
 
+    def test_add_players_unauthenticated(self):
+        data = {'file': self.csv_uploaded_file}
+        response = self.client.post(self.url_csv, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_add_players_without_permission(self):
+        self.remove_permissions()
+        self.client.force_authenticate(user=self.admin)
+        data = {'file': self.csv_uploaded_file}
+        response = self.client.post(self.url_csv, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_add_players_without_event_id(self):
+        self.client.force_authenticate(user=self.admin)
+        url = reverse('api:upload', kwargs={'filename': 'participantes.csv'})
+        response = self.client.post(url, {'file': self.csv_uploaded_file})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data, {'errors': "['Dados inválidos!']"})
+
+    def test_add_players_with_invalid_event_id(self):
+        self.client.force_authenticate(user=self.admin)
+        url = f"{reverse('api:upload', kwargs={'filename': 'participantes.csv'})}?event_id=100"
+        response = self.client.post(url, {'file': self.csv_uploaded_file})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data, {'errors': "['Evento não encontrado!']"})
+
     def tearDown(self):
         User.objects.all().delete()
         Event.objects.all().delete()
         Player.objects.all().delete()
         Group.objects.all().delete()
         self.data = None
+        self.excel_file.close()

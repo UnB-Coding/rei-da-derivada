@@ -113,7 +113,7 @@ class GetCurrentPlayer(APIView):
 
 
 class AddPlayers(APIView):
-    # permission_classes = [IsAuthenticated, PlayersPermission]
+    permission_classes = [IsAuthenticated, PlayersPermission]
     parser_classes = [MultiPartParser]
 
     @swagger_auto_schema(
