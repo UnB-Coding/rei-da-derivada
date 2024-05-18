@@ -56,10 +56,12 @@ class PlayerScoreAdmin(GuardedModelAdmin):
 
 
 @admin.register(Player)
-class Admin(GuardedModelAdmin):
-    list_display = ['user', 'event', 'total_score', 'registration_email', 'id']
+class PlayerAdmin(GuardedModelAdmin):
+    list_display = ['user', 'full_name', 'social_name',
+                    'event', 'total_score', 'registration_email', 'id']
     search_fields = ['user', 'total_score', 'event', 'registration_email']
-    fields = ['user', 'total_score', 'event', 'registration_email']
+    fields = ['user', 'total_score', 'event',
+              'registration_email', 'full_name', 'social_name']
 
     def username(self, obj):
         return obj.username
