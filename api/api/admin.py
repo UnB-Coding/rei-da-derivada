@@ -12,7 +12,7 @@ class TokenAdmin(GuardedModelAdmin):
 
 @admin.register(Event)
 class EventAdmin(GuardedModelAdmin):
-    list_display = ['token', 'name', 'id']
+    list_display = ['id', 'token', 'players_token', 'name']
     search_fields = ['token', 'name']
     fields = ['token', 'name']
 
