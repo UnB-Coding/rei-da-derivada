@@ -56,6 +56,8 @@ class Event (models.Model):
         Token, on_delete=models.CASCADE, related_name='event')
     name = models.CharField(default='', max_length=64, blank=True, null=True)
     active = models.BooleanField(default=True)
+    players_token = models.CharField(
+        default='', max_length=TOKEN_LENGTH, blank=True, null=False, unique=True)
 
     class Meta:
         verbose_name = ("Evento")
@@ -80,6 +82,18 @@ class Event (models.Model):
 
     def __token__(self):
         return self.token.token_code
+
+    def generate_token(self) -> str:
+        """Gera um token aleatório de TOKEN_LENGTH caracteres."""
+        self.players_token = ''.join(
+            random.choices(string.digits, k=TOKEN_LENGTH))
+        return self.players_token
+
+    def save(self, *args, **kwargs) -> None:
+        """Sobrescreve o método save para gerar um token caso não exista."""
+        if not self.players_token:
+            self.generate_token()
+        super(Event, self).save(*args, **kwargs)
 
 
 class Sumula (models.Model):
@@ -123,7 +137,7 @@ class Player(models.Model):
     registration_email = models.EmailField(
         blank=False, unique=False, null=False)
     event = models.ForeignKey(
-        Event, on_delete=models.CASCADE, related_name='players')
+        Event, on_delete=models.CASCADE, related_name='player')
 
     class Meta:
         verbose_name = ("Player")
