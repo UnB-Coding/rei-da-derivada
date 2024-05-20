@@ -15,13 +15,23 @@ class UserSerializer(ModelSerializer):
 
 class PlayerSerializer(ModelSerializer):
     """ Serializer for the Player model.
-    fields: first_name, last_name, event, total_score, registration_email, id
+    fields: full_name, social_name event, total_score, registration_email, id
     """
     user = UserSerializer()
 
     class Meta:
         model = Player
-        fields = ['id', 'total_score', 'event', 'user']
+        fields = ['id', 'total_score', 'event',
+                  'full_name', 'social_name', 'user']
+
+
+class PlayerResultsSerializer(ModelSerializer):
+    """ Serializer for the Player model. Returns only the necessary fields for results.
+    fields: 'id', 'total_score', 'full_name', 'social_name'
+    """
+    class Meta:
+        model = Player
+        fields = ['id', 'total_score', 'full_name', 'social_name']
 
 
 class TokenSerializer(ModelSerializer):
