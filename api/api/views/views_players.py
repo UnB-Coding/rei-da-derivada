@@ -144,6 +144,76 @@ class GetPlayerResults(APIView):
         return event
 
 
+class PublishPlayersPermissions(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method == 'PUT':
+            return request.user.has_perm('api.change_event', obj)
+        return True
+
+
+class PublishPlayersResults(APIView):
+    permission_classes = [IsAuthenticated, PublishPlayersPermissions]
+
+    @swagger_auto_schema(
+        security=[{'Bearer': []}],
+        operation_description='Publica os resultados dos jogadores do evento.',
+        operation_summary="""Publica os resultados dos jogadores do evento. Os jogadores poderão ver suas pontuações e os 4 primeiros colocados.""",
+        operation_id='publish_results',
+        manual_parameters=[openapi.Parameter(
+            'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
+        responses={200: openapi.Response(
+            200), **Errors([400]).retrieve_erros()}
+    )
+    def put(self, request: request.Request, *args, **kwargs) -> response.Response:
+        try:
+            event = self.get_object()
+        except ValidationError as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+        event.results_published = True
+        event.save()
+        return response.Response(status=status.HTTP_200_OK, data='Resultados publicados com sucesso!')
+
+    def get_object(self):
+        if 'event_id' not in self.request.query_params:
+            raise ValidationError('Dados inválidos!')
+
+        event_id = self.request.query_params.get('event_id')
+        if not event_id:
+            raise ValidationError('event_id é obrigatório!')
+        event = Event.objects.filter(id=event_id).first()
+        if not event:
+            raise ValidationError('Evento não encontrado!')
+        return event
+
+
+class Top4Players(APIView):
+    permission_classes = [IsAuthenticated, PlayersPermission]
+
+    def get(self, request: request.Request, *args, **kwargs) -> response.Response:
+        try:
+            event = self.get_object()
+        except ValidationError as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+        players = Player.objects.filter(
+            event=event).order_by('-total_score')[:4]
+        data = PlayerResultsSerializer(players, many=True).data
+        return response.Response(status=status.HTTP_200_OK, data=data)
+
+    def get_object(self):
+        if 'event_id' not in self.request.query_params:
+            raise ValidationError('Dados inválidos!')
+
+        event_id = self.request.query_params.get('event_id')
+        if not event_id:
+            raise ValidationError('event_id é obrigatório!')
+        event = Event.objects.filter(id=event_id).first()
+        if not event:
+            raise ValidationError('Evento não encontrado!')
+        return event
+
+
 class AddPlayers(APIView):
     permission_classes = [IsAuthenticated, PlayersPermission]
     parser_classes = [MultiPartParser]
@@ -212,66 +282,6 @@ class AddPlayers(APIView):
         if not excel_file.name:
             raise ValidationError('Arquivo inválido!')
         return excel_file
-
-    def get_object(self):
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError('Dados inválidos!')
-
-        event_id = self.request.query_params.get('event_id')
-        if not event_id:
-            raise ValidationError('event_id é obrigatório!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
-
-
-class PublishPlayersPermissions(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        if request.method == 'POST':
-            return request.user.has_perm('api.change_event', obj)
-        return True
-
-
-class PublishPlayersResults(APIView):
-    permission_classes = [IsAuthenticated, PublishPlayersPermissions]
-
-    def put(self, request: request.Request, *args, **kwargs) -> response.Response:
-        try:
-            event = self.get_object()
-        except ValidationError as e:
-            return handle_400_error(str(e))
-        self.check_object_permissions(request, event)
-        event.results_published = True
-        event.save()
-        return response.Response(status=status.HTTP_200_OK, data='Resultados publicados com sucesso!')
-
-    def get_object(self):
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError('Dados inválidos!')
-
-        event_id = self.request.query_params.get('event_id')
-        if not event_id:
-            raise ValidationError('event_id é obrigatório!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
-
-
-class Top4Players(APIView):
-    permission_classes = [IsAuthenticated, PlayersPermission]
-
-    def get(self, request: request.Request, *args, **kwargs) -> response.Response:
-        try:
-            event = self.get_object()
-        except ValidationError as e:
-            return handle_400_error(str(e))
-        self.check_object_permissions(request, event)
-        players = Player.objects.filter(
-            event=event).order_by('-total_score')[:4]
-        data = PlayerResultsSerializer(players, many=True).data
-        return response.Response(status=status.HTTP_200_OK, data=data)
 
     def get_object(self):
         if 'event_id' not in self.request.query_params:
