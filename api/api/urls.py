@@ -19,4 +19,5 @@ urlpatterns = [
     path('staff/', StaffView.as_view(), name='staff'),
     path('upload/', AddPlayers.as_view(), name='upload'),
     path('publish-results/', PublishPlayersResults.as_view(), name='publish-results'),
+    path('top4/', Top4Players.as_view(), name='top4'),
 ]
