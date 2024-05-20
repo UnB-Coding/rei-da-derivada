@@ -149,6 +149,9 @@ class PlayersViewTest(APITestCase):
         self.assertEqual(response.data, 'Jogador adicionado com sucesso!')
         self.assertEqual(self.player.user, self.user_player1)
         self.assertEqual(self.player.event, self.event)
+        perms = get_perms(self.user_player1, self.event)
+        self.assertTrue(all(perm in perms for perm in [
+                        'view_player_event', 'view_event', 'view_sumula_event', 'view_player_score_event']))
 
     def test_post_add_user_to_event_without_previous_player(self):
         user = User.objects.create(username=self.create_unique_username(), email=self.create_unique_email(
@@ -190,7 +193,7 @@ class PlayersViewTest(APITestCase):
         self.data = None
 
 
-class GetCurrentPlayerViewTest(APITestCase):
+class GetPlayerResultsViewTest(APITestCase):
     def create_unique_email(self):
         return f'{uuid.uuid4()}@gmail.com'
 
@@ -214,7 +217,8 @@ class GetCurrentPlayerViewTest(APITestCase):
 
     def setUpEvent(self):
         self.token = Token.objects.create()
-        self.event = Event.objects.create(name='Evento 1', token=self.token)
+        self.event = Event.objects.create(
+            name='Evento 1', token=self.token, results_published=True)
 
     def setUpPlayers(self):
         self.player = Player.objects.create(
@@ -257,12 +261,8 @@ class GetCurrentPlayerViewTest(APITestCase):
         self.assertEqual(response.data, {
             'id': self.player.id,
             'total_score': self.player.total_score,
-            'event': self.event.id,
-            'user': {
-                'id': self.user.id,
-                'first_name': self.user.first_name,
-                'last_name': self.user.last_name
-            },
+            'full_name': self.player.full_name,
+            'social_name': self.player.social_name,
         })
 
     def test_get_player_without_event_id(self):
@@ -298,6 +298,15 @@ class GetCurrentPlayerViewTest(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data,  {'errors': 'Jogador não encontrado!'})
+
+    def test_get_player_results_published_false(self):
+        self.event.results_published = False
+        self.event.save()
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            response.data, 'Resultados não publicados!')
 
     def tearDown(self):
         User.objects.all().delete()
