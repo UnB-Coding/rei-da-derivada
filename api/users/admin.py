@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as AuthUserAdmin
 from django import forms
 from .models import User
 
@@ -17,7 +18,7 @@ class UserForm(forms.ModelForm):
 
 
 @admin.register(User)
-class UserAdmin(admin.ModelAdmin):
+class UserAdmin(AuthUserAdmin):
     form = UserForm
 
     def group(self, user):
@@ -30,5 +31,10 @@ class UserAdmin(admin.ModelAdmin):
     list_display = ['uuid', 'email', 'username',
                     'first_name', 'last_name', 'is_active', 'group']
     search_fields = ['email']
-    fields = [('first_name', 'last_name'), 'email', 'username', 'is_active', 'is_staff',
-              'is_superuser', 'groups', 'user_permissions', 'password']
+
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'username', 'password1', 'password2')}
+         ),
+    )

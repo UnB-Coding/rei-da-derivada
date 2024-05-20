@@ -66,6 +66,12 @@ class TokenTest(TestCase):
         if Token.objects.all().count() > 0:
             Token.objects.all().delete()
 
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if Token.objects.all().count() > 0:
+            Token.objects.all().delete()
+        return super().tearDownClass()
+
 
 class EventTest(TestCase):
     def setUp(self):
@@ -77,6 +83,10 @@ class EventTest(TestCase):
         event = Event.objects.create(name='Evento 1', token=self.token)
         self.assertIsNotNone(event)
         self.assertEqual(event.name, 'Evento 1')
+        self.assertEqual(event.token, self.token)
+        self.assertEqual(event.active, True)
+        self.assertIsNotNone(event.players_token)
+        self.assertTrue(len(event.players_token) == TOKEN_LENGTH)
 
     def test_create_event_without_anything(self):
         """Testa a criação de um evento sem nada"""
@@ -126,12 +136,18 @@ class EventTest(TestCase):
 
 
 class SumulaTest(TestCase):
+    def create_unique_email(self):
+        return f'{uuid.uuid4()}@gmail.com'
+
+    def create_unique_username(self):
+        return f'user_{uuid.uuid4().hex[:10]}'
+
     def setUp(self):
         self.token = Token.objects.create()
         self.user = User.objects.create(
-            email='user1@gmail.com', username='user1')
+            email=self.create_unique_email(), username=self.create_unique_username())
         self.user_2 = User.objects.create(
-            email='user2@gmail.com', username='user2')
+            email=self.create_unique_email(), username=self.create_unique_username())
         self.event = Event.objects.create(name='Evento 1', token=self.token)
         self.sumula = Sumula.objects.create(name='Sumula 1', event=self.event)
 
@@ -175,12 +191,24 @@ class SumulaTest(TestCase):
         self.sumula.delete()
         return super().tearDown()
 
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if User.objects.all().count() > 0:
+            User.objects.all().delete()
+        return super().tearDownClass()
+
 
 class PlayerScoreTest(TestCase):
+    def create_unique_email(self):
+        return f'{uuid.uuid4()}@gmail.com'
+
+    def create_unique_username(self):
+        return f'user_{uuid.uuid4().hex[:10]}'
+
     def setUp(self):
         self.token = Token.objects.create()
         self.user = User.objects.create(
-            email='user1@gmail.com', username='user1')
+            email=self.create_unique_email(), username=self.create_unique_username(), first_name='Test', last_name='User')
         self.event = Event.objects.create(name='Evento 1', token=self.token)
         self.sumula = Sumula.objects.create(name='Sumula 1', event=self.event)
         self.player = Player.objects.create(
@@ -257,6 +285,12 @@ class PlayerScoreTest(TestCase):
             self.player_score.delete()
         return super().tearDown()
 
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if User.objects.all().count() > 0:
+            User.objects.all().delete()
+        return super().tearDownClass()
+
 
 class PlayerTest(TestCase):
     def create_unique_email(self):
@@ -321,3 +355,9 @@ class PlayerTest(TestCase):
         self.player.delete()
         self.unique_email = None
         self.sumula.delete()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if User.objects.all().count() > 0:
+            User.objects.all().delete()
+        return super().tearDownClass()

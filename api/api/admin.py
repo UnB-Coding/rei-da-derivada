@@ -1,23 +1,24 @@
 from django.contrib import admin
 from .models import Token, Event, Sumula, PlayerScore, Player
+from guardian.admin import GuardedModelAdmin
 
 
 @admin.register(Token)
-class TokenAdmin(admin.ModelAdmin):
+class TokenAdmin(GuardedModelAdmin):
     list_display = ['token_code', 'id']
     search_fields = ['token_code']
     fields = ['token_code']
 
 
 @admin.register(Event)
-class EventAdmin(admin.ModelAdmin):
-    list_display = ['token', 'name', 'id']
+class EventAdmin(GuardedModelAdmin):
+    list_display = ['id', 'token', 'players_token', 'name']
     search_fields = ['token', 'name']
     fields = ['token', 'name']
 
 
 @admin.register(Sumula)
-class SumulaAdmin(admin.ModelAdmin):
+class SumulaAdmin(GuardedModelAdmin):
 
     def referee(self, obj):
         referees = []
@@ -43,7 +44,7 @@ class SumulaAdmin(admin.ModelAdmin):
 
 
 @admin.register(PlayerScore)
-class PlayerScoreAdmin(admin.ModelAdmin):
+class PlayerScoreAdmin(GuardedModelAdmin):
     def get_player_name(self, obj):
         return obj.player.user.__str__()
     # Define um cabeçalho para a coluna
@@ -55,10 +56,12 @@ class PlayerScoreAdmin(admin.ModelAdmin):
 
 
 @admin.register(Player)
-class Admin(admin.ModelAdmin):
-    list_display = ['user', 'event', 'total_score', 'registration_email', 'id']
+class PlayerAdmin(GuardedModelAdmin):
+    list_display = ['user', 'full_name', 'social_name',
+                    'event', 'total_score', 'registration_email', 'id']
     search_fields = ['user', 'total_score', 'event', 'registration_email']
-    fields = ['user', 'total_score', 'event', 'registration_email']
+    fields = ['user', 'total_score', 'event',
+              'registration_email', 'full_name', 'social_name']
 
     def username(self, obj):
         return obj.username
