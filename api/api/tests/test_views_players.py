@@ -435,3 +435,91 @@ class AddPlayersViewTest(APITestCase):
         Group.objects.all().delete()
         self.data = None
         self.excel_file.close()
+
+
+class PublishPlayersResultsViewTestCase(APITestCase):
+    def create_unique_email(self):
+        return f'{uuid.uuid4()}@gmail.com'
+
+    def create_unique_username(self):
+        return f'user_{uuid.uuid4().hex[:10]}'
+
+    def remove_permissions(self, user, event):
+        perms = get_perms(user, event)
+        for perm in perms:
+            remove_perm(perm, user, event)
+
+    def setUpUser(self):
+        self.admin = User.objects.create(username='admin', email=self.create_unique_email(
+        ), first_name='Admin', last_name='Admin')
+
+    def setUpEvent(self):
+        self.token = Token.objects.create()
+        self.event = Event.objects.create(name='Evento 1', token=self.token)
+
+    def setUpGroup(self):
+        self.group_app_admin = Group.objects.create(name='app_admin')
+        self.group_event_admin = Group.objects.create(name='event_admin')
+        self.group_staff_manager = Group.objects.create(name='staff_manager')
+        self.group_staff_member = Group.objects.create(name='staff_member')
+        self.group_player = Group.objects.create(name='player')
+
+    def setUpPermissions(self):
+        assign_permissions(self.admin,
+                           self.group_event_admin, self.event)
+
+    def setUp(self):
+        self.setUpUser()
+        self.setUpEvent()
+        self.setUpGroup()
+        self.setUpPermissions()
+        self.url = f"{reverse('api:publish-results')}?event_id={self.event.id}"
+        self.client = APIClient()
+
+    def test_publish_results(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.put(self.url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, 'Resultados publicados com sucesso!')
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.results_published, True)
+
+    def test_publish_results_unauthenticated(self):
+        response = self.client.put(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_publish_results_without_permission(self):
+        self.remove_permissions(self.admin, self.event)
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.put(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.results_published, False)
+
+    def test_publish_results_without_event_id(self):
+        self.client.force_authenticate(user=self.admin)
+        url = reverse('api:publish-results')
+        response = self.client.put(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data, {'errors': "['Dados inválidos!']"})
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.results_published, False)
+
+    def test_publish_results_with_invalid_event_id(self):
+        self.client.force_authenticate(user=self.admin)
+        url = f"{reverse('api:publish-results')}?event_id=100"
+        response = self.client.put(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data, {'errors': "['Evento não encontrado!']"})
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.results_published, False)
+
+    def tearDown(self):
+        User.objects.all().delete()
+        Event.objects.all().delete()
+        Token.objects.all().delete()
+        Player.objects.all().delete()
+        Group.objects.all().delete()
+        self.data = None

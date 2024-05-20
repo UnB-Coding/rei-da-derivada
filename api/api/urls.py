@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, re_path
 from .views.views_event import TokenView, EventView, StaffView
-from .views.views_players import PlayersView, GetPlayerResults, AddPlayers
+from .views.views_players import PlayersView, GetPlayerResults, AddPlayers, PublishPlayersResults, Top4Players
 from .views.views_sumulas import SumulaView, ActiveSumulaView, FinishedSumulaView
 
 app_name = 'api'
@@ -18,4 +18,5 @@ urlpatterns = [
     path('player/', GetPlayerResults.as_view(), name='player'),
     path('staff/', StaffView.as_view(), name='staff'),
     path('upload/', AddPlayers.as_view(), name='upload'),
+    path('publish-results/', PublishPlayersResults.as_view(), name='publish-results'),
 ]
