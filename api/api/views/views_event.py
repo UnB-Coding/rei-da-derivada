@@ -218,6 +218,7 @@ class StaffView(APIView):
             return handle_400_error(EVENT_NOT_FOUND_ERROR_MESSAGE)
 
         group = Group.objects.get(name='staff_member')
+        request.user.groups.add(group)
         assign_permissions(user=request.user, group=group, event=event)
 
         return response.Response(status=status.HTTP_200_OK, data={'message': 'Membro da equipe adicionado com sucesso!'})
