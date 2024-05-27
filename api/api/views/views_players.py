@@ -223,7 +223,8 @@ class AddPlayers(APIView):
         operation_summary='Adiciona multiplos jogadores ao evento.',
         manual_parameters=[openapi.Parameter(
             'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
-        request_body=UploadFileSerializer,
+        request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={'file': openapi.Schema(
+            type=openapi.TYPE_FILE, description='Arquivo com os jogadores. Formatos aceitos: .csv,.xlsx e .xls')}, required=['file']),
         responses={201: openapi.Response(
             201), **Errors([400]).retrieve_erros()})
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
@@ -240,6 +241,7 @@ class AddPlayers(APIView):
             excel_file = self.get_excel_file()
         except ValidationError as e:
             return handle_400_error(str(e))
+
         extension = (excel_file.name.split("."))[1]
         df = self.createData(extension=extension, file=excel_file)
         if df is None:

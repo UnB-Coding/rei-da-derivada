@@ -141,7 +141,7 @@ class Player(models.Model):
     registration_email = models.EmailField(
         blank=False, unique=False, null=False)
     event = models.ForeignKey(
-        Event, on_delete=models.CASCADE, related_name='player')
+        Event, on_delete=models.CASCADE, related_name='players')
 
     class Meta:
         verbose_name = ("Player")

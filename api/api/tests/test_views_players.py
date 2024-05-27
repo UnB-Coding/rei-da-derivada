@@ -41,15 +41,15 @@ class PlayersViewTest(APITestCase):
             username='staff_manager', email=f'{uuid.uuid4()}@gmail.com', first_name='Staff', last_name='Manager')
         self.user_staff_member = User.objects.create(
             username='staff_member', email=f'{uuid.uuid4()}@gmail.com', first_name='Staff', last_name='Member')
-        self.user_player1 = User.objects.create(
+        self.user = User.objects.create(
             username=self.create_unique_username(), email=f'{uuid.uuid4()}@gmail.com', first_name=self.generate_random_name(), last_name=self.generate_random_name())
-        self.user_player2 = User.objects.create(
+        self.user2 = User.objects.create(
             username=self.create_unique_username(), email=self.create_unique_email(), first_name=self.generate_random_name(), last_name=self.generate_random_name())
 
-        self.user_player3 = User.objects.create(
+        self.user3 = User.objects.create(
             username=self.create_unique_username(), email=self.create_unique_email(), first_name=self.generate_random_name(), last_name=self.generate_random_name())
 
-        self.user_player4 = User.objects.create(
+        self.user4 = User.objects.create(
             username=self.create_unique_username(), email=self.create_unique_email(), first_name=self.generate_random_name(), last_name=self.generate_random_name())
 
     def setUpEvent(self):
@@ -58,13 +58,13 @@ class PlayersViewTest(APITestCase):
 
     def setUpPlayers(self):
         self.player = Player.objects.create(
-            user=self.user_player1, event=self.event, registration_email=self.create_unique_email())
+            user=self.user, event=self.event, registration_email=self.create_unique_email())
         self.player2 = Player.objects.create(
-            user=self.user_player2, event=self.event, registration_email=self.create_unique_email())
+            user=self.user2, event=self.event, registration_email=self.create_unique_email())
         self.player3 = Player.objects.create(
-            user=self.user_player3, event=self.event, registration_email=self.create_unique_email())
+            user=self.user3, event=self.event, registration_email=self.create_unique_email())
         self.player4 = Player.objects.create(
-            user=self.user_player4, event=self.event, registration_email=self.create_unique_email())
+            user=self.user4, event=self.event, registration_email=self.create_unique_email())
 
     def setUpGroup(self):
         self.group_app_admin = Group.objects.create(name='app_admin')
@@ -80,7 +80,7 @@ class PlayersViewTest(APITestCase):
                            self.group_staff_member, self.event)
         assign_permissions(self.admin,
                            self.group_event_admin, self.event)
-        assign_permissions(self.user_player1, self.group_player, self.event)
+        assign_permissions(self.user, self.group_player, self.event)
 
     def setUp(self):
         self.setUpEvent()
@@ -89,17 +89,16 @@ class PlayersViewTest(APITestCase):
         self.setUpGroup()
         self.setUpPermissions()
         self.client = APIClient()
-        self.url_get = f"{reverse('api:players')}?event_id={self.event.id}"
-        self.url_post = reverse('api:players')
+        self.url = f"{reverse('api:players')}?event_id={self.event.id}"
 
     def test_get_all_players(self):
         self.client.force_authenticate(user=self.admin)
-        response = self.client.get(self.url_get)
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 4)
 
-        expected_user_ids = [self.user_player1.id,
-                             self.user_player2.id, self.user_player3.id, self.user_player4.id]
+        expected_user_ids = [self.user.id,
+                             self.user2.id, self.user3.id, self.user4.id]
 
         returned_user_ids = [player['user']['id'] for player in response.data]
         returned_event_ids = [player['event'] for player in response.data]
@@ -109,7 +108,7 @@ class PlayersViewTest(APITestCase):
             all(event_id == self.event.id for event_id in returned_event_ids))
 
     def test_get_all_players_unauthenticated(self):
-        response = self.client.get(self.url_get)
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_get_all_players_without_event_id(self):
@@ -120,9 +119,9 @@ class PlayersViewTest(APITestCase):
         # self.assertEqual(response.data['errors'], 'event_id is required')
 
     def test_get_all_players_without_permission(self):
-        self.remove_permissions(self.user_player1, self.event)
-        self.client.force_authenticate(user=self.user_player1)
-        response = self.client.get(self.url_get)
+        self.remove_permissions(self.user, self.event)
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_get_all_players_with_invalid_event_id(self):
@@ -362,7 +361,8 @@ class AddPlayersViewTest(APITestCase):
             "Exemplo.csv", self.csv_content.encode('utf-8'), content_type="multipart/form-data")
 
     def setUpUrl(self):
-        self.url = f"{reverse('api:upload')}?event_id={self.event.id}"
+        self.url_csv = f"{reverse('api:upload', kwargs={'filename': 'participantes.csv'})}?event_id={self.event.id}"
+        self.url_excel = f"{reverse('api:upload', kwargs={'filename': 'participantes.xlsx'})}?event_id={self.event.id}"
 
     def remove_permissions(self):
         perm = get_perms(self.admin, self.event)
@@ -383,7 +383,7 @@ class AddPlayersViewTest(APITestCase):
 
         data = {'file': self.csv_uploaded_file}
 
-        response = self.client.post(self.url, data, format='multipart')
+        response = self.client.post(self.url_csv, data, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data, 'Jogadores adicionados com sucesso!')
@@ -394,7 +394,7 @@ class AddPlayersViewTest(APITestCase):
     def test_add_players_excel(self):
         self.client.force_authenticate(user=self.admin)
         data = {'file': self.excel_uploaded_file}
-        response = self.client.post(self.url, data, format='multipart')
+        response = self.client.post(self.url_excel, data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data, 'Jogadores adicionados com sucesso!')
         players = Player.objects.filter(event=self.event)
@@ -402,19 +402,19 @@ class AddPlayersViewTest(APITestCase):
 
     def test_add_players_unauthenticated(self):
         data = {'file': self.csv_uploaded_file}
-        response = self.client.post(self.url, data, format='multipart')
+        response = self.client.post(self.url_csv, data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_add_players_without_permission(self):
         self.remove_permissions()
         self.client.force_authenticate(user=self.admin)
         data = {'file': self.csv_uploaded_file}
-        response = self.client.post(self.url, data, format='multipart')
+        response = self.client.post(self.url_csv, data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_add_players_without_event_id(self):
         self.client.force_authenticate(user=self.admin)
-        url = reverse('api:upload')
+        url = reverse('api:upload', kwargs={'filename': 'participantes.csv'})
         response = self.client.post(url, {'file': self.csv_uploaded_file})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -422,7 +422,7 @@ class AddPlayersViewTest(APITestCase):
 
     def test_add_players_with_invalid_event_id(self):
         self.client.force_authenticate(user=self.admin)
-        url = f"{reverse('api:upload')}?event_id=100"
+        url = f"{reverse('api:upload', kwargs={'filename': 'participantes.csv'})}?event_id=100"
         response = self.client.post(url, {'file': self.csv_uploaded_file})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(

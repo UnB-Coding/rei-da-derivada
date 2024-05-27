@@ -74,7 +74,3 @@ class SumulaSerializer(ModelSerializer):
     class Meta:
         model = Sumula
         fields = ['id', 'active', 'referee', 'name', 'players_score']
-
-
-class UploadFileSerializer(serializers.Serializer):
-    file = serializers.FileField()
