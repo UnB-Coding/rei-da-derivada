@@ -46,7 +46,7 @@ class SumulaAdmin(GuardedModelAdmin):
 @admin.register(PlayerScore)
 class PlayerScoreAdmin(GuardedModelAdmin):
     def get_player_name(self, obj):
-        return obj.player.user.__str__()
+        return obj.player.__str__()
     # Define um cabeçalho para a coluna
     get_player_name.short_description = 'Player Name'
 
