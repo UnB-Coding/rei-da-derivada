@@ -1,17 +1,19 @@
 from io import StringIO
 from typing import Optional
 from django.forms import ValidationError
+from django.contrib.auth.models import Group
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser
-from api.models import Event, Player
-from ..serializers import PlayerSerializer, UploadFileSerializer
 from rest_framework.permissions import BasePermission
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from api.models import Event, Player
 from ..utils import handle_400_error
+from ..serializers import PlayerSerializer, UploadFileSerializer, PlayerResultsSerializer
 from ..swagger import Errors
+from ..permissions import assign_permissions
 import pandas as pd
 
 
@@ -78,11 +80,13 @@ class PlayersView(APIView):
         event = Event.objects.filter(players_token=players_token).first()
         if not event:
             return handle_400_error('Evento não encontrado!')
-        player= Player.objects.filter(
+        player = Player.objects.filter(
             registration_email=email, event=event).first()
         if not player:
             return handle_400_error('Jogador não encontrado!')
         player.user = request.user
+        group = Group.objects.get(name='player')
+        assign_permissions(request.user, group, event)
         player.save()
         return response.Response(status=status.HTTP_200_OK, data='Jogador adicionado com sucesso!')
 
@@ -99,29 +103,31 @@ class PlayersView(APIView):
         return event
 
 
-class GetCurrentPlayer(APIView):
+class GetPlayerResults(APIView):
     permission_classes = [IsAuthenticated, PlayersPermission]
 
     @swagger_auto_schema(
         security=[{'Bearer': []}],
-        operation_summary='Retorna as informações do jogador atual do usuário logado.',
-        operation_description='Retorna apenas o jogador do evento atual do usuário logado.',
+        operation_summary='Retorna o resultado a pontuação do jogador',
+        operation_description='Retorna o resultado de pontuação do jogador atual do usuário logado.',
         operation_id='get_current_player',
         manual_parameters=[openapi.Parameter(
             'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
         responses={200: openapi.Response(200, PlayerSerializer), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
-        """ Retorna as informações do jogador atual do usuário logado."""
+        """ Retorna o resultado de pontuação do jogador atual do usuário logado."""
         try:
             event = self.get_object()
         except ValidationError as e:
             return handle_400_error(str(e))
+        if not event.is_results_published():
+            return response.Response(status=status.HTTP_403_FORBIDDEN, data='Resultados não publicados!')
         self.check_object_permissions(request, event)
         player = Player.objects.filter(event=event, user=request.user).first()
         if not player:
             return handle_400_error('Jogador não encontrado!')
 
-        data = PlayerSerializer(player).data
+        data = PlayerResultsSerializer(player).data
 
         return response.Response(status=status.HTTP_200_OK, data=data)
 
@@ -130,6 +136,76 @@ class GetCurrentPlayer(APIView):
             raise ValidationError('Dados inválidos!')
 
         event_id = self.request.query_params.get('event_id')  # type: ignore
+        if not event_id:
+            raise ValidationError('event_id é obrigatório!')
+        event = Event.objects.filter(id=event_id).first()
+        if not event:
+            raise ValidationError('Evento não encontrado!')
+        return event
+
+
+class PublishPlayersPermissions(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method == 'PUT':
+            return request.user.has_perm('api.change_event', obj)
+        return True
+
+
+class PublishPlayersResults(APIView):
+    permission_classes = [IsAuthenticated, PublishPlayersPermissions]
+
+    @swagger_auto_schema(
+        security=[{'Bearer': []}],
+        operation_description='Publica os resultados dos jogadores do evento.',
+        operation_summary="""Publica os resultados dos jogadores do evento. Os jogadores poderão ver suas pontuações e os 4 primeiros colocados.""",
+        operation_id='publish_results',
+        manual_parameters=[openapi.Parameter(
+            'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
+        responses={200: openapi.Response(
+            200), **Errors([400]).retrieve_erros()}
+    )
+    def put(self, request: request.Request, *args, **kwargs) -> response.Response:
+        try:
+            event = self.get_object()
+        except ValidationError as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+        event.results_published = True
+        event.save()
+        return response.Response(status=status.HTTP_200_OK, data='Resultados publicados com sucesso!')
+
+    def get_object(self):
+        if 'event_id' not in self.request.query_params:
+            raise ValidationError('Dados inválidos!')
+
+        event_id = self.request.query_params.get('event_id')
+        if not event_id:
+            raise ValidationError('event_id é obrigatório!')
+        event = Event.objects.filter(id=event_id).first()
+        if not event:
+            raise ValidationError('Evento não encontrado!')
+        return event
+
+
+class Top4Players(APIView):
+    permission_classes = [IsAuthenticated, PlayersPermission]
+
+    def get(self, request: request.Request, *args, **kwargs) -> response.Response:
+        try:
+            event = self.get_object()
+        except ValidationError as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+        players = Player.objects.filter(
+            event=event).order_by('-total_score')[:4]
+        data = PlayerResultsSerializer(players, many=True).data
+        return response.Response(status=status.HTTP_200_OK, data=data)
+
+    def get_object(self):
+        if 'event_id' not in self.request.query_params:
+            raise ValidationError('Dados inválidos!')
+
+        event_id = self.request.query_params.get('event_id')
         if not event_id:
             raise ValidationError('event_id é obrigatório!')
         event = Event.objects.filter(id=event_id).first()
