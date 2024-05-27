@@ -213,5 +213,3 @@ next-env.d.ts
 # End of https://www.toptal.com/developers/gitignore/api/django,nextjs
 api/config/files_tests/excel/Exemplo.csv
 api/config/files_tests/excel/Exemplo.xlsx
-api/config/files_tests/excel/Exemplo.csv
-api/config/files_tests/excel/Exemplo.xlsx
