@@ -13,7 +13,7 @@ class Token (models.Model):
     - used: BooleanField que indica se o token foi utilizado ou não
     """
     token_code = models.CharField(
-        default='', max_length=TOKEN_LENGTH, unique=True)
+        default='', max_length=TOKEN_LENGTH, unique=True, blank=True)
     used = models.BooleanField(default=False)
 
     class Meta:
