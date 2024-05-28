@@ -35,7 +35,8 @@ class CreateGroupsTestCase(TestCase):
         for group_name in GROUPS.split(','):
             self.assertTrue(Group.objects.filter(name=group_name).exists())
 
-    def test_content_type(self):
+    @patch('builtins.print')
+    def test_content_type(self, mock_print):
         """ Testa se os content types estão corretos."""
         content_type_event = self.command.get_content_type(Event)
         content_type_sumula = self.command.get_content_type(Sumula)
@@ -44,17 +45,19 @@ class CreateGroupsTestCase(TestCase):
         self.assertEqual(content_type_sumula,
                          ContentType.objects.get_for_model(Sumula))
 
-    def test_permissions(self):
+    @patch('builtins.print')
+    def test_permissions(self, mock_print):
         """ Testa se as permissões estão sendo criadas."""
-        group = Group.objects.create(name='App_Admin')
+        group = Group.objects.create(name='app_admin')
         self.command.add_permissions(group)
         self.assertTrue(group.permissions.exists())
 
-    def test_permissions_App_Admin(self):
+    @patch('builtins.print')
+    def test_permissions_App_Admin(self, mock_print):
         """ Testa se as permissões do grupo App_Admin estão corretas.
         O grupo App_Admin deve ter todas as permissões.
         """
-        group = Group.objects.create(name='App_Admin')
+        group = Group.objects.create(name='app_admin')
         self.command.add_permissions(group)
 
         for key in self.command.permissions:

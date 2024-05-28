@@ -15,6 +15,8 @@ class Token (models.Model):
     token_code = models.CharField(
         default='', max_length=TOKEN_LENGTH, unique=True, blank=True)
     used = models.BooleanField(default=False)
+    created_at = models.DateTimeField(
+        auto_now_add=True, null=True, blank=True,)
 
     class Meta:
         verbose_name = ("Token")
@@ -181,7 +183,7 @@ class PlayerScore(models.Model):
         verbose_name_plural = ("PlayerScores")
 
     def __str__(self):
-        return str(self.points)
+        return f'{self.player} - {self.points}'
 
     def save(self, *args, **kwargs) -> None:
         super(PlayerScore, self).save(*args, **kwargs)
