@@ -8,6 +8,7 @@ from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import Permission
 from ..utils import get_permissions, get_content_type
+from ..serializers import UserSerializer
 from guardian.shortcuts import get_perms, assign_perm, remove_perm
 from ..permissions import assign_permissions
 import uuid
@@ -210,9 +211,19 @@ class StaffViewTest(APITestCase):
     def create_unique_username(self):
         return f'user_{uuid.uuid4().hex[:10]}'
 
+    def setUpResponseData(self):
+        self.response_data_total = UserSerializer(
+            [self.user_staff1, self.user_staff2], many=True).data
+        self.response_data_staff1 = UserSerializer(
+            [self.user_staff1], many=True).data
+
     def setUpUser(self):
-        self.user = User.objects.create(
-            username=self.create_unique_username(), email=self.create_unique_email())
+        self.user_staff1 = User.objects.create(
+            username=self.create_unique_username(), email=self.create_unique_email(), first_name='Staff1', last_name='Member1')
+        self.user_staff2 = User.objects.create(
+            username=self.create_unique_username(), email=self.create_unique_email(), first_name='Staff2', last_name='Member2')
+        self.admin = User.objects.create(
+            username=self.create_unique_username(), email=self.create_unique_email(), first_name='Admin', last_name='User')
 
     def setUpEvent(self):
         self.token = Token.objects.create()
@@ -220,34 +231,42 @@ class StaffViewTest(APITestCase):
 
     def setUpGroup(self):
         self.group = Group.objects.create(name='staff_member')
-        self.user.groups.add(self.group)
+        self.group2 = Group.objects.create(name='staff_manager')
+        self.group3 = Group.objects.create(name='app_admin')
+        self.group4 = Group.objects.create(name='event_admin')
+        self.user_staff1.groups.add(self.group)
+        self.user_staff2.groups.add(self.group)
+        self.admin.groups.add(self.group4)
 
     def setUpPermissions(self):
         self.content_type = ContentType.objects.get_for_model(Event)
         self.permission = Permission.objects.filter(
             content_type=self.content_type).filter(Q(codename__icontains='view') | Q(codename__icontains='change')).exclude(codename__icontains='change_event')
+        assign_permissions(self.admin, self.group4, self.event)
 
     def setUp(self):
-        self.setUpUser()
         self.setUpEvent()
+        self.setUpUser()
         self.setUpGroup()
         self.setUpPermissions()
+        self.setUpResponseData()
 
     def test_add_staff_member(self):
         """Test adding a staff member to an event."""
         url = reverse('api:staff')
         data = {'token_code': self.token.token_code}
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.user_staff1)
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.user_staff1.events.count(), 1)
         for permission in self.permission:
-            self.assertTrue(self.user.has_perm(
+            self.assertTrue(self.user_staff1.has_perm(
                 permission.codename, self.event))
 
     def test_add_staff_member_without_token(self):
         """Test adding a staff member without a token."""
         url = reverse('api:staff')
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.user_staff1)
         response = self.client.post(url, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -255,7 +274,7 @@ class StaffViewTest(APITestCase):
         """Test adding a staff member with an invalid token."""
         url = reverse('api:staff')
         data = {'token_code': 'invalid_token'}
-        self.client.force_authenticate(user=self.user)
+        self.client.force_authenticate(user=self.user_staff1)
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -266,11 +285,54 @@ class StaffViewTest(APITestCase):
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_get_staff_members(self):
+        """Test getting staff members from an event."""
+        self.user_staff1.events.add(self.event)
+        self.user_staff2.events.add(self.event)
+        url = f'{reverse("api:staff")}?event_id={self.event.id}'
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, self.response_data_total)
+
+    def test_get_staff_members_exlcuding_other_groups(self):
+        """Test getting staff members from an event excluding other groups."""
+        self.user_staff1.events.add(self.event)
+        self.user_staff2.events.add(self.event)
+        self.user_staff2.groups.add(self.group2, self.group3, self.group4)
+        url = f'{reverse("api:staff")}?event_id={self.event.id}'
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotEqual(response.data, self.response_data_total)
+        self.assertNotIn(self.user_staff2, response.data)
+        self.assertEqual(response.data, self.response_data_staff1)
+
+    def test_get_staff_members_without_event_id(self):
+        """Test getting staff members without an event id."""
+        url = reverse('api:staff')
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_get_staff_members_with_unauthenticated_user(self):
+        """Test getting staff members without authentication."""
+        url = f'{reverse("api:staff")}?event_id={self.event.id}'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_staff_members_with_unauthorized_user(self):
+        """Test getting staff members with an unauthorized user."""
+        url = f'{reverse("api:staff")}?event_id={self.event.id}'
+        self.client.force_authenticate(user=self.user_staff1)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def tearDown(self):
-        self.user.delete()
-        self.event.delete()
-        self.group.delete()
-        self.permission.delete()
+        User.objects.all().delete()
+        Event.objects.all().delete()
+        Group.objects.all().delete()
+        Permission.objects.all().delete()
         self.client.logout()
         self.client.force_authenticate(user=None)
         if Token.objects.exists():
