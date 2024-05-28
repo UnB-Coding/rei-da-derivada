@@ -21,8 +21,7 @@ class PlayerSerializer(ModelSerializer):
 
     class Meta:
         model = Player
-        fields = ['id', 'total_score', 'event',
-                  'full_name', 'social_name', 'user']
+        fields = ['id', 'total_score', 'full_name', 'social_name', 'user']
 
 
 class PlayerResultsSerializer(ModelSerializer):
@@ -55,7 +54,7 @@ class PlayerScoreSerializer(ModelSerializer):
 
 
 class PlayerScoreSerializerForSumula(ModelSerializer):
-    player = PlayerSerializer()
+    player = PlayerResultsSerializer()
 
     class Meta:
         model = PlayerScore

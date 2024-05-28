@@ -1,6 +1,69 @@
 from drf_yasg import openapi
 from requests import status_codes
 
+from requests import status_codes
+
+user_api_post_schema = openapi.Schema(
+    title='User',
+    type=openapi.TYPE_OBJECT,
+    properties={
+        'user': openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+            'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do usuário', example=1),
+        }, required=['id']),
+    },
+    required=['user']
+)
+sumula_api_post_schema = openapi.Schema(
+    title='Sumula',
+    type=openapi.TYPE_OBJECT,
+    properties={
+        'sumula': openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID da sumula', example=1),
+                'active': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Sumula ativa ou não', example=True),
+                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome da sumula', example='Sumula 1'),
+                'referee': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        title='User',
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do usuário', example=1),
+                            'first_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do usuário', example='João'),
+                            'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='Sobrenome do usuário', example='Silva'),
+                        },
+                        required=['id']
+                    )
+                ),
+                'players_score': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        title='PlayerScore',
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            'points': openapi.Schema(type=openapi.TYPE_INTEGER, description='Pontos do jogador', example=10),
+                            'player': openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                title='Player',
+                                properties={
+                                    'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador', example=1),
+                                    'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João Silva Pinto'),
+                                    'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='João Silva'),
+                                },
+                                required=['id']
+                            ),
+                        },
+                        required=['points', 'player']
+                    )
+                ),
+            },
+            required=['id', 'active', 'name', 'referee', 'players_score']
+        )
+    },
+    required=['sumula']
+)
+
 
 class Errors():
 
