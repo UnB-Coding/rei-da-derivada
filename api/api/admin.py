@@ -5,7 +5,7 @@ from guardian.admin import GuardedModelAdmin
 
 @admin.register(Token)
 class TokenAdmin(GuardedModelAdmin):
-    list_display = ['token_code', 'id']
+    list_display = ['token_code', 'id', 'created_at']
     search_fields = ['token_code']
     fields = ['token_code']
 

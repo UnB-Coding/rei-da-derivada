@@ -15,6 +15,7 @@ class Token (models.Model):
     token_code = models.CharField(
         default='', max_length=TOKEN_LENGTH, unique=True, blank=True)
     used = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True,)
 
     class Meta:
         verbose_name = ("Token")
