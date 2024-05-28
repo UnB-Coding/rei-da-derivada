@@ -22,27 +22,24 @@ class EventAdmin(GuardedModelAdmin):
 @admin.register(Sumula)
 class SumulaAdmin(GuardedModelAdmin):
 
-    def referee(self, obj):
+    def referees(self, obj):
         referees = []
         for referee in obj.referee.all():
-            referees.append(str(referee))
+            referees.append(referee.__str__())
         return ', '.join(referees)
 
     def player_scores(self, obj):
         scores = []
         for score in obj.scores.all():
-            scores.append(f'{score.player.user.__str__()}: {score.points}')
+            scores.append(score.__str__())
         return ', '.join(scores)
     player_scores.short_description = 'Player Scores'
-
-    list_display = ['event', 'name', 'referee',
+    referees.short_description = 'Referees'
+    list_display = ['name', 'event', 'referees',
                     'id', 'player_scores', 'active']
     search_fields = ['referee__username', 'event__name', 'name']
     fields = ['referee', 'event', 'name']
-
-    """ def get_readonly_fields(self, request, obj=None):
-        readonly_fields = super().get_readonly_fields(request, obj)
-        return readonly_fields + ['player_scores'] """
+    filter_horizontal = ['referee']
 
 
 @admin.register(PlayerScore)

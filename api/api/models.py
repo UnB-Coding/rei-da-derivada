@@ -185,7 +185,7 @@ class PlayerScore(models.Model):
         verbose_name_plural = ("PlayerScores")
 
     def __str__(self):
-        return str(self.points)
+        return f'{self.player} - {self.points}'
 
     def save(self, *args, **kwargs) -> None:
         super(PlayerScore, self).save(*args, **kwargs)
