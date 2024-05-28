@@ -174,3 +174,5 @@ AUTHENTICATION_BACKENDS = (
 FILE_UPLOAD_HANDLERS = ["django.core.files.uploadhandler.MemoryFileUploadHandler",
                         "django.core.files.uploadhandler.TemporaryFileUploadHandler",
                         ]
+DATE_FORMAT = 'd/m/Y'
+TIME_ZONE = 'America/Sao_Paulo'
