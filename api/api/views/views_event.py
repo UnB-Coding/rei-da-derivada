@@ -230,9 +230,9 @@ class StaffView(APIView):
         return response.Response(status=status.HTTP_200_OK, data={'message': 'Membro da equipe adicionado com sucesso!'})
 
     @swagger_auto_schema(
-        operation_description="""Retorna os usuários staff_member associados ao evento.
+        operation_description="""Retorna os todos usuários monitores associados ao evento.
         """,
-        operation_summary="Retorna os usuários staff_member associados ao evento.",
+        operation_summary="Retorna os usuários monitores associados ao evento.",
         operation_id="get_staff_members",
         manual_parameters=[openapi.Parameter(
             'event_id', openapi.IN_QUERY, description='ID do evento', type=openapi.TYPE_INTEGER)],
