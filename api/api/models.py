@@ -13,7 +13,7 @@ class Token (models.Model):
     - used: BooleanField que indica se o token foi utilizado ou não
     """
     token_code = models.CharField(
-        default='', max_length=TOKEN_LENGTH, unique=True)
+        default='', max_length=TOKEN_LENGTH, unique=True, blank=True)
     used = models.BooleanField(default=False)
 
     class Meta:
@@ -58,6 +58,7 @@ class Event (models.Model):
     active = models.BooleanField(default=True)
     players_token = models.CharField(
         default='', max_length=TOKEN_LENGTH, blank=True, null=False, unique=True)
+    results_published = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = ("Evento")
@@ -82,6 +83,9 @@ class Event (models.Model):
 
     def __token__(self):
         return self.token.token_code
+
+    def is_results_published(self) -> bool:
+        return self.results_published
 
     def generate_token(self) -> str:
         """Gera um token aleatório de TOKEN_LENGTH caracteres."""
