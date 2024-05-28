@@ -5,7 +5,9 @@ from guardian.admin import GuardedModelAdmin
 
 @admin.register(Token)
 class TokenAdmin(GuardedModelAdmin):
-    list_display = ['token_code', 'id', 'created_at']
+    def event(self, obj):
+        return obj.event.name
+    list_display = ['token_code', 'id', 'created_at', 'used', 'event']
     search_fields = ['token_code']
     fields = ['token_code']
 

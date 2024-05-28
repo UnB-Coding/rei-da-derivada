@@ -133,6 +133,7 @@ class EventView(APIView):
 
         event, created = Event.objects.get_or_create(token=token)
         group = Group.objects.get(name='event_admin')
+        token.mark_as_used()
         try:
             assign_permissions(user=request.user, group=group, event=event)
         except Exception as e:
