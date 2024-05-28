@@ -36,7 +36,7 @@ class UserAdmin(AuthUserAdmin):
     event.short_description = 'Events'
     group.short_description = 'Groups'
     list_display = ['uuid', 'email', 'username',
-                    'first_name', 'last_name', 'is_active']
+                    'first_name', 'last_name', 'is_active', 'group', 'event']
     search_fields = ['email']
     filter_horizontal = ('groups', 'events')
 
