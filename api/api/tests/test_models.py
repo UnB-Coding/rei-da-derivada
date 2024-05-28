@@ -228,7 +228,7 @@ class PlayerScoreTest(TestCase):
         self.player_score.points = 10
         self.player_score.save()
         self.assertEqual(self.player_score.points, 10)
-        self.assertEqual(str(self.player_score), '10')
+        self.assertEqual(str(self.player_score), f'{self.player} - 10')
 
     def test_update_total_score_within_save_method(self):
         self.assertEqual(self.player.total_score, 0)
@@ -273,7 +273,7 @@ class PlayerScoreTest(TestCase):
 
     def test_player_score_str(self):
         """Testa a representação de uma pontuação de jogador"""
-        self.assertEqual(str(self.player_score), '0')
+        self.assertEqual(str(self.player_score), f'{self.player} - 0')
 
     def tearDown(self):
         self.token.delete()

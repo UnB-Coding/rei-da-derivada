@@ -99,8 +99,6 @@ class Event (models.Model):
         """Sobrescreve o método save para gerar um token caso não exista."""
         if not self.players_token:
             self.generate_token()
-        if not self.token.is_used():
-            self.token.mark_as_used()
         super(Event, self).save(*args, **kwargs)
 
 
