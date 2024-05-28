@@ -131,14 +131,12 @@ class EventView(APIView):
         if token.is_used():
             return handle_400_error(TOKEN_ALREADY_USED_ERROR_MESSAGE)
 
-        event = Event.objects.create(token=token)
+        event, created = Event.objects.get_or_create(token=token)
         group = Group.objects.get(name='event_admin')
         try:
             assign_permissions(user=request.user, group=group, event=event)
         except Exception as e:
             return handle_400_error(str(e))
-        # permisions = get_perms(request.user, event)
-        """ print("PERMISSÕES DO USUÁRIO ADMIN:", permisions) """
         data = EventSerializer(event).data
 
         return response.Response(status=status.HTTP_201_CREATED, data=data)
