@@ -15,12 +15,13 @@ class User(AbstractUser):
     - is_active: BooleanField
     """
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
-    first_name = models.CharField(default='', max_length=64)
-    last_name = models.CharField(default='', max_length=128)
+    first_name = models.CharField(default='', max_length=64, blank=True)
+    last_name = models.CharField(default='', max_length=128, blank=True)
     email = models.EmailField(blank=False, unique=True)
     picture_url = models.URLField(default='')
     is_active = models.BooleanField(default=True)
-
+    events = models.ManyToManyField(
+        'api.Event', related_name="users", blank=True)
     REQUIRED_FIELDS = ["email"]
 
     def __str__(self):

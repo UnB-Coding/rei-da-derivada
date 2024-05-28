@@ -5,7 +5,9 @@ from guardian.admin import GuardedModelAdmin
 
 @admin.register(Token)
 class TokenAdmin(GuardedModelAdmin):
-    list_display = ['token_code', 'id']
+    def event(self, obj):
+        return obj.event.name
+    list_display = ['token_code', 'id', 'created_at', 'used', 'event']
     search_fields = ['token_code']
     fields = ['token_code']
 
@@ -20,33 +22,30 @@ class EventAdmin(GuardedModelAdmin):
 @admin.register(Sumula)
 class SumulaAdmin(GuardedModelAdmin):
 
-    def referee(self, obj):
+    def referees(self, obj):
         referees = []
         for referee in obj.referee.all():
-            referees.append(str(referee))
+            referees.append(referee.__str__())
         return ', '.join(referees)
 
     def player_scores(self, obj):
         scores = []
         for score in obj.scores.all():
-            scores.append(f'{score.player.user.__str__()}: {score.points}')
+            scores.append(score.__str__())
         return ', '.join(scores)
     player_scores.short_description = 'Player Scores'
-
-    list_display = ['event', 'name', 'referee',
+    referees.short_description = 'Referees'
+    list_display = ['name', 'event', 'referees',
                     'id', 'player_scores', 'active']
     search_fields = ['referee__username', 'event__name', 'name']
     fields = ['referee', 'event', 'name']
-
-    """ def get_readonly_fields(self, request, obj=None):
-        readonly_fields = super().get_readonly_fields(request, obj)
-        return readonly_fields + ['player_scores'] """
+    filter_horizontal = ['referee']
 
 
 @admin.register(PlayerScore)
 class PlayerScoreAdmin(GuardedModelAdmin):
     def get_player_name(self, obj):
-        return obj.player.user.__str__()
+        return obj.player.__str__()
     # Define um cabeçalho para a coluna
     get_player_name.short_description = 'Player Name'
 

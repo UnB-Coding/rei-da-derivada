@@ -24,7 +24,7 @@ class Command(BaseCommand):
 
     def add_permissions(self, *args, **options):
         group = args[0]
-        """ print(f'Adicionando permissões ao grupo {group.name}...') """
+        print(f'Adicionando permissões ao grupo {group.name}...')
 
         content_types = {
             'event': self.get_content_type(Event),
@@ -43,7 +43,7 @@ class Command(BaseCommand):
         }
 
         group_permissions = {
-            "App_Admin": permissions['event'] | permissions['sumula'] | permissions['player_score'] | permissions['player'] | permissions['token'],
+            "app_admin": permissions['event'] | permissions['sumula'] | permissions['player_score'] | permissions['player'] | permissions['token'],
         }
 
         if group.name in group_permissions:
