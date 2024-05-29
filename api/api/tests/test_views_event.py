@@ -337,3 +337,87 @@ class StaffViewTest(APITestCase):
         self.client.force_authenticate(user=None)
         if Token.objects.exists():
             Token.objects.all().delete()
+
+
+class AddStaffManagerTestCase(APITestCase):
+    def create_unique_email(self):
+        return f'{uuid.uuid4()}@gmail.com'
+
+    def create_unique_username(self):
+        return f'user_{uuid.uuid4().hex[:10]}'
+
+    def setUpUser(self):
+        self.user = User.objects.create(username='staff_member', email=self.create_unique_email(
+        ), first_name='Staff', last_name='Member')
+        self.admin = User.objects.create(username='event_admin', email=self.create_unique_email(
+        ), first_name='Event', last_name='Admin')
+
+    def setUpEvent(self):
+        self.token = Token.objects.create()
+        self.event = Event.objects.create(name='Evento 1', token=self.token)
+
+    def setUpGroup(self):
+        self.group = Group.objects.create(name='staff_member')
+        self.group2 = Group.objects.create(name='staff_manager')
+        self.group3 = Group.objects.create(name='app_admin')
+        self.group4 = Group.objects.create(name='event_admin')
+        self.admin.groups.add(self.group4)
+
+    def setUpPermissions(self):
+        self.content_type = ContentType.objects.get_for_model(Event)
+        self.permission = Permission.objects.filter(
+            content_type=self.content_type).filter(Q(codename__icontains='view') | Q(codename__icontains='change')).exclude(codename__icontains='change_event')
+        assign_permissions(self.admin, self.group4, self.event)
+
+    def setUp(self):
+        self.setUpUser()
+        self.setUpEvent()
+        self.setUpGroup()
+        self.setUpPermissions()
+        self.data = {'id': self.user.id, 'email': self.user.email}
+        self.url = f'{reverse("api:staff-manager")}?event_id={self.event.id}'
+
+    def test_add_staff_manager(self):
+        """Test adding a staff manager to an event."""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(self.user.groups.filter(name='staff_manager').exists())
+        for permission in self.permission:
+            self.assertTrue(self.user.has_perm(
+                permission.codename, self.event))
+
+    def test_add_staff_manager_without_event_id(self):
+        """Test adding a staff manager without an event id."""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(
+            reverse('api:staff-manager'), self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_add_staff_manager_with_unauthenticated_user(self):
+        """Test adding a staff manager without authentication."""
+        response = self.client.post(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_add_staff_manager_with_unauthorized_user(self):
+        """Test adding a staff manager with an unauthorized user."""
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_add_staff_manager_with_invalid_event_id(self):
+        """Test adding a staff manager with an invalid event id."""
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(
+            f'{reverse("api:staff-manager")}?event_id=invalid_id', self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def tearDown(self):
+        User.objects.all().delete()
+        Event.objects.all().delete()
+        Group.objects.all().delete()
+        Permission.objects.all().delete()
+        self.client.logout()
+        self.client.force_authenticate(user=None)
+        if Token.objects.exists():
+            Token.objects.all().delete()
