@@ -417,6 +417,10 @@ class AddStaffManagerTestCase(APITestCase):
         Event.objects.all().delete()
         Group.objects.all().delete()
         Permission.objects.all().delete()
+        User.objects.all().delete()
+        Event.objects.all().delete()
+        Group.objects.all().delete()
+        Permission.objects.all().delete()
         self.client.logout()
         self.client.force_authenticate(user=None)
         if Token.objects.exists():

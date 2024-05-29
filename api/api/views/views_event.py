@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from api.models import Token, Event
 from users.models import User
-from ..serializers import TokenSerializer, EventSerializer, UserSerializer
+from ..serializers import TokenSerializer, EventSerializer, UserSerializer, UserSerializer
 from rest_framework.permissions import BasePermission
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
