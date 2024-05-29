@@ -4,6 +4,7 @@ from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from api.models import Token, Event
+from users.models import User
 from ..serializers import TokenSerializer, EventSerializer, UserSerializer
 from rest_framework.permissions import BasePermission
 from drf_yasg import openapi
@@ -200,7 +201,7 @@ class StaffView(APIView):
         O usuário terá permissões de Monitor no evento associado ao token fornecido.
         """,
         operation_summary="Adiciona um novo membro da equipe ao evento.",
-        operation_id="add_staff_member",
+
         request_body=TokenSerializer,
         responses={200: openapi.Response(
             'OK'), **Errors([400]).retrieve_erros()}
@@ -232,7 +233,6 @@ class StaffView(APIView):
         operation_description="""Retorna os todos usuários monitores associados ao evento.
         """,
         operation_summary="Retorna os usuários monitores associados ao evento.",
-        operation_id="get_staff_members",
         manual_parameters=[openapi.Parameter(
             'event_id', openapi.IN_QUERY, description='ID do evento', type=openapi.TYPE_INTEGER)],
         responses={200: openapi.Response(
@@ -260,3 +260,64 @@ class StaffView(APIView):
         if not event:
             raise ValidationError('Evento não encontrado!')
         return event
+
+
+class AddStaffManagerPermissions(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method == 'POST':
+            return request.user.has_perm('api.change_event', obj)
+        return False
+
+
+class AddStaffManager(APIView):
+    permission_classes = [IsAuthenticated, AddStaffManagerPermissions]
+
+    @swagger_auto_schema(
+        operation_description="""Promove um usuário monitor a Gerente de Equipe no evento associado.""",
+        operation_summary="Promove um monitor a Gerente de Equipe.",
+        manual_parameters=[openapi.Parameter(
+            'event_id', openapi.IN_QUERY, description='ID do evento', type=openapi.TYPE_INTEGER)],
+        request_body=UserSerializer,
+        responses={200: openapi.Response(
+            "Gerente de equipe adicionado com sucesso!'"), **Errors([400]).retrieve_erros()}
+    )
+    def post(self, request: request.Request, *args, **kwargs):
+        """Promove um usuário a staff_manager no evento associado.
+        """
+        try:
+            event = self.get_object()
+        except Exception as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+        try:
+            user = self.get_request_user()
+        except Exception as e:
+            return handle_400_error(str(e))
+        group = Group.objects.get(name='staff_manager')
+        user.groups.add(group)
+        user.events.add(event)
+        assign_permissions(user=user, group=group, event=event)
+        return response.Response(status=status.HTTP_200_OK, data='Gerente de equipe adicionado com sucesso!')
+
+    def get_object(self):
+        if 'event_id' not in self.request.query_params:
+            raise ValidationError('Evento não fornecido!')
+        event_id = self.request.query_params['event_id']
+        if not event_id:
+            raise ValidationError('Evento não fornecido!')
+        event = Event.objects.filter(id=event_id).first()
+        if not event:
+            raise ValidationError('Evento não encontrado!')
+        return event
+
+    def get_request_user(self):
+        if 'email' not in self.request.data:
+            raise ValidationError('Email do Usuário não fornecido!')
+        email = self.request.data['email']
+        if not email:
+            raise ValidationError('Email do Usuário não fornecido!')
+        user = User.objects.filter(email=email).first()
+        if not user:
+            raise ValidationError('Usuário não encontrado!')
+        else:
+            return user
