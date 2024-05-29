@@ -1,16 +1,25 @@
 {
+  "name": "web",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
     "dev": "next dev",
-    "start": "next start"
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
-    "next": "latest",
-    "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "next": "14.1.4",
+    "react": "^18",
+    "react-dom": "^18"
   },
-  "engines": {
-    "node": ">=18"
+  "devDependencies": {
+    "@types/node": "20.12.7",
+    "@types/react": "18.2.75",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
+    "postcss": "^8",
+    "tailwindcss": "^3.3.0",
+    "typescript": "5.4.5"
   }
 }
