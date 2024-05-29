@@ -15,6 +15,12 @@ export default function JoinEvents() {
     }
   });
   return (
-    <HeaderComponent profile={profile} name={user.first_name} logo={logo}/>
+    <div>
+      <HeaderComponent profile={profile} name={user.first_name} logo={logo}/>
+      <div className="">
+
+      </div>
+    </div>
+    
   );
 }
