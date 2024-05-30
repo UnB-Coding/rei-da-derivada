@@ -4,8 +4,8 @@ import { UserContext } from "@/app/contexts/UserContext";
 import Image from 'next/image';
 import profile from '@/app/assets/matui.jpg';
 import logo from '@/app/assets/logo.png';
-import  HeaderComponent  from "@/app/components/HeaderComponent";
-
+import HeaderComponent from "@/app/components/HeaderComponent";
+import NavBarComponent from "@/app/components/NavBarComponent";
 
 export default function JoinEvents() {
   const { user } = useContext(UserContext);
@@ -17,9 +17,7 @@ export default function JoinEvents() {
   return (
     <div>
       <HeaderComponent profile={profile} name={user.first_name} logo={logo}/>
-      <div className="">
-
-      </div>
+      <NavBarComponent/>
     </div>
     
   );
