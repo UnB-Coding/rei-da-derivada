@@ -44,6 +44,7 @@ class UserAdmin(AuthUserAdmin):
         return ' '.join(events)
 
     event.short_description = 'Events'
+
     def event(self, user):
         events = []
         for event in user.events.all():
@@ -61,7 +62,7 @@ class UserAdmin(AuthUserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'username', 'password1', 'password2', 'first_name', 'last_name', 'is_active', 'groups', 'events')}
+            'fields': ('email', 'username', 'password1', 'password2', 'first_name', 'last_name', 'is_active', 'groups', 'events'),
             'fields': ('email', 'username', 'password1', 'password2', 'first_name', 'last_name', 'is_active', 'groups', 'events')}
          ),
     )
