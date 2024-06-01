@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Token, Event, Sumula, PlayerScore, Player
+from .models import Token, Event, Sumula, PlayerScore, Player, Staff
 from guardian.admin import GuardedModelAdmin
 
 
@@ -66,3 +66,15 @@ class PlayerAdmin(GuardedModelAdmin):
         return obj.username
     # Optional, to set column header in admin interface.
     username.short_description = 'username'
+
+
+@admin.register(Staff)
+class StaffAdmin(GuardedModelAdmin):
+    list_display = ['user', 'event', 'registration_email', 'id']
+    search_fields = ['user', 'event', 'registration_email']
+    fields = ['user', 'event', 'registration_email']
+
+    # def username(self, obj):
+    #     return obj.username
+    # # Optional, to set column header in admin interface.
+    # username.short_description = 'username'

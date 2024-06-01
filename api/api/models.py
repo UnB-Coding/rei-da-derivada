@@ -190,3 +190,21 @@ class PlayerScore(models.Model):
 
         if self.player is not None and self.event is not None:
             self.player.update_total_score(self.event)
+
+
+class Staff(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='staff', null=True, blank=True, default=None)
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='staff')
+    registration_email = models.EmailField(
+        default='',  blank=False, unique=False, null=False)
+    is_manager = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = ("Staff")
+        verbose_name_plural = ("Staffs")
+        unique_together = ['registration_email', 'event']
+
+    def __str__(self) -> str:
+        return f'{self.user}'

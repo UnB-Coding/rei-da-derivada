@@ -3,7 +3,7 @@ from django.forms import ValidationError
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from api.models import Token, Event
+from api.models import Token, Event, Staff
 from users.models import User
 from ..serializers import TokenSerializer, EventSerializer, UserSerializer, UserSerializer
 from rest_framework.permissions import BasePermission
@@ -207,25 +207,35 @@ class StaffView(APIView):
             'OK'), **Errors([400]).retrieve_erros()}
     )
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
-        """Adiciona um novo membro da equipe ao evento. O usuário será atribuido ao grupo 'staff_member' e terá permissões de Staff Member no evento associado ao token fornecido.
+        """Adiciona um novo membro da equipe ao evento. O usuário será atribuido ao grupo 'staff_member' 
+        e terá permissões de Staff Member no evento associado ao token fornecido.
         """
-        if request.data is None or 'token_code' not in request.data:
-            return handle_400_error(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
+        if request.data is None or 'token_code' not in request.data or 'email' not in request.data:
+            return handle_400_error('Dados inválidos!')
         token_code = request.data['token_code']
         if not token_code:
             return handle_400_error(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
-
+        email = request.data['email']
+        if not email:
+            return handle_400_error('Email não fornecido!')
         token = self.get_token(token_code)
         if not token:
             return handle_400_error(TOKEN_NOT_FOUND_ERROR_MESSAGE)
         event = self.get_event_by_token(token)
         if not event:
             return handle_400_error(EVENT_NOT_FOUND_ERROR_MESSAGE)
-
+        staff = Staff.objects.filter(email=email).first()
+        if not staff:
+            return handle_400_error('Usuário não encontrado!')
+        if staff.user is None:
+            staff.user = request.user
+        elif staff.user != request.user:
+            return handle_400_error('Usuário não autorizado!')
+        
         group = Group.objects.get(name='staff_member')
         request.user.groups.add(group)
         request.user.events.add(event)
-        assign_permissions(user=request.user, group=group, event=event)
+        assign_permissions(user=request.user], group=group, event=event)
 
         return response.Response(status=status.HTTP_200_OK, data={'message': 'Membro da equipe adicionado com sucesso!'})
 
