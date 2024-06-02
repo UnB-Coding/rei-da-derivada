@@ -1,18 +1,21 @@
 from django.forms import ValidationError
 from django.contrib.auth.models import Group
+
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import NotFound
+from rest_framework.permissions import BasePermission
+
 from api.models import Event, Sumula, PlayerScore, Player
 from users.models import User
 from ..serializers import SumulaSerializer
-from rest_framework.permissions import BasePermission
 from ..utils import handle_400_error
+from ..swagger import Errors, sumula_api_post_schema
+
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from ..swagger import Errors, sumula_api_post_schema
-from rest_framework.exceptions import NotFound
 EVENT_NOT_FOUND_ERROR_MESSAGE = "Evento não encontrado!"
 EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE = "Id do evento não fornecido!"
 SUMULA_NOT_FOUND_ERROR_MESSAGE = "Sumula não encontrada!"
