@@ -253,7 +253,7 @@ class AddPlayers(APIView):
             email = line['E-mail']
             player, created = Player.objects.get_or_create(
                 full_name=name, registration_email=email, event=event)
-            if created:
+            if not created:
                 player.full_name = name
                 player.registration_email = email
                 player.event = event
