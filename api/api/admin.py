@@ -70,9 +70,9 @@ class PlayerAdmin(GuardedModelAdmin):
 
 @admin.register(Staff)
 class StaffAdmin(GuardedModelAdmin):
-    list_display = ['user', 'event', 'registration_email', 'id']
-    search_fields = ['user', 'event', 'registration_email']
-    fields = ['user', 'event', 'registration_email']
+    list_display = ['full_name', 'user', 'event', 'registration_email', 'id']
+    search_fields = ['full_name', 'user', 'event', 'registration_email']
+    fields = ['full_name', 'user', 'event', 'registration_email', 'is_manager']
 
     # def username(self, obj):
     #     return obj.username
