@@ -193,6 +193,14 @@ class PlayerScore(models.Model):
 
 
 class Staff(models.Model):
+    """ Modelo para salvar informações de staff em um evento.
+    fields:
+    - full_name: CharField com o nome completo do staff
+    - registration_email: EmailField
+    - is_manager: BooleanField que indica se o staff é um manager
+    - event: ForeignKey para Event
+    - user: ForeignKey para User
+    """
     full_name = models.CharField(
         default='', max_length=128, blank=True, null=True)
     registration_email = models.EmailField(
