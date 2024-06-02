@@ -193,13 +193,15 @@ class PlayerScore(models.Model):
 
 
 class Staff(models.Model):
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='staff', null=True, blank=True, default=None)
-    event = models.ForeignKey(
-        Event, on_delete=models.CASCADE, related_name='staff')
+    full_name = models.CharField(
+        default='', max_length=128, blank=True, null=True)
     registration_email = models.EmailField(
         default='',  blank=False, unique=False, null=False)
     is_manager = models.BooleanField(default=False)
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='staff')
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='staff', null=True, blank=True, default=None)
 
     class Meta:
         verbose_name = ("Staff")
@@ -207,4 +209,4 @@ class Staff(models.Model):
         unique_together = ['registration_email', 'event']
 
     def __str__(self) -> str:
-        return f'{self.user}'
+        return f'{self.full_name}'
