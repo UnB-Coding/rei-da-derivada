@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
-from api.models import Token, Event, Sumula, PlayerScore, Player
+from api.models import Token, Event, Sumula, PlayerScore, Player, Staff
 from users.models import User
 
 
@@ -10,7 +10,7 @@ class UserSerializer(ModelSerializer):
     """
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name']
+        fields = ['id', 'first_name', 'last_name', 'email']
 
 
 class PlayerSerializer(ModelSerializer):
@@ -21,8 +21,7 @@ class PlayerSerializer(ModelSerializer):
 
     class Meta:
         model = Player
-        fields = ['id', 'total_score', 'event',
-                  'full_name', 'social_name', 'user']
+        fields = ['id', 'total_score', 'full_name', 'social_name', 'user']
 
 
 class PlayerResultsSerializer(ModelSerializer):
@@ -55,7 +54,7 @@ class PlayerScoreSerializer(ModelSerializer):
 
 
 class PlayerScoreSerializerForSumula(ModelSerializer):
-    player = PlayerSerializer()
+    player = PlayerResultsSerializer()
 
     class Meta:
         model = PlayerScore
@@ -64,8 +63,7 @@ class PlayerScoreSerializerForSumula(ModelSerializer):
 
 class SumulaSerializer(ModelSerializer):
     """ Serializer for the Sumula model.
-    fields: id, name, players_score
-    returns: players_score as a list of PlayerScoreSerializer
+    fields: id, active, referee, name, players_score
     """
     players_score = PlayerScoreSerializerForSumula(
         source='scores', many=True)
@@ -73,7 +71,18 @@ class SumulaSerializer(ModelSerializer):
 
     class Meta:
         model = Sumula
-        fields = ['id', 'active', 'referee', 'name', 'players_score']
+        fields = ['id', 'active', 'name', 'referee',  'players_score']
+
+
+class StaffSerializer(ModelSerializer):
+    """ Serializer for the Staff model.
+    fields: id, full_name, event, registration_email
+    """
+    user = UserSerializer()
+
+    class Meta:
+        model = Staff
+        fields = ['id', 'full_name', 'registration_email', 'user']
 
 
 class UploadFileSerializer(serializers.Serializer):

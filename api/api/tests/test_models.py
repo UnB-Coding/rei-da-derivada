@@ -1,6 +1,6 @@
 from django.db import IntegrityError
 from django.test import TestCase
-from api.models import Player, Token, Event, Sumula, PlayerScore, TOKEN_LENGTH
+from api.models import Player, Token, Event, Sumula, PlayerScore, Staff, TOKEN_LENGTH
 from users.models import User
 from unittest import TestCase
 import uuid
@@ -361,3 +361,40 @@ class PlayerTest(TestCase):
         if User.objects.all().count() > 0:
             User.objects.all().delete()
         return super().tearDownClass()
+
+
+class StaffTest(TestCase):
+    def create_unique_email(self):
+        self.unique_email = f'{uuid.uuid4()}@gmail.com'
+
+    def create_unique_username(self):
+        self.unique_username = f'user_{uuid.uuid4().hex[:10]}'
+
+    def setUp(self):
+        self.create_unique_email()
+        self.create_unique_username()
+        self.user = User.objects.create(
+            username=self.unique_username, email=self.unique_email, first_name='Test', last_name='User')
+        self.token = Token.objects.create()
+        self.event = Event.objects.create(name='Evento 1', token=self.token)
+        self.staff = Staff.objects.create(
+            full_name='Test User', registration_email=self.unique_email, user=self.user, event=self.event)
+
+    def test_create_staff(self):
+        self.assertIsNotNone(self.staff)
+        self.assertEqual(self.staff.full_name, 'Test User')
+        self.assertEqual(self.staff.registration_email, self.unique_email)
+
+    def test_create_staff_without_email(self):
+        with self.assertRaises(IntegrityError):
+            Staff.objects.create(full_name='Test User')
+
+    def test_edit_staff_name(self):
+        self.staff.full_name = 'Test User 2'
+        self.staff.save()
+        self.assertEqual(self.staff.full_name, 'Test User 2')
+
+    def test_edit_staff_email(self):
+        self.staff.registration_email = 'another@email.com'
+        self.staff.save()
+        self.assertEqual(self.staff.registration_email, 'another@email.com')

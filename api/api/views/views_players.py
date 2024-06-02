@@ -37,7 +37,6 @@ class PlayersView(APIView):
     @ swagger_auto_schema(security=[{'Bearer': []}],
                           operation_description='Retorna todos os jogadores de um evento.',
                           operation_summary='Retorna todos os jogadores de um evento.',
-                          operation_id='get_all_players',
                           manual_parameters=[openapi.Parameter(
                               'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
                           responses={200: openapi.Response(200, PlayerSerializer), **Errors([400]).retrieve_erros()})
@@ -110,7 +109,6 @@ class GetPlayerResults(APIView):
         security=[{'Bearer': []}],
         operation_summary='Retorna o resultado a pontuação do jogador',
         operation_description='Retorna o resultado de pontuação do jogador atual do usuário logado.',
-        operation_id='get_current_player',
         manual_parameters=[openapi.Parameter(
             'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
         responses={200: openapi.Response(200, PlayerSerializer), **Errors([400]).retrieve_erros()})
@@ -158,7 +156,6 @@ class PublishPlayersResults(APIView):
         security=[{'Bearer': []}],
         operation_description='Publica os resultados dos jogadores do evento.',
         operation_summary="""Publica os resultados dos jogadores do evento. Os jogadores poderão ver suas pontuações e os 4 primeiros colocados.""",
-        operation_id='publish_results',
         manual_parameters=[openapi.Parameter(
             'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
         responses={200: openapi.Response(
