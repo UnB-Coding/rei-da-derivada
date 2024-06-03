@@ -188,6 +188,13 @@ class PublishPlayersResults(APIView):
 class Top4Players(APIView):
     permission_classes = [IsAuthenticated, PlayersPermission]
 
+    @swagger_auto_schema(
+        security=[{'Bearer': []}],
+        operation_description='Retorna os 4 primeiros colocados do evento.',
+        operation_summary='Retorna os 4 primeiros colocados do evento.',
+        manual_parameters=[openapi.Parameter(
+            'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
+        responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         try:
             event = self.get_object()
