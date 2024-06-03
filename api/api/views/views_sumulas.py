@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from api.models import Event, Sumula, PlayerScore, Player
 from users.models import User
-from ..serializers import SumulaSerializer
+from ..serializers import SumulaSerializer, SumulaForPlayerSerializer
 from rest_framework.permissions import BasePermission
 from ..utils import handle_400_error
 from drf_yasg.utils import swagger_auto_schema
@@ -298,5 +298,54 @@ class FinishedSumulaView(APIView):
         if not event:
             raise NotFound(EVENT_NOT_FOUND_ERROR_MESSAGE)
         # Verifica se o usuário tem permissão para acessar o evento
+        self.check_object_permissions(self.request, event)
+        return event
+
+
+class GetSumulaForPlayerPermission(BasePermission):
+    def has_object_permission(self, request, view, obj) -> bool:
+        if Group.objects.get(name='app_admin') in request.user.groups.all():
+            return True
+
+        if request.method == 'GET':
+            return request.user.has_perm('api.view_event', obj)
+        return True
+
+
+class GetSumulaForPlayer(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @ swagger_auto_schema(
+        operation_summary="Retorna as sumulas ativas para um jogador.",
+        operation_description="""
+        Retorna todas as sumulas ativas para o jogador. São omitidos pontuações da sumula.""",
+        manual_parameters=[openapi.Parameter(
+                              'event_id', openapi.IN_QUERY, description="Id do evento associado às sumulas.", type=openapi.TYPE_INTEGER, required=True)],
+        responses={200: openapi.Response(
+            'OK', SumulaForPlayerSerializer), **Errors([400]).retrieve_erros()}
+    )
+    def get(self, request: request.Request, *args, **kwargs) -> response.Response:
+        """Retorna todas as sumulas ativas associadas a um evento."""
+        try:
+            event = self.get_object()
+        except Exception as e:
+            return handle_400_error(str(e))
+        player_scores = PlayerScore.objects.filter(
+            event=event, player__user=request.user, sumula__active=True)
+        if not player_scores:
+            return handle_400_error("Jogador não possui nenhuma sumula associada!")
+        sumulas = [player_score.sumula for player_score in player_scores]
+        data = SumulaForPlayerSerializer(sumulas, many=True).data
+        return response.Response(status=status.HTTP_200_OK, data=data)
+
+    def get_object(self) -> Event:
+        if 'event_id' not in self.request.query_params:
+            raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
+        event_id = self.request.query_params.get('event_id')
+        if not event_id:
+            raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
+        event = Event.objects.filter(id=event_id).first()
+        if not event:
+            raise NotFound(EVENT_NOT_FOUND_ERROR_MESSAGE)
         self.check_object_permissions(self.request, event)
         return event
