@@ -148,7 +148,7 @@ class Player(models.Model):
     class Meta:
         verbose_name = ("Player")
         verbose_name_plural = ("Players")
-        unique_together = ['registration_email', 'event']
+        unique_together = ['user', 'event']
 
     def update_total_score(self, event):
         """ Calculate the total score of the player for an event. """
@@ -206,7 +206,7 @@ class Staff(models.Model):
     class Meta:
         verbose_name = ("Staff")
         verbose_name_plural = ("Staffs")
-        unique_together = ['registration_email', 'event']
+        unique_together = ['user', 'event']
 
     def __str__(self) -> str:
         return f'{self.full_name}'
