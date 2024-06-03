@@ -10,6 +10,9 @@ from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import Permission
 from django.db.models import Q
+from django.core.files.uploadedfile import SimpleUploadedFile
+from decouple import config
+from guardian.shortcuts import get_perms, remove_perm
 
 
 class StaffViewTest(APITestCase):
@@ -303,5 +306,102 @@ class AddStaffManagerTestCase(APITestCase):
         if Token.objects.exists():
             Token.objects.all().delete()
 
-class AddStaffMembersViewTest(APITestCase):
-    
+
+class AddStaffMembersTestCase(APITestCase):
+
+    def setUpFiles(self):
+        self.xlsx_path = config("XLSX_FILE_PATH")
+        self.csv_path = config("CSV_FILE_PATH")
+
+        # Setup Excel file
+        self.excel_file = open(self.xlsx_path, 'rb')
+        self.excel_content = self.excel_file.read()
+        self.excel_uploaded_file = SimpleUploadedFile(
+            "Exemplo.xlsx", self.excel_content, content_type="multipart/form-data")
+        # Setup CSV file
+        self.csv_file = open(self.csv_path, 'r')
+        self.csv_content = self.csv_file.read()
+        self.csv_uploaded_file = SimpleUploadedFile(
+            "Exemplo.csv", self.csv_content.encode('utf-8'), content_type="multipart/form-data")
+
+    def setUpEvent(self):
+        self.token = Token.objects.create()
+        self.event = Event.objects.create(name='Evento 1', token=self.token)
+
+    def setUpGroup(self):
+        self.group3 = Group.objects.create(name='app_admin')
+        self.group4 = Group.objects.create(name='event_admin')
+        self.user.groups.add(self.group4)
+
+    def setUpPermissions(self):
+        self.content_type = ContentType.objects.get_for_model(Event)
+        assign_permissions(self.user, self.group4, self.event)
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='admin', email='admin@email.com')
+        self.setUpEvent()
+        self.setUpFiles()
+        self.setUpGroup()
+        self.setUpPermissions()
+        self.url = f"{reverse('api:upload-staff')}?event_id={self.event.id}"
+
+        self.client.force_authenticate(user=self.user)
+
+    def test_add_staff_members_with_valid_data_xlsx(self):
+
+        data = {'event_id': self.event.id, 'file': self.excel_uploaded_file}
+        response = self.client.post(self.url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            response.data, 'Monitores adicionados com sucesso!'
+        )
+        self.assertIsNotNone(Staff.objects.filter(event=self.event))
+
+    def test_add_staff_members_with_valid_data_csv(self):
+
+        data = {'event_id': self.event.id, 'file': self.csv_uploaded_file}
+        response = self.client.post(self.url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            response.data, 'Monitores adicionados com sucesso!'
+        )
+        self.assertIsNotNone(Staff.objects.filter(event=self.event))
+
+    def test_add_staff_members_with_invalid_event_id(self):
+        url = f'{reverse("api:upload-staff")}?event_id=99999'
+        data = {'event_id': 999, 'file': self.excel_uploaded_file}
+        response = self.client.post(url, data, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_add_staff_members_with_missing_event_id(self):
+        url = f'{reverse("api:upload-staff")}'
+        data = {'file': self.excel_uploaded_file}
+        response = self.client.post(url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_add_staff_members_with_invalid_file(self):
+        url = f'{reverse("api:upload-staff")}?event_id={self.event.id}'
+        data = {'event_id': self.event.id, 'file': 'invalid_file'}
+        response = self.client.post(url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_add_staff_members_without_permission(self):
+        self.remove_permissions()
+        data = {'event_id': self.event.id, 'file': self.excel_uploaded_file}
+        response = self.client.post(self.url, data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def remove_permissions(self):
+        perm = get_perms(self.user, self.event)
+        for p in perm:
+            remove_perm(p, self.user, self.event)
+
+    def tearDown(self):
+        self.client.logout()
+        Event.objects.all().delete()
+        User.objects.all().delete()
+        self.excel_file.close()
+        self.csv_file.close()
+        Token.objects.all().delete()
