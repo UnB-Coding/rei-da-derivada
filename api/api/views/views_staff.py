@@ -20,6 +20,7 @@ from ..permissions import assign_permissions
 
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from django.core.files.uploadedfile import UploadedFile
 
 
 class StaffPermissions(BasePermission):
@@ -263,6 +264,8 @@ class AddStaffMembers(APIView):
 
     def get_excel_file(self):
         excel_file = self.request.data['file']
+        if not isinstance(excel_file, UploadedFile):
+            raise ValidationError('Arquivo inválido!')
         if not excel_file:
             raise ValidationError('Arquivo não encontrado!')
         if not excel_file.name:

@@ -2,6 +2,7 @@ from io import StringIO
 from typing import Optional
 from django.forms import ValidationError
 from django.contrib.auth.models import Group
+from django.core.files.uploadedfile import UploadedFile
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -274,6 +275,8 @@ class AddPlayers(APIView):
 
     def get_excel_file(self):
         excel_file = self.request.data['file']
+        if not isinstance(excel_file, UploadedFile):
+            raise ValidationError('Arquivo inválido!')
         if not excel_file:
             raise ValidationError('Arquivo não encontrado!')
         if not excel_file.name:
