@@ -83,6 +83,9 @@ class PlayersView(APIView):
             registration_email=email, event=event).first()
         if not player:
             return handle_400_error('Jogador não encontrado!')
+        if player.user is not None and player.user != request.user:
+            return handle_400_error("""Jogador já está associado a outro usuário!
+                                    Se isso é um erro, entre em contato com o administrador do evento.""")
         player.user = request.user
         group = Group.objects.get(name='player')
         assign_permissions(request.user, group, event)
