@@ -74,6 +74,17 @@ class SumulaSerializer(ModelSerializer):
         fields = ['id', 'active', 'name', 'referee',  'players_score']
 
 
+class SumulaForPlayerSerializer(ModelSerializer):
+    """ Serializer for the Sumula model.
+    fields: id, active, referee, name, players_score
+    """
+    referee = UserSerializer(many=True)
+
+    class Meta:
+        model = Sumula
+        fields = ['id', 'active', 'name', 'referee']
+
+
 class StaffSerializer(ModelSerializer):
     """ Serializer for the Staff model.
     fields: id, full_name, event, registration_email
