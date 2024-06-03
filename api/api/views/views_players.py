@@ -62,7 +62,9 @@ class PlayersView(APIView):
 
     @swagger_auto_schema(
         security=[{'Bearer': []}],
-        operation_description='Adiciona um jogador ao evento através do email fornecido na inscrição.',
+        operation_description="""Adiciona um jogador ao evento através do email fornecido na inscrição.
+        Para um jogador entrar no evento, ele deve informar o email que foi utilizado na inscrição e o token de jogador fornecido pelo administrador do evento.
+        """,
         operation_summary='Adiciona um jogador ao evento.',
         request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do jogador'), 'players_token': openapi.Schema(
             type=openapi.TYPE_STRING, description='Token do evento')}, required=['email', 'players_token']),
