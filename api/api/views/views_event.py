@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import BasePermission
 
 from api.models import Token, Event
+from users.models import User
 from ..serializers import EventSerializer, TokenSerializer
 from ..utils import handle_400_error
 from ..swagger import Errors
@@ -18,7 +19,7 @@ from drf_yasg.utils import swagger_auto_schema
 TOKEN_NOT_PROVIDED_ERROR_MESSAGE = "Token não fornecido!"
 TOKEN_NOT_FOUND_ERROR_MESSAGE = "Token não encontrado!"
 TOKEN_ALREADY_USED_ERROR_MESSAGE = "Token já utilizado para criação de evento!"
-EVENT_NOT_FOUND_ERROR_MESSAGE = "Evento não encontrado!"
+EVENT_NOT_FOUND_ERROR_MESSAGE = "Nenhum evento encontrado!"
 EVENT_DOES_NOT_EXIST_ERROR_MESSAGE = "Este evento não existe!"
 
 
@@ -174,3 +175,16 @@ class EventView(APIView):
         self.token.used = False
         self.token.save()
         return response.Response(status=status.HTTP_200_OK)
+
+    @ swagger_auto_schema(
+        operation_summary="Retorna todos os eventos associados ao usuário logado.",
+        operation_description='Retorna todos os eventos associados ao usuário logado. Caso não haja eventos, retorna uma lista vazia.',
+        security=[{'Bearer': []}],
+        responses={200: openapi.Response(
+            'OK', EventSerializer), **Errors([400]).retrieve_erros()}
+    )
+    def get(self, request: request.Request, *args, **kwargs):
+        """Retorna todos os eventos associados ao usuário que fez a requisição."""
+        events = request.user.events.all()
+        data = EventSerializer(events, many=True).data
+        return response.Response(status=status.HTTP_200_OK, data=data)
