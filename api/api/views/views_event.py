@@ -1,19 +1,19 @@
 from typing import Optional
-from django.forms import ValidationError
+from django.contrib.auth.models import Group
+
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from api.models import Token, Event, Staff
-from users.models import User
-from ..serializers import TokenSerializer, EventSerializer, UserSerializer, StaffSerializer
 from rest_framework.permissions import BasePermission
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+
+from api.models import Token, Event
+from ..serializers import EventSerializer, TokenSerializer
 from ..utils import handle_400_error
 from ..swagger import Errors
-from django.contrib.auth.models import Group
 from ..permissions import assign_permissions
-from guardian.shortcuts import get_perms, remove_perm, assign_perm
+
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
 TOKEN_NOT_PROVIDED_ERROR_MESSAGE = "Token não fornecido!"
 TOKEN_NOT_FOUND_ERROR_MESSAGE = "Token não encontrado!"
@@ -174,188 +174,3 @@ class EventView(APIView):
         self.token.used = False
         self.token.save()
         return response.Response(status=status.HTTP_200_OK)
-
-
-class StaffPermissions(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        if Group.objects.get(name='app_admin') in request.user.groups.all():
-            return True
-        if request.method == 'GET':
-            return request.user.has_perm('api.change_event', obj)
-        return False
-
-
-class StaffView(APIView):
-    permission_classes = [IsAuthenticated, StaffPermissions]
-
-    def get_token(self, token_code: str) -> Optional[Token]:
-        """Retorna um token com o código-token fornecido."""
-        return Token.objects.filter(token_code=token_code).first()
-
-    def get_event_by_token(self, token: Token) -> Optional[Event]:
-        """Retorna um evento com o token fornecido."""
-        return Event.objects.filter(token=token).first()
-
-    @ swagger_auto_schema(
-        operation_description="""Adiciona um novo membro da equipe ao evento.
-        O usuário terá permissões de Monitor no evento associado ao token fornecido.
-        Retorna o evento no qual o usuário foi adicionado.
-        """,
-        operation_summary="Adiciona um novo membro da equipe ao evento.",
-
-        request_body=openapi.Schema(
-            title='Token e Email do Monitor', type=openapi.TYPE_OBJECT,
-            properties={'token_code': openapi.Schema(type=openapi.TYPE_STRING, description='Código do token', example='123456'),
-                        'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do monitor', example='example@email.com')},
-            required=['token_code', 'email']),
-        responses={200: openapi.Response(
-            'OK', EventSerializer), **Errors([400]).retrieve_erros()}
-    )
-    def post(self, request: request.Request, *args, **kwargs) -> response.Response:
-        """Adiciona um novo membro da equipe ao evento. O usuário será atribuido ao grupo 'staff_member'
-        e terá permissões de Staff Member no evento associado ao token fornecido.
-
-        """
-        if request.data is None or 'token_code' not in request.data or 'email' not in request.data:
-            return handle_400_error('Dados inválidos!')
-        token_code = request.data['token_code']
-        if not token_code:
-            return handle_400_error(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
-        email = request.data['email']
-        if not email:
-            return handle_400_error('Email não fornecido!')
-        token = self.get_token(token_code)
-        if not token:
-            return handle_400_error(TOKEN_NOT_FOUND_ERROR_MESSAGE)
-        event = self.get_event_by_token(token)
-        if not event:
-            return handle_400_error(EVENT_NOT_FOUND_ERROR_MESSAGE)
-        staff = Staff.objects.filter(
-            registration_email=email, event=event).first()
-        if not staff:
-            return handle_400_error('Este email não está cadastrado como monitor para este evento.')
-        if staff.user is None:
-            staff.user = request.user
-        elif staff.user != request.user:
-            return response.Response(status=status.HTTP_403_FORBIDDEN, data='Este email já está cadastrado como monitor para este evento.')
-
-        group = Group.objects.get(name='staff_member')
-        request.user.groups.add(group)
-        request.user.events.add(event)
-        assign_permissions(user=request.user, group=group, event=event)
-        data = EventSerializer(event).data
-        return response.Response(status=status.HTTP_200_OK, data=data)
-
-    @swagger_auto_schema(
-        operation_description="""Retorna os todos usuários monitores associados ao evento.
-        Procura por todos os objetos staff associados ao evento e retorna esses objetos.
-        """,
-        operation_summary="Retorna os usuários monitores associados ao evento.",
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, description='ID do evento', type=openapi.TYPE_INTEGER)],
-        responses={200: openapi.Response(
-            'OK', StaffSerializer), **Errors([400]).retrieve_erros()}
-    )
-    def get(self, request: request.Request, *args, **kwargs) -> response.Response:
-        """Retorna os usuários staff_member associados ao evento."""
-        try:
-            event = self.get_object()
-        except Exception as e:
-            return handle_400_error(str(e))
-        self.check_object_permissions(request, event)
-        # users = event.users.filter(groups__name='staff_member').exclude(
-        #     groups__name='staff_manager').exclude(groups__name='app_admin').exclude(groups__name='event_admin')
-        staffs = event.staff.filter(is_manager=False)
-        data = StaffSerializer(staffs, many=True).data
-        return response.Response(status=status.HTTP_200_OK, data=data)
-
-    def get_object(self):
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError('Evento não fornecido!')
-        event_id = self.request.query_params['event_id']
-        if not event_id:
-            raise ValidationError('Evento não fornecido!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
-
-
-class AddStaffManagerPermissions(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        if request.method == 'POST':
-            return request.user.has_perm('api.change_event', obj)
-        return False
-
-
-class AddStaffManager(APIView):
-    permission_classes = [IsAuthenticated, AddStaffManagerPermissions]
-
-    @swagger_auto_schema(
-        operation_description="""Promove um usuário monitor a Gerente de Equipe no evento associado.
-        Deve ser enviado o email do usuário a ser promovido a Gerente de Equipe. Quem envia a requisição é o Admin do evento.
-        """,
-        operation_summary="Promove um monitor a Gerente de Equipe.",
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, description='ID do evento', type=openapi.TYPE_INTEGER)],
-        request_body=openapi.Schema
-        (title='Email do Usuário', type=openapi.TYPE_OBJECT,
-         properties={'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do usuário', example='example@email.com')}),
-        responses={200: openapi.Response(
-            "Gerente de equipe adicionado com sucesso!'"), **Errors([400]).retrieve_erros()}
-    )
-    def post(self, request: request.Request, *args, **kwargs):
-        """Promove um usuário a staff_manager no evento associado.
-        """
-        try:
-            event = self.get_object()
-        except Exception as e:
-            return handle_400_error(str(e))
-        self.check_object_permissions(request, event)
-        try:
-            staff_user = self.get_request_user()
-        except Exception as e:
-            return handle_400_error(str(e))
-        staff_object = Staff.objects.filter(
-            user=staff_user, event=event).first()
-        if not staff_object:
-            return handle_400_error('O usuário não é monitor deste evento!')
-        staff_object.is_manager = True
-        staff_object.save()
-        group = Group.objects.get(name='staff_manager')
-        staff_user.groups.add(group)
-        staff_user.events.add(event)
-        assign_permissions(user=staff_user, group=group, event=event)
-        return response.Response(status=status.HTTP_200_OK, data='Gerente de equipe adicionado com sucesso!')
-
-    def get_object(self):
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError('Evento não fornecido!')
-        event_id = self.request.query_params['event_id']
-        if not event_id:
-            raise ValidationError('Evento não fornecido!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
-
-    def get_request_user(self):
-        if 'email' not in self.request.data:
-            raise ValidationError('Email do Usuário não fornecido!')
-        email = self.request.data['email']
-        if not email:
-            raise ValidationError('Email do Usuário não fornecido!')
-        user = User.objects.filter(email=email).first()
-        if not user:
-            raise ValidationError('Usuário não encontrado!')
-        else:
-            return user
-
-
-"""
-class AddStaffMembers(APIView):
-    permission_classes = [IsAuthenticated, StaffPermissions]
-
-    def post(self, request: request.Request, *args, **kwargs):
-        a = 2
- """

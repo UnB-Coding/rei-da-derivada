@@ -2,6 +2,7 @@ from io import StringIO
 from typing import Optional
 from django.forms import ValidationError
 from django.contrib.auth.models import Group
+from django.core.files.uploadedfile import UploadedFile
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -61,7 +62,9 @@ class PlayersView(APIView):
 
     @swagger_auto_schema(
         security=[{'Bearer': []}],
-        operation_description='Adiciona um jogador ao evento através do email fornecido na inscrição.',
+        operation_description="""Adiciona um jogador ao evento através do email fornecido na inscrição.
+        Para um jogador entrar no evento, ele deve informar o email que foi utilizado na inscrição e o token de jogador fornecido pelo administrador do evento.
+        """,
         operation_summary='Adiciona um jogador ao evento.',
         request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do jogador'), 'players_token': openapi.Schema(
             type=openapi.TYPE_STRING, description='Token do evento')}, required=['email', 'players_token']),
@@ -190,6 +193,13 @@ class PublishPlayersResults(APIView):
 class Top4Players(APIView):
     permission_classes = [IsAuthenticated, PlayersPermission]
 
+    @swagger_auto_schema(
+        security=[{'Bearer': []}],
+        operation_description='Retorna os 4 primeiros colocados do evento.',
+        operation_summary='Retorna os 4 primeiros colocados do evento.',
+        manual_parameters=[openapi.Parameter(
+            'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
+        responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         try:
             event = self.get_object()
@@ -256,7 +266,7 @@ class AddPlayers(APIView):
             email = line['E-mail']
             player, created = Player.objects.get_or_create(
                 full_name=name, registration_email=email, event=event)
-            if created:
+            if not created:
                 player.full_name = name
                 player.registration_email = email
                 player.event = event
@@ -277,6 +287,8 @@ class AddPlayers(APIView):
 
     def get_excel_file(self):
         excel_file = self.request.data['file']
+        if not isinstance(excel_file, UploadedFile):
+            raise ValidationError('Arquivo inválido!')
         if not excel_file:
             raise ValidationError('Arquivo não encontrado!')
         if not excel_file.name:

@@ -340,9 +340,6 @@ class AddPlayersViewTest(APITestCase):
     def setUpGroup(self):
         self.group_app_admin = Group.objects.create(name='app_admin')
         self.group_event_admin = Group.objects.create(name='event_admin')
-        self.group_staff_manager = Group.objects.create(name='staff_manager')
-        self.group_staff_member = Group.objects.create(name='staff_member')
-        self.group_player = Group.objects.create(name='player')
 
     def setUpPermissions(self):
         assign_permissions(self.admin,
@@ -362,7 +359,7 @@ class AddPlayersViewTest(APITestCase):
             "Exemplo.csv", self.csv_content.encode('utf-8'), content_type="multipart/form-data")
 
     def setUpUrl(self):
-        self.url = f"{reverse('api:upload')}?event_id={self.event.id}"
+        self.url = f"{reverse('api:upload-player')}?event_id={self.event.id}"
 
     def remove_permissions(self):
         perm = get_perms(self.admin, self.event)
@@ -414,7 +411,7 @@ class AddPlayersViewTest(APITestCase):
 
     def test_add_players_without_event_id(self):
         self.client.force_authenticate(user=self.admin)
-        url = reverse('api:upload')
+        url = reverse('api:upload-player')
         response = self.client.post(url, {'file': self.csv_uploaded_file})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
@@ -422,7 +419,7 @@ class AddPlayersViewTest(APITestCase):
 
     def test_add_players_with_invalid_event_id(self):
         self.client.force_authenticate(user=self.admin)
-        url = f"{reverse('api:upload')}?event_id=100"
+        url = f"{reverse('api:upload-player')}?event_id=100"
         response = self.client.post(url, {'file': self.csv_uploaded_file})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
