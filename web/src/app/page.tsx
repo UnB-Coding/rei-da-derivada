@@ -37,6 +37,7 @@ export default function Home() {
         return res.json();
       }).then((data) => {
         setUser(data);
+        console.log(data);
         router.push("/home");
       }).catch((err) => {
         console.error(err);
