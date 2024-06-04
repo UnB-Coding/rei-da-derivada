@@ -8,7 +8,8 @@ from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import Permission
 from ..utils import get_permissions, get_content_type
-from guardian.shortcuts import  assign_perm, remove_perm
+from guardian.shortcuts import assign_perm, remove_perm
+from ..serializers import EventSerializer
 
 
 class TokenViewTest(APITestCase):
@@ -56,6 +57,10 @@ class TokenViewTest(APITestCase):
 
 
 class EventViewTest(APITestCase):
+
+    def setUpData(self):
+        self.expected_data = EventSerializer([self.event], many=True).data
+
     def setUpUser(self):
         self.user = User.objects.create(
             username='testuser', email='test@email.com')
@@ -87,6 +92,7 @@ class EventViewTest(APITestCase):
         self.setUpPermissions()
         self.event = Event.objects.create(token=self.token2)
         self.setUpAssignPermissions()
+        self.setUpData()
 
     def test_create_event(self):
         """Test creating a new event with a valid token."""
@@ -184,6 +190,22 @@ class EventViewTest(APITestCase):
         self.client.force_authenticate(user=self.app_admin_user)
         response = self.client.delete(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_event(self):
+        """Test getting an event with a valid token."""
+        self.user.events.add(self.event)
+        self.user.save()
+        url = reverse('api:event')
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, self.expected_data)
+
+    def test_get_event_unauthenticated(self):
+        """Test getting an event without authentication."""
+        url = reverse('api:event')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def tearDown(self):
         self.user.delete()
