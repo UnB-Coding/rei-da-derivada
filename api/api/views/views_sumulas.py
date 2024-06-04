@@ -241,6 +241,7 @@ class ActiveSumulaView(APIView):
             event = self.get_object()
         except Exception as e:
             return handle_400_error(str(e))
+        self.check_object_permissions(self.request, event)
         sumulas = Sumula.objects.filter(event=event, active=True)
         data = SumulaSerializer(sumulas, many=True).data
         return response.Response(status=status.HTTP_200_OK, data=data)
@@ -258,8 +259,6 @@ class ActiveSumulaView(APIView):
         event = Event.objects.filter(id=event_id).first()
         if not event:
             raise NotFound(EVENT_NOT_FOUND_ERROR_MESSAGE)
-        # Verifica se o usuário tem permissão para acessar o evento
-        self.check_object_permissions(self.request, event)
         return event
 
 
@@ -280,6 +279,7 @@ class FinishedSumulaView(APIView):
             event = self.get_object()
         except Exception as e:
             return handle_400_error(str(e))
+        self.check_object_permissions(self.request, event)
         sumulas = Sumula.objects.filter(event=event, active=False)
         data = SumulaSerializer(sumulas, many=True).data
         return response.Response(status=status.HTTP_200_OK, data=data)
@@ -297,8 +297,6 @@ class FinishedSumulaView(APIView):
         event = Event.objects.filter(id=event_id).first()
         if not event:
             raise NotFound(EVENT_NOT_FOUND_ERROR_MESSAGE)
-        # Verifica se o usuário tem permissão para acessar o evento
-        self.check_object_permissions(self.request, event)
         return event
 
 
@@ -306,14 +304,13 @@ class GetSumulaForPlayerPermission(BasePermission):
     def has_object_permission(self, request, view, obj) -> bool:
         if Group.objects.get(name='app_admin') in request.user.groups.all():
             return True
-
         if request.method == 'GET':
             return request.user.has_perm('api.view_event', obj)
-        return True
+        return False
 
 
 class GetSumulaForPlayer(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, GetSumulaForPlayerPermission]
 
     @ swagger_auto_schema(
         operation_summary="Retorna as sumulas ativas para um jogador.",
@@ -330,6 +327,7 @@ class GetSumulaForPlayer(APIView):
             event = self.get_object()
         except Exception as e:
             return handle_400_error(str(e))
+        self.check_object_permissions(self.request, event)
         player_scores = PlayerScore.objects.filter(
             event=event, player__user=request.user, sumula__active=True)
         if not player_scores:
@@ -347,5 +345,5 @@ class GetSumulaForPlayer(APIView):
         event = Event.objects.filter(id=event_id).first()
         if not event:
             raise NotFound(EVENT_NOT_FOUND_ERROR_MESSAGE)
-        self.check_object_permissions(self.request, event)
+
         return event

@@ -9,6 +9,7 @@ from users.models import User
 import uuid
 from ..utils import get_permissions, get_content_type
 from ..permissions import assign_permissions, filter_permissions
+from ..serializers import SumulaForPlayerSerializer
 from django.contrib.auth.models import Group
 from guardian.shortcuts import remove_perm, assign_perm, get_perms
 
@@ -339,3 +340,105 @@ class SumulaViewTest(APITestCase):
         Group.objects.all().delete()
         self.remove_permissions()
         self.data_update = None
+
+
+class GetSumulaForPlayerTest(APITestCase):
+    def create_unique_email(self):
+        return f'{uuid.uuid4()}@gmail.com'
+
+    def create_unique_username(self):
+        return f'user_{uuid.uuid4().hex[:10]}'
+
+    def setUpData(self):
+        self.expected_data = SumulaForPlayerSerializer(
+            [self.sumula1, self.sumula2], many=True).data
+
+    def setUpSumula(self):
+        self.sumula1 = Sumula.objects.create(event=self.event)
+        self.sumula2 = Sumula.objects.create(event=self.event)
+
+    def setUpReferee(self, user: User, user2: User, sumulas: list):
+        for sumula in sumulas:
+            sumula.referee.add(user)
+            sumula.referee.add(user2)
+
+    def setUpPlayers(self):
+        self.player = Player.objects.create(
+            user=self.user, event=self.event, registration_email=self.create_unique_email())
+
+    def setUpPlayerScore(self):
+        self.player_score1 = PlayerScore.objects.create(
+            player=self.player, sumula=self.sumula1, event=self.event)
+        self.player_score2 = PlayerScore.objects.create(
+            player=self.player, sumula=self.sumula2, event=self.event)
+
+    def setUpGroup(self):
+        self.group_app_admin = Group.objects.create(name='app_admin')
+        self.group_player = Group.objects.create(name='player')
+
+    def setUpPermissions(self):
+        assign_permissions(self.user, self.group_player, self.event)
+
+    def setUpEvent(self):
+        self.token = Token.objects.create()
+        self.event = Event.objects.create(name='Evento 1', token=self.token)
+
+    def setUpUser(self):
+        self.user = User.objects.create(
+            username='test_user', email='example@email.com', first_name='Test', last_name='User')
+        self.user2 = User.objects.create(
+            username='test_user2', email='example2@email.com', first_name='Test2', last_name='User2')
+
+    def setUp(self):
+        self.setUpEvent()
+        self.setUpUser()
+        self.setUpSumula()
+        self.setUpPlayers()
+        self.setUpPlayerScore()
+        self.setUpGroup()
+        self.setUpReferee(self.user, self.user2, [
+            self.sumula1, self.sumula2])
+        self.setUpPermissions()
+        self.setUpData()
+        self.client = APIClient()
+        self.url = f'{reverse("api:sumula-player")}?event_id={self.event.id}'
+
+    def test_get_sumulas_for_player(self):
+        data = {'event_id': self.event.id}
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(self.url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, self.expected_data)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data[0]['id'], self.sumula1.id)
+        self.assertEqual(response.data[1]['id'], self.sumula2.id)
+
+    def test_get_sumulas_for_player_unauthenticated(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_sumulas_for_player_invalid_event_id(self):
+        url = f'{reverse("api:sumula-player")}?event_id=10000'
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_get_sumulas_for_player_without_event_id(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(reverse('api:sumula-player'))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_get_sumulas_for_player_unauthorized(self):
+        self.client.force_authenticate(user=self.user2)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    
+    def tearDown(self) -> None:
+        Event.objects.all().delete()
+        Sumula.objects.all().delete()
+        Player.objects.all().delete()
+        PlayerScore.objects.all().delete()
+        User.objects.all().delete()
+        Group.objects.all().delete()
+        Token.objects.all().delete()

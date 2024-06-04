@@ -74,17 +74,6 @@ class SumulaSerializer(ModelSerializer):
         fields = ['id', 'active', 'name', 'referee',  'players_score']
 
 
-class SumulaForPlayerSerializer(ModelSerializer):
-    """ Serializer for the Sumula model.
-    fields: id, active, referee, name, players_score
-    """
-    referee = UserSerializer(many=True)
-
-    class Meta:
-        model = Sumula
-        fields = ['id', 'active', 'name', 'referee']
-
-
 class StaffSerializer(ModelSerializer):
     """ Serializer for the Staff model.
     fields: id, full_name, event, registration_email
@@ -98,3 +87,23 @@ class StaffSerializer(ModelSerializer):
 
 class UploadFileSerializer(serializers.Serializer):
     file = serializers.FileField()
+
+
+class PlayerScoreForPlayerSerializer(ModelSerializer):
+    player = PlayerResultsSerializer()
+
+    class Meta:
+        model = PlayerScore
+        fields = ['player']
+
+
+class SumulaForPlayerSerializer(ModelSerializer):
+    """ Serializer for the Sumula model.
+    fields: id, active, referee, name, players_score
+    """
+    referee = UserSerializer(many=True)
+    players = PlayerScoreForPlayerSerializer(source='scores', many=True)
+
+    class Meta:
+        model = Sumula
+        fields = ['id', 'active', 'name', 'referee', 'players']
