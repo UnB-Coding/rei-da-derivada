@@ -140,6 +140,8 @@ class EventView(APIView):
             assign_permissions(user=request.user, group=group, event=event)
         except Exception as e:
             return handle_400_error(str(e))
+        request.user.events.add(event)
+        request.user.groups.add(group)
         data = EventSerializer(event).data
 
         return response.Response(status=status.HTTP_201_CREATED, data=data)
