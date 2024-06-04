@@ -149,6 +149,7 @@ class PlayersViewTest(APITestCase):
         self.assertEqual(response.data, 'Jogador adicionado com sucesso!')
         self.assertEqual(self.player.user, self.user_player1)
         self.assertEqual(self.player.event, self.event)
+        self.assertEqual(self.user_player1.events.first(), self.event)
         perms = get_perms(self.user_player1, self.event)
         self.assertTrue(all(perm in perms for perm in [
                         'view_player_event', 'view_event', 'view_sumula_event', 'view_player_score_event']))

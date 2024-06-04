@@ -93,6 +93,8 @@ class PlayersView(APIView):
         group = Group.objects.get(name='player')
         assign_permissions(request.user, group, event)
         player.save()
+        request.user.events.add(event)
+        request.user.save()
         return response.Response(status=status.HTTP_200_OK, data='Jogador adicionado com sucesso!')
 
     def get_object(self) -> Event:
