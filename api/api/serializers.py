@@ -40,9 +40,12 @@ class TokenSerializer(ModelSerializer):
 
 
 class EventSerializer(ModelSerializer):
+    """ Serializer for the Event model.
+    fields: 'id', 'name','active'
+    """
     class Meta:
         model = Event
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'active']
 
 
 class PlayerScoreSerializer(ModelSerializer):
