@@ -95,6 +95,10 @@ class Event (models.Model):
             random.choices(string.digits, k=TOKEN_LENGTH))
         return self.players_token
 
+    def is_active(self) -> bool:
+        """Retorna se o evento está ativo ou não."""
+        return self.active
+
     def save(self, *args, **kwargs) -> None:
         """Sobrescreve o método save para gerar um token caso não exista."""
         if not self.players_token:
