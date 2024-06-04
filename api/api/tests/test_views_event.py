@@ -102,6 +102,8 @@ class EventViewTest(APITestCase):
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['name'], '')
+        self.assertEqual(self.user.events.count(), 1)
+        self.assertEqual(self.user.groups.count(), 1)
         event_id = response.data['id']
         self.assertIsNotNone(event_id)
         self.assertTrue(Event.objects.filter(id=event_id).exists())
