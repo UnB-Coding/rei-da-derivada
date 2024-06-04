@@ -95,6 +95,10 @@ class Event (models.Model):
             random.choices(string.digits, k=TOKEN_LENGTH))
         return self.players_token
 
+    def is_active(self) -> bool:
+        """Retorna se o evento está ativo ou não."""
+        return self.active
+
     def save(self, *args, **kwargs) -> None:
         """Sobrescreve o método save para gerar um token caso não exista."""
         if not self.players_token:
@@ -128,7 +132,7 @@ class Player(models.Model):
     params:
     - full_name: CharField with the full name of the player
     - social_name: CharField with the social name of the player
-    - user: OneToOneField to User
+    - user: ForeignKey to User
     - event: ForeignKey to Event
     - registration_email: EmailField
     - total_score: IntegerField
@@ -137,8 +141,8 @@ class Player(models.Model):
         default='', max_length=128, blank=True, null=True)
     social_name = models.CharField(
         default='', max_length=128, blank=True, null=True)
-    user = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name='player', null=True, blank=True)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='player', null=True, blank=True, default=None)
     total_score = models.PositiveSmallIntegerField(default=0)
     registration_email = models.EmailField(
         blank=False, unique=False, null=False)
@@ -148,7 +152,7 @@ class Player(models.Model):
     class Meta:
         verbose_name = ("Player")
         verbose_name_plural = ("Players")
-        unique_together = ['registration_email', 'event']
+        unique_together = ['user', 'event']
 
     def update_total_score(self, event):
         """ Calculate the total score of the player for an event. """
@@ -214,7 +218,7 @@ class Staff(models.Model):
     class Meta:
         verbose_name = ("Staff")
         verbose_name_plural = ("Staffs")
-        unique_together = ['registration_email', 'event']
+        unique_together = ['user', 'event']
 
     def __str__(self) -> str:
         return f'{self.full_name}'
