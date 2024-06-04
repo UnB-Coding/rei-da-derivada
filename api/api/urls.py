@@ -9,19 +9,26 @@ app_name = 'api'
 
 
 urlpatterns = [
+    # Rotas de evento e token
     path('token/', TokenView.as_view(), name='token'),
     path('event/', EventView.as_view(), name='event'),
+
+    # Rotas de sumula
     path('sumula/', SumulaView.as_view(), name='sumula'),
     path('sumula/ativas/', ActiveSumulaView.as_view(), name='sumula-ativas'),
     path('sumula/encerradas/', FinishedSumulaView.as_view(),
          name='sumula-encerradas'),
+    path('sumula/player/', GetSumulaForPlayer.as_view(), name='sumula-player'),
+
+    # Rotas de jogadores
     path('players/', PlayersView.as_view(), name='players'),
     path('player/', GetPlayerResults.as_view(), name='player'),
-    path('staff/', StaffView.as_view(), name='staff'),
-    path('staff-manager/', AddStaffManager.as_view(), name='staff-manager'),
     path('upload-player/', AddPlayers.as_view(), name='upload-player'),
-    path('upload-staff/', AddStaffMembers.as_view(), name='upload-staff'),
     path('top4/', Top4Players.as_view(), name='top4'),
     path('publish-results/', PublishPlayersResults.as_view(), name='publish-results'),
-    path('sumula/player/', GetSumulaForPlayer.as_view(), name='sumula-player')
+
+    # Rotas de staff
+    path('staff/', StaffView.as_view(), name='staff'),
+    path('staff-manager/', AddStaffManager.as_view(), name='staff-manager'),
+    path('upload-staff/', AddStaffMembers.as_view(), name='upload-staff'),
 ]
