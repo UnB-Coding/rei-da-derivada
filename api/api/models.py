@@ -117,6 +117,8 @@ class Sumula (models.Model):
         Event, on_delete=models.CASCADE, related_name='sumulas')
     name = models.CharField(default='', max_length=64)
     active = models.BooleanField(default=True)
+    description = models.TextField(
+        default='', blank=True, null=True, max_length=256)
 
     class Meta:
         verbose_name = ("Sumula")

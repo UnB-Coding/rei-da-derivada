@@ -66,7 +66,7 @@ class PlayerScoreSerializer(ModelSerializer):
 
 class SumulaSerializer(ModelSerializer):
     """ Serializer for the Sumula model.
-    fields: id, active, referee, name, players_score
+    fields: id, active, description, referee, name, players_score
     """
     players_score = PlayerScoreSerializer(
         source='scores', many=True)
@@ -74,7 +74,8 @@ class SumulaSerializer(ModelSerializer):
 
     class Meta:
         model = Sumula
-        fields = ['id', 'active', 'name', 'referee',  'players_score']
+        fields = ['id', 'active', 'name',
+                  'description', 'referee',  'players_score']
 
 
 class StaffSerializer(ModelSerializer):
@@ -109,4 +110,4 @@ class SumulaForPlayerSerializer(ModelSerializer):
 
     class Meta:
         model = Sumula
-        fields = ['id', 'active', 'name', 'referee', 'players']
+        fields = ['id', 'active', 'name', 'description', 'referee', 'players']
