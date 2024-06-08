@@ -38,7 +38,6 @@ export default function UserContextProvider({ children }:{children: React.ReactN
       setLoading(false);
     }).catch((err) => {
       console.error(err);
-      
       setLoading(false);
     });
   }, [setUser]);
