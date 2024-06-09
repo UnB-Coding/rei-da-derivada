@@ -75,9 +75,6 @@ class SumulaViewTest(APITestCase):
         ]
         self.data_post = {
             "name": "imortais 01",
-            "event": {
-                "id": self.event.id
-            },
             "players": [
                 {
                     "id": self.player.id,
@@ -171,9 +168,9 @@ class SumulaViewTest(APITestCase):
         self.setUpPlayers()
         self.setUpPlayerScore()
         self.setUpPermissions()
-        self.url_post = f"{reverse('api:sumula')}"
+        self.url_post = f"{reverse('api:sumula')}?event_id={self.event.id}"
         self.url_get = f"{reverse('api:sumula')}?event_id={self.event.id}"
-        self.url_update = f"{reverse('api:sumula')}?sumula_id={self.sumula.id}"
+        self.url_update = f"{reverse('api:sumula')}?event_id={self.event.id}"
         self.setUpData()
 
     """*********Testes de Create*********"""
@@ -433,7 +430,6 @@ class GetSumulaForPlayerTest(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    
     def tearDown(self) -> None:
         Event.objects.all().delete()
         Sumula.objects.all().delete()
