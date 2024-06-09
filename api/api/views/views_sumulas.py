@@ -14,7 +14,6 @@ from ..serializers import SumulaSerializer, SumulaForPlayerSerializer
 from rest_framework.permissions import BasePermission
 from ..utils import handle_400_error
 from ..swagger import Errors, sumula_api_post_schema
-
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 EVENT_NOT_FOUND_ERROR_MESSAGE = "Evento não encontrado!"
@@ -55,32 +54,20 @@ class SumulaView(APIView):
             type=openapi.TYPE_OBJECT,
             properties={
                 'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome da sumula'),
-                'event': openapi.Schema(type=openapi.TYPE_OBJECT, properties={'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do evento')}),
                 'players': openapi.Schema(
                     type=openapi.TYPE_ARRAY,
+                    title='Players',
                     items=openapi.Schema(
                         type=openapi.TYPE_OBJECT,
                         properties={
                             'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador'),
                             'total_score': openapi.Schema(type=openapi.TYPE_INTEGER, description='Pontuação total do jogador'),
-                            'user': openapi.Schema(
-                                type=openapi.TYPE_ARRAY,
-                                items=openapi.Schema(
-                                    type=openapi.TYPE_OBJECT,
-                                    properties={
-                                        'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do usuário'),
-                                        'first_name': openapi.Schema(type=openapi.TYPE_STRING, description='Primeiro nome'),
-                                        'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='Último nome'),
-                                    }
-                                ),
-                                description='Lista de usuários',
-                            ),
                         }
                     ),
                     description='Lista de jogadores',
                 ),
             },
-            required=['name', 'event', 'players'],
+            required=['name', 'players'],
         ),
         responses={201: openapi.Response(
             'Created', SumulaSerializer), **Errors([400]).retrieve_erros()}
@@ -136,6 +123,8 @@ class SumulaView(APIView):
         operation_description="""Atualiza os dados associados a uma sumula criada.
                          """,
         security=[{'Bearer': []}],
+        manual_parameters=[openapi.Parameter('event_id', openapi.IN_QUERY, description="Id do evento associado a sumula.",
+                                             type=openapi.TYPE_INTEGER, required=True)],
         request_body=sumula_api_post_schema,
         responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
     def put(self, request: request.Request, *args, **kwargs) -> response.Response:
@@ -154,7 +143,11 @@ class SumulaView(APIView):
         sumula = Sumula.objects.filter(id=sumula_id).first()
         if not sumula:
             return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
-        event = sumula.event
+        try:
+            event = self.get_object()
+        except Exception as e:
+            return handle_400_error(str(e))
+
         # Verifica se o usuário tem permissão para acessar o evento
         self.check_object_permissions(request, event)
 
@@ -209,19 +202,11 @@ class SumulaView(APIView):
         """ Verifica se o evento existe e se o usuário tem permissão para acessá-lo.
         Retorna o evento associado ao id fornecido.
         """
-        event_id = None
-        # Verifica se o event_id está nos dados da requisição
-        if 'event' in self.request.data and isinstance(self.request.data['event'], dict) and 'id' in self.request.data['event']:
-            event_id = self.request.data['event'].get('id')
-
-        # Se não estiver nos dados da requisição, verifica se está nos parâmetros da consulta
-        if not event_id:
-
-            event_id = self.request.query_params.get('event_id')
-
+        if 'event_id' not in self.request.query_params:
+            raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
+        event_id = self.request.query_params.get('event_id')
         if not event_id:
             raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
-
         event = Event.objects.filter(id=event_id).first()
         if not event:
             raise NotFound(EVENT_NOT_FOUND_ERROR_MESSAGE)
