@@ -47,7 +47,7 @@ export default function Home() {
 
   return (
     <button
-      className="bg-blue-500 w-60 h-12 text-white font-semibold py-2 px-4 rounded-[10px] fixed bottom-10 left-1/2 transform -translate-x-1/2"
+      className="bg-blue-500 w-60 h-12 hover:bg-sky-800 text-white font-semibold py-2 px-4 rounded-[10px] fixed bottom-10 left-1/2 transform -translate-x-1/2"
       onClick={() => {
         router.replace(url);
       }}
