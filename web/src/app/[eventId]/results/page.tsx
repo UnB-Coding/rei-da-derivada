@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import HeaderComponent from "@/app/components/HeaderComponent";
 import LoadingComponent from "@/app/components/LoadingComponent";
 import EventNavBarComponent from "@/app/components/EventNavBarComponent";
+import ResultsComponent from "@/app/components/ResultsComponent";
 
 export default function Results() {
   const { user, loading } = useContext(UserContext);
@@ -19,6 +20,7 @@ export default function Results() {
   return loading ? <LoadingComponent/>:
     <>
         <HeaderComponent/>
+        <ResultsComponent/>
         <EventNavBarComponent/>
     </>
 
