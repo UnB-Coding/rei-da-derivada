@@ -9,7 +9,7 @@ class TokenAdmin(GuardedModelAdmin):
         return obj.event
     list_display = ['token_code', 'id', 'created_at', 'used', 'event']
     search_fields = ['token_code']
-    fields = ['token_code', 'used']
+    fields = ['used']
 
 
 @admin.register(Event)
