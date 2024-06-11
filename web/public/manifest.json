@@ -1,0 +1,17 @@
+{
+    "name": "My awesome PWA app",
+    "short_name": "PWA App",
+    "icons": [
+      {
+        "src": "logo.png",
+        "sizes": "144x144",
+        "type": "image/png",
+        "purpose": "any"
+      }
+    ],
+    "theme_color": "#FFFFFF",
+    "background_color": "#FFFFFF",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "portrait"
+}
