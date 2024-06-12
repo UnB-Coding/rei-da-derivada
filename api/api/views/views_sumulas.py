@@ -13,7 +13,7 @@ from users.models import User
 from ..serializers import SumulaSerializer, SumulaForPlayerSerializer
 from rest_framework.permissions import BasePermission
 from ..utils import handle_400_error
-from ..swagger import Errors, sumula_api_post_schema
+from ..swagger import Errors, sumula_api_put_schema
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 EVENT_NOT_FOUND_ERROR_MESSAGE = "Evento não encontrado!"
@@ -125,7 +125,7 @@ class SumulaView(APIView):
         security=[{'Bearer': []}],
         manual_parameters=[openapi.Parameter('event_id', openapi.IN_QUERY, description="Id do evento associado a sumula.",
                                              type=openapi.TYPE_INTEGER, required=True)],
-        request_body=sumula_api_post_schema,
+        request_body=sumula_api_put_schema,
         responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
     def put(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Atualiza uma sumula
