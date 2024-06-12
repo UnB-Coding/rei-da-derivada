@@ -70,29 +70,28 @@ class PlayerScoreSerializer(ModelSerializer):
         fields = ['id', 'points', 'player']
 
 
+class StaffSerializer(ModelSerializer):
+    """ Serializer for the Staff model.
+    fields: id, full_name, event, registration_email
+    """
+
+    class Meta:
+        model = Staff
+        fields = ['id', 'full_name', 'registration_email']
+
+
 class SumulaSerializer(ModelSerializer):
     """ Serializer for the Sumula model.
     fields: id, active, description, referee, name, players_score
     """
     players_score = PlayerScoreSerializer(
         source='scores', many=True)
-    referee = UserSerializer(many=True)
+    referee = StaffSerializer(many=True)
 
     class Meta:
         model = Sumula
         fields = ['id', 'active', 'name',
                   'description', 'referee',  'players_score']
-
-
-class StaffSerializer(ModelSerializer):
-    """ Serializer for the Staff model.
-    fields: id, full_name, event, registration_email
-    """
-    user = UserSerializer()
-
-    class Meta:
-        model = Staff
-        fields = ['id', 'full_name', 'registration_email', 'user']
 
 
 class UploadFileSerializer(serializers.Serializer):
