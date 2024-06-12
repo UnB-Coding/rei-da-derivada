@@ -154,8 +154,8 @@ class SumulaView(APIView):
             return handle_400_error("Dados inválidos!")
         sumula.name = request.data[0]['name']
         sumula.description = request.data[0]['description']
-        referees = request.data[0]['referee']
-        self.add_referee(sumula, referees)
+        # referees = request.data[0]['referee']
+        # self.add_referee(sumula, referees) necessario refatorar com outra rota apenas para atribuir referee.
 
         players_score = request.data[0]['players_score']
 
@@ -178,13 +178,14 @@ class SumulaView(APIView):
             PlayerScore.objects.create(
                 player=player_obj, sumula=sumula, event=event)
 
-    def add_referee(self, sumula: Sumula, referees: list) -> None:
-        """Adiciona um árbitro a uma sumula."""
-        for referee in referees:
-            user = User.objects.filter(id=referee['id']).first()
-            if not user:
-                continue
-            sumula.referee.add(user)
+    # def add_referee(self, sumula: Sumula, referees: list) -> None:
+    #     """Adiciona um árbitro a uma sumula."""
+    #     for referee in referees:
+    #         user = User.objects.filter(id=referee['id']).first()
+    #         if not user:
+    #             continue
+    #         sumula.referee.add(user)
+    # Necessario refatorar com outra rota
 
     def update_player_score(self, players_score: list[dict]) -> bool:
         """Atualiza a pontuação de um jogador."""

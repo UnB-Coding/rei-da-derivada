@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils.crypto import get_random_string
 from rest_framework import status
 from rest_framework.test import APIClient
-from api.models import Sumula, Event, PlayerScore, Token, Player
+from api.models import Sumula, Event, PlayerScore, Token, Player, Staff
 from users.models import User
 import uuid
 from ..utils import get_permissions, get_content_type
@@ -105,10 +105,10 @@ class SumulaViewTest(APITestCase):
         self.user_player2 = User.objects.create(
             username=self.create_unique_username(), email=self.create_unique_email(), first_name='Player2', last_name='User')
 
-    def setUpReferee(self, user: User, user2: User, sumulas: list):
+    def setUpReferee(self, staff1: Staff, staff2: Staff, sumulas: list):
         for sumula in sumulas:
-            sumula.referee.add(user)
-            sumula.referee.add(user2)
+            sumula.referee.add(staff1)
+            sumula.referee.add(staff2)
 
     def setUpPlayers(self):
         self.player = Player.objects.create(
@@ -146,13 +146,20 @@ class SumulaViewTest(APITestCase):
         for p in perm:
             remove_perm(p, self.user_staff_manager, self.event)
 
+    def SetUpStaff(self):
+        self.staff1 = Staff.objects.create(
+            user=self.user_staff_manager, event=self.event)
+        self.staff2 = Staff.objects.create(
+            user=self.user_staff_member, event=self.event)
+
     def setUp(self):
         self.client = APIClient()
         self.setUpEvent()
         self.setUpSumula()
         self.setupUser()
         self.setUpGroup()
-        self.setUpReferee(self.user_staff_manager, self.user_staff_member, [
+        self.SetUpStaff()
+        self.setUpReferee(self.staff1, self.staff2, [
             self.sumula, self.sumula2, self.sumula3])
         self.setUpPlayers()
         self.setUpPlayerScore()
@@ -259,7 +266,7 @@ class SumulaViewTest(APITestCase):
         self.assertEqual(self.sumula.description, "Sala S4")
         for referee in referees:
             self.assertIn(
-                referee, [self.user_staff_manager, self.user_staff_member])
+                referee, [self.staff1, self.staff2])
 
         for score in scores:
             self.assertIn(score.player, [self.player, self.player2])
@@ -341,10 +348,10 @@ class GetSumulaForPlayerTest(APITestCase):
         self.sumula1 = Sumula.objects.create(event=self.event)
         self.sumula2 = Sumula.objects.create(event=self.event)
 
-    def setUpReferee(self, user: User, user2: User, sumulas: list):
+    def setUpReferee(self, staff1: Staff, staff2: Staff, sumulas: list):
         for sumula in sumulas:
-            sumula.referee.add(user)
-            sumula.referee.add(user2)
+            sumula.referee.add(staff1)
+            sumula.referee.add(staff2)
 
     def setUpPlayers(self):
         self.player = Player.objects.create(
@@ -373,6 +380,12 @@ class GetSumulaForPlayerTest(APITestCase):
         self.user2 = User.objects.create(
             username='test_user2', email='example2@email.com', first_name='Test2', last_name='User2')
 
+    def SetUpStaff(self):
+        self.staff1 = Staff.objects.create(
+            user=self.user2, event=self.event)
+        self.staff2 = Staff.objects.create(
+            user=self.user, event=self.event)
+
     def setUp(self):
         self.setUpEvent()
         self.setUpUser()
@@ -380,7 +393,8 @@ class GetSumulaForPlayerTest(APITestCase):
         self.setUpPlayers()
         self.setUpPlayerScore()
         self.setUpGroup()
-        self.setUpReferee(self.user, self.user2, [
+        self.SetUpStaff()
+        self.setUpReferee(self.staff2, self.staff1, [
             self.sumula1, self.sumula2])
         self.setUpPermissions()
         self.setUpData()
