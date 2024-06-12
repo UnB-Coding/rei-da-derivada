@@ -110,7 +110,7 @@ class SumulaForPlayerSerializer(ModelSerializer):
     """ Serializer for the Sumula model.
     fields: id, active, referee, name, players_score
     """
-    referee = UserSerializer(many=True)
+    referee = StaffSerializer(many=True)
     players = PlayerScoreForPlayerSerializer(source='scores', many=True)
 
     class Meta:
