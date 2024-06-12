@@ -132,13 +132,41 @@ class Event (models.Model):
         super(Event, self).save(*args, **kwargs)
 
 
+class Staff(models.Model):
+    """ Modelo para salvar informações de staff em um evento.
+    fields:
+    - full_name: CharField com o nome completo do staff
+    - registration_email: EmailField
+    - is_manager: BooleanField que indica se o staff é um manager
+    - event: ForeignKey para Event
+    - user: ForeignKey para User
+    """
+    full_name = models.CharField(
+        default='', max_length=128, blank=True, null=True)
+    registration_email = models.EmailField(
+        default='',  blank=False, unique=False, null=False)
+    is_manager = models.BooleanField(default=False)
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='staff')
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='staff', null=True, blank=True, default=None)
+
+    class Meta:
+        verbose_name = ("Staff")
+        verbose_name_plural = ("Staffs")
+        unique_together = ['user', 'event']
+
+    def __str__(self) -> str:
+        return f'{self.full_name}'
+
+
 class Sumula (models.Model):
     """Modelo de Sumula.
     - referee: ManyToManyField para User (related_name='sumulas')
     - event: ForeignKey para Event
     - name: CharField com o nome da sumula
     """
-    referee = models.ManyToManyField(User, related_name='sumulas', blank=True)
+    referee = models.ManyToManyField(Staff, related_name='sumulas', blank=True)
     event = models.ForeignKey(
         Event, on_delete=models.CASCADE, related_name='sumulas')
     name = models.CharField(default='', max_length=64)
@@ -222,31 +250,3 @@ class PlayerScore(models.Model):
 
         if self.player is not None and self.event is not None:
             self.player.update_total_score(self.event)
-
-
-class Staff(models.Model):
-    """ Modelo para salvar informações de staff em um evento.
-    fields:
-    - full_name: CharField com o nome completo do staff
-    - registration_email: EmailField
-    - is_manager: BooleanField que indica se o staff é um manager
-    - event: ForeignKey para Event
-    - user: ForeignKey para User
-    """
-    full_name = models.CharField(
-        default='', max_length=128, blank=True, null=True)
-    registration_email = models.EmailField(
-        default='',  blank=False, unique=False, null=False)
-    is_manager = models.BooleanField(default=False)
-    event = models.ForeignKey(
-        Event, on_delete=models.CASCADE, related_name='staff')
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='staff', null=True, blank=True, default=None)
-
-    class Meta:
-        verbose_name = ("Staff")
-        verbose_name_plural = ("Staffs")
-        unique_together = ['user', 'event']
-
-    def __str__(self) -> str:
-        return f'{self.full_name}'
