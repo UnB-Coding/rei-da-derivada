@@ -13,7 +13,7 @@ user_api_post_schema = openapi.Schema(
     },
     required=['user']
 )
-sumula_api_post_schema = openapi.Schema(
+sumula_api_put_schema = openapi.Schema(
     title='Sumula',
     type=openapi.TYPE_OBJECT,
     properties={
@@ -21,7 +21,6 @@ sumula_api_post_schema = openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
                 'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID da sumula', example=1),
-                'active': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Sumula ativa ou não', example=True),
                 'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome da sumula', example='Sumula 1'),
                 'referee': openapi.Schema(
                     type=openapi.TYPE_ARRAY,
@@ -58,7 +57,7 @@ sumula_api_post_schema = openapi.Schema(
                     )
                 ),
             },
-            required=['id', 'active', 'name', 'referee', 'players_score']
+            required=['id', 'name', 'referee', 'players_score']
         )
     },
     required=['sumula']
