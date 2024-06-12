@@ -9,7 +9,7 @@ from users.models import User
 import uuid
 from ..utils import get_permissions, get_content_type
 from ..permissions import assign_permissions, filter_permissions
-from ..serializers import SumulaForPlayerSerializer
+from ..serializers import SumulaForPlayerSerializer, SumulaSerializer
 from django.contrib.auth.models import Group
 from guardian.shortcuts import remove_perm, assign_perm, get_perms
 
@@ -26,6 +26,7 @@ class SumulaViewTest(APITestCase):
             {
                 "id": self.sumula.id,
                 "active": True,
+                "description": 'Sala S4',
                 "referee": [
                     {
                         "id": self.user_staff_manager.id,
@@ -47,12 +48,6 @@ class SumulaViewTest(APITestCase):
                             "id": self.player.id,
                             "total_score": 0,
                             "registration_email": self.player.registration_email,
-                            "event": self.event.id,
-                            "user": {
-                                "id": self.user_player1.id,
-                                "first_name": self.user_player1.first_name,
-                                "last_name": self.user_player1.last_name
-                            }
                         }
                     },
                     {
@@ -62,12 +57,6 @@ class SumulaViewTest(APITestCase):
                             "id": self.player2.id,
                             "total_score": 0,
                             "registration_email": self.player2.registration_email,
-                            "event": self.event.id,
-                            "user": {
-                                "id": self.user_player2.id,
-                                "first_name": self.user_player2.first_name,
-                                "last_name": self.user_player2.last_name
-                            }
                         }
                     }
                 ]
@@ -75,9 +64,6 @@ class SumulaViewTest(APITestCase):
         ]
         self.data_post = {
             "name": "imortais 01",
-            "event": {
-                "id": self.event.id
-            },
             "players": [
                 {
                     "id": self.player.id,
@@ -171,9 +157,9 @@ class SumulaViewTest(APITestCase):
         self.setUpPlayers()
         self.setUpPlayerScore()
         self.setUpPermissions()
-        self.url_post = f"{reverse('api:sumula')}"
+        self.url_post = f"{reverse('api:sumula')}?event_id={self.event.id}"
         self.url_get = f"{reverse('api:sumula')}?event_id={self.event.id}"
-        self.url_update = f"{reverse('api:sumula')}?sumula_id={self.sumula.id}"
+        self.url_update = f"{reverse('api:sumula')}?event_id={self.event.id}"
         self.setUpData()
 
     """*********Testes de Create*********"""
@@ -260,19 +246,17 @@ class SumulaViewTest(APITestCase):
         response = self.client.put(
             self.url_update, self.data_update, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        sumula = Sumula.objects.get(id=self.sumula.id)
-        referees = sumula.referee.all()
-        scores = sumula.scores.all()
-
-        self.assertIsNotNone(sumula)
+        self.sumula.refresh_from_db()
+        referees = self.sumula.referee.all()
+        scores = self.sumula.scores.all()
+        self.assertIsNotNone(self.sumula)
         self.assertEqual(len(referees), 2)
         self.assertEqual(len(scores), 2)
-        self.assertEqual(sumula.name, 'imortais 01')
-        self.assertEqual(sumula.referee.count(), 2)
-        self.assertEqual(sumula.scores.count(), 2)
+        self.assertEqual(self.sumula.name, 'imortais 01')
+        self.assertEqual(self.sumula.referee.count(), 2)
+        self.assertEqual(self.sumula.scores.count(), 2)
         self.assertFalse(Sumula.objects.get(id=self.sumula.id).active)
-
+        self.assertEqual(self.sumula.description, "Sala S4")
         for referee in referees:
             self.assertIn(
                 referee, [self.user_staff_manager, self.user_staff_member])
@@ -433,7 +417,6 @@ class GetSumulaForPlayerTest(APITestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    
     def tearDown(self) -> None:
         Event.objects.all().delete()
         Sumula.objects.all().delete()
