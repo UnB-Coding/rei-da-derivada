@@ -33,6 +33,12 @@ class PlayerResultsSerializer(ModelSerializer):
         fields = ['id', 'total_score', 'full_name', 'social_name']
 
 
+class PlayerWithoutScoreSerializer(ModelSerializer):
+    class Meta:
+        model = Player
+        fields = ['id', 'full_name', 'social_name']
+
+
 class TokenSerializer(ModelSerializer):
     class Meta:
         model = Token
@@ -48,16 +54,16 @@ class EventSerializer(ModelSerializer):
         fields = ['id', 'name', 'active']
 
 
+# class PlayerScoreSerializer(ModelSerializer):
+#     player = PlayerSerializer()
+
+#     class Meta:
+#         model = PlayerScore
+#         fields = ['id', 'player', 'sumula', 'points']
+
+
 class PlayerScoreSerializer(ModelSerializer):
-    player = PlayerSerializer()
-
-    class Meta:
-        model = PlayerScore
-        fields = ['id', 'player', 'sumula', 'points']
-
-
-class PlayerScoreSerializer(ModelSerializer):
-    player = PlayerResultsSerializer()
+    player = PlayerWithoutScoreSerializer()
 
     class Meta:
         model = PlayerScore
