@@ -152,6 +152,7 @@ class SumulaView(APIView):
         self.check_object_permissions(request, event)
 
         sumula.name = request.data[0]['name']
+        sumula.description = request.data[0]['description']
         referees = request.data[0]['referee']
         self.add_referee(sumula, referees)
 
