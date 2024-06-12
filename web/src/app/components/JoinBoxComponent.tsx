@@ -13,11 +13,11 @@ const JoinBoxComponent = (props: JoinBoxComponentProps) => {
             <p className="text-primary font-semibold text-xl">{props.title?.toUpperCase()}</p>
             {props.active && (
                 <span className="flex h-3 w-3 absolute ml-56">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full bg-green-500 h-3 w-3 bg--500"></span>
                 </span>
             )}
-            <ArrowButton path="contests"/>
+            <ArrowButton path={props.buttonPath}/>
         </div>
     );
 }

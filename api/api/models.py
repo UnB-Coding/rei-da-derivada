@@ -1,8 +1,9 @@
+import random
 from django.db import models
 from users.models import User
 import string
-import random
-TOKEN_LENGTH = 8
+import secrets
+TOKEN_LENGTH = 9
 
 
 class Token (models.Model):
@@ -36,9 +37,16 @@ class Token (models.Model):
 
     def generate_token(self) -> str:
         """Gera um token aleatório de TOKEN_LENGTH caracteres."""
-        self.token_code = ''.join(
-            random.choices(string.digits, k=TOKEN_LENGTH))
-        return self.token_code
+        alphabet = string.ascii_uppercase
+        while True:
+            letters = ''.join(secrets.choice(alphabet)
+                              for i in range(TOKEN_LENGTH - 2))
+            numbers = ''.join(secrets.choice(string.digits)
+                              for i in range(2))
+            self.token_code = ''.join(random.sample(
+                letters + numbers, len(letters + numbers)))
+            if not Token.objects.filter(token_code=self.token_code).exists():
+                break
 
     def save(self, *args, **kwargs) -> None:
         """Sobrescreve o método save para gerar um token caso não exista."""
@@ -56,10 +64,13 @@ class Event (models.Model):
     """
     token = models.OneToOneField(
         Token, on_delete=models.CASCADE, related_name='event')
-    name = models.CharField(default='', max_length=64, blank=True, null=True)
-    active = models.BooleanField(default=True)
     players_token = models.CharField(
         default='', max_length=TOKEN_LENGTH, blank=True, null=False, unique=True)
+    staff_token = models.CharField(
+        default='', max_length=TOKEN_LENGTH, unique=True, blank=True, null=False)
+    name = models.CharField(default='', max_length=64, blank=True, null=True)
+    active = models.BooleanField(default=True)
+    admin_email = models.EmailField(default='', blank=True, null=True)
     results_published = models.BooleanField(default=False)
 
     class Meta:
@@ -91,9 +102,24 @@ class Event (models.Model):
 
     def generate_token(self) -> str:
         """Gera um token aleatório de TOKEN_LENGTH caracteres."""
-        self.players_token = ''.join(
-            random.choices(string.digits, k=TOKEN_LENGTH))
-        return self.players_token
+        alphabet = string.ascii_uppercase
+        while True:
+            staff_letters = ''.join(secrets.choice(alphabet)
+                                    for i in range(TOKEN_LENGTH - 2))
+            staff_numbers = ''.join(secrets.choice(string.digits)
+                                    for i in range(2))
+            self.staff_token = ''.join(random.sample(
+                staff_letters + staff_numbers, len(staff_letters + staff_numbers)))
+
+            players_letters = ''.join(secrets.choice(alphabet)
+                                      for i in range(TOKEN_LENGTH - 2))
+            players_numbers = ''.join(secrets.choice(
+                string.digits) for i in range(2))
+            self.players_token = ''.join(random.sample(
+                players_letters + players_numbers, len(players_letters + players_numbers)))
+
+            if not Event.objects.filter(staff_token=self.staff_token).exists() and not Event.objects.filter(players_token=self.players_token).exists():
+                break
 
     def is_active(self) -> bool:
         """Retorna se o evento está ativo ou não."""
@@ -101,7 +127,7 @@ class Event (models.Model):
 
     def save(self, *args, **kwargs) -> None:
         """Sobrescreve o método save para gerar um token caso não exista."""
-        if not self.players_token:
+        if not self.players_token or not self.staff_token:
             self.generate_token()
         super(Event, self).save(*args, **kwargs)
 
