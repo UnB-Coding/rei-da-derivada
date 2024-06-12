@@ -150,6 +150,8 @@ class SumulaTest(TestCase):
             email=self.create_unique_email(), username=self.create_unique_username())
         self.event = Event.objects.create(name='Evento 1', token=self.token)
         self.sumula = Sumula.objects.create(name='Sumula 1', event=self.event)
+        self.staff1 = Staff.objects.create(user=self.user, event=self.event)
+        self.staff2 = Staff.objects.create(user=self.user_2, event=self.event)
 
     def test_create_sumula_without_referee(self):
         """Testa a criação de uma sumula"""
@@ -161,21 +163,24 @@ class SumulaTest(TestCase):
         """Testa a criação de uma sumula com árbitros"""
         sumula = Sumula.objects.create(
             name='Sumula 1', event=self.event)
-        sumula.referee.add(self.user)
-        sumula.referee.add(self.user_2)
-        self.assertIn(self.user, sumula.referee.all())
-        self.assertIn(self.user_2, sumula.referee.all())
+        sumula.referee.add(self.staff1)
+        sumula.referee.add(self.staff2)
+        self.assertIn(self.staff1, sumula.referee.all())
+        self.assertIn(self.staff2, sumula.referee.all())
 
     def test_remove_one_referee_from_sumula(self):
         """Testa a remoção de um árbitro de uma sumula"""
-        self.sumula.referee.add(self.user)
-        self.sumula.referee.remove(self.user)
-        self.assertNotIn(self.user, self.sumula.referee.all())
+        self.sumula.referee.add(self.staff1)
+        self.sumula.save()
+        self.sumula.referee.remove(self.staff1)
+        self.sumula.save()
+        self.sumula.refresh_from_db()
+        self.assertNotIn(self.staff1, self.sumula.referee.all())
 
     def test_remove_all_referees_from_sumula(self):
         """Testa a remoção de todos os árbitros de uma sumula"""
-        self.sumula.referee.add(self.user)
-        self.sumula.referee.add(self.user_2)
+        self.sumula.referee.add(self.staff1)
+        self.sumula.referee.add(self.staff2)
         self.sumula.referee.clear()
         self.assertEqual(self.sumula.referee.count(), 0)
 
