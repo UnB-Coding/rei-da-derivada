@@ -150,7 +150,8 @@ class SumulaView(APIView):
 
         # Verifica se o usuário tem permissão para acessar o evento
         self.check_object_permissions(request, event)
-
+        if 'name' not in request.data[0] or 'description' not in request.data[0] or 'referee' not in request.data[0]:
+            return handle_400_error("Dados inválidos!")
         sumula.name = request.data[0]['name']
         sumula.description = request.data[0]['description']
         referees = request.data[0]['referee']
