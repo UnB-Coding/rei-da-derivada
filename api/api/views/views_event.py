@@ -97,7 +97,14 @@ class EventView(APIView):
         return True
 
     @ swagger_auto_schema(
-        operation_description="Cria um novo evento associado a um token e retorna o evento criado.",
+        operation_description=""" __Cria um novo evento associado a um token e retorna o evento criado.__
+        Caso o evento já exista, retorna o evento existente. Isso foi feito para permitir novamente o login do adminsitrador do evento caso ele tenha fechado a aplicação ou feito logout.
+        Por padrão, o evento possui *o mesmo email do usuário que o criou*. Caso outro usuário tente acessar o evento como administrador, *ele não terá permissão*.
+
+        Status code 200 é retornado caso o evento já exista e o status code 201 é retornado caso o evento seja criado com sucesso.
+        Status code 400 é retornado caso o token não seja fornecido ou não exista, ou caso o token já tenha sido utilizado para criar um evento.
+        Status code 403 é retornado caso o usuário que tenta acessar o evento não seja o administrador do evento.
+        """,
         operation_summary="Cria um novo evento.",
         security=[{'Bearer': []}],
         request_body=openapi.Schema(
@@ -108,7 +115,8 @@ class EventView(APIView):
             required=['token_code']
         ),
         responses={200: openapi.Response(
-            'OK', EventSerializer), **Errors([400]).retrieve_erros()}
+            'OK', EventSerializer), 201: openapi.Response(
+            'OK', EventSerializer), **Errors([400, 403]).retrieve_erros()}
     )
     def post(self, request, *args, **kwargs) -> response.Response:
         """Cria um novo evento associado a um token e retorna o evento criado.
@@ -134,15 +142,25 @@ class EventView(APIView):
             return handle_400_error(TOKEN_ALREADY_USED_ERROR_MESSAGE)
 
         event, created = Event.objects.get_or_create(token=token)
-        group = Group.objects.get(name='event_admin')
+        data = EventSerializer(event).data
+        if not event:
+            return handle_400_error(EVENT_DOES_NOT_EXIST_ERROR_MESSAGE)
+
+        if not created and request.user.email != event.admin_email:
+            return response.Response(status=status.HTTP_403_FORBIDDEN)
+        elif not created and request.user.email == event.admin_email:
+            return response.Response(status=status.HTTP_200_OK, data=data)
+
         token.mark_as_used()
+        event.admin_email = request.user.email
+        event.save()
+        group = Group.objects.get(name='event_admin')
         try:
             assign_permissions(user=request.user, group=group, event=event)
         except Exception as e:
             return handle_400_error(str(e))
         request.user.events.add(event)
         request.user.groups.add(group)
-        data = EventSerializer(event).data
 
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 

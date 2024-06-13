@@ -106,8 +106,9 @@ class EventViewTest(APITestCase):
         self.assertEqual(self.user.groups.count(), 1)
         event_id = response.data['id']
         self.assertIsNotNone(event_id)
-        self.assertTrue(Event.objects.filter(id=event_id).exists())
-        event = Event.objects.get(id=event_id)
+        event = Event.objects.filter(id=event_id).first()
+        self.assertIsNotNone(event)
+        self.assertEqual(event.admin_email, self.user.email)
         self.assertEqual(event.token, self.token)
         for permission in self.permission:
             if permission.codename != 'add_event':
@@ -149,6 +150,28 @@ class EventViewTest(APITestCase):
         response = self.client.post(url, data, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_event_with_different_user_than_admin(self):
+        """Test creating a new event with a different user than the admin."""
+        self.event.admin_email = 'another@email.com'
+        self.event.save()
+        self.client.force_authenticate(user=self.user)
+        url = reverse('api:event')
+        data = {'token_code': self.token2.token_code}
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_login_in_event_with_the_admin_user(self):
+        """Test logging in an event with the same user."""
+        self.event.admin_email = self.user.email
+        self.event.save()
+        self.client.force_authenticate(user=self.user)
+        url = reverse('api:event')
+        data = {'token_code': self.token2.token_code}
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    """***Start of the delete tests.***"""
 
     def test_delete_event_with_authorized_user(self):
         """Test deleting an existing event with a valid token."""
