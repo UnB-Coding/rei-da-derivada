@@ -10,7 +10,7 @@ from typing import Optional
 from django.db.models import QuerySet
 
 
-def assign_permissions(user: User, group: Group, event: Event) -> Optional[Exception]:
+def assign_permissions(user: User, group: Group, event: Event) -> None:
     """ Atribui permissões ao usuário em nível de objeto de acordo com o grupo fornecido.
     Args:
         user (User): Usuário ao qual as permissões serão atribuídas
@@ -18,8 +18,6 @@ def assign_permissions(user: User, group: Group, event: Event) -> Optional[Excep
         event (Event): Evento ao qual as permissões serão atribuídas
     """
     permissions = filter_permissions(group)
-    if permissions is None:
-        return Exception(f"Group {group} not found")
     for permission in permissions:
         assign_perm(permission, user, event)
 
