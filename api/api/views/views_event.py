@@ -179,10 +179,7 @@ class EventView(APIView):
 
     def assign_event_admin_permissions(self, request, event):
         group = Group.objects.get(name='event_admin')
-        try:
-            assign_permissions(user=request.user, group=group, event=event)
-        except Exception as e:
-            return handle_400_error(str(e))
+        assign_permissions(user=request.user, group=group, event=event)
         request.user.events.add(event)
         request.user.groups.add(group)
 
