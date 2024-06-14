@@ -161,25 +161,54 @@ class Staff(models.Model):
 
 
 class Sumula (models.Model):
-    """Modelo de Sumula.
+    """Modelo Base de Sumula.
     - referee: ManyToManyField para Staff (related_name='sumulas')
     - event: ForeignKey para Event
     - name: CharField com o nome da sumula
     """
-    referee = models.ManyToManyField(Staff, related_name='sumulas', blank=True)
+    referee = models.ManyToManyField(Staff, blank=True)
     event = models.ForeignKey(
-        Event, on_delete=models.CASCADE, related_name='sumulas')
+        Event, on_delete=models.CASCADE)
     name = models.CharField(default='', max_length=64)
     active = models.BooleanField(default=True)
     description = models.TextField(
         default='', blank=True, null=True, max_length=256)
 
     class Meta:
+        abstract = True
         verbose_name = ("Sumula")
         verbose_name_plural = ("Sumulas")
 
     def __str__(self):
         return self.name
+
+
+class SumulaImortal(Sumula):
+    """Modelo de Sumula Imortal.
+    - referee: ManyToManyField para Staff (related_name='sumulas')
+    - event: ForeignKey para Event
+    - name: CharField com o nome da sumula
+    """
+    referee = models.ManyToManyField(
+        Staff, related_name='sumula_imortal', blank=True)
+
+    class Meta:
+        verbose_name = ("Sumula Imortal")
+        verbose_name_plural = ("Sumulas Imortais")
+
+
+class SumulaClassificatoria(Sumula):
+    """Modelo de Sumula Classificatoria.
+    - referee: ManyToManyField para Staff (related_name='sumulas')
+    - event: ForeignKey para Event
+    - name: CharField com o nome da sumula
+    """
+    referee = models.ManyToManyField(
+        Staff, related_name='sumula_classificatoria', blank=True)
+
+    class Meta:
+        verbose_name = ("Sumula Classificatoria")
+        verbose_name_plural = ("Sumulas Classificatoria")
 
 
 class Player(models.Model):
@@ -197,11 +226,12 @@ class Player(models.Model):
         default='', max_length=128, blank=True, null=True)
     social_name = models.CharField(
         default='', max_length=128, blank=True, null=True)
-    user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name='player', null=True, blank=True, default=None)
     total_score = models.PositiveSmallIntegerField(default=0)
     registration_email = models.EmailField(
         blank=False, unique=False, null=False)
+    is_imortal = models.BooleanField(default=False)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='player', null=True, blank=True, default=None)
     event = models.ForeignKey(
         Event, on_delete=models.CASCADE, related_name='player')
 
@@ -233,8 +263,10 @@ class PlayerScore(models.Model):
         Player, on_delete=models.CASCADE, related_name='scores')
     event = models.ForeignKey(
         Event, on_delete=models.CASCADE, related_name='scores')
-    sumula = models.ForeignKey(
-        Sumula, on_delete=models.CASCADE, related_name='scores')
+    sumula_classificatoria = models.ForeignKey(
+        SumulaClassificatoria, on_delete=models.CASCADE, related_name='scores', null=True, blank=True, default=None)
+    sumula_imortal = models.ForeignKey(
+        SumulaImortal, on_delete=models.CASCADE, related_name='scores', null=True, blank=True, default=None)
     points = models.PositiveSmallIntegerField(
         default=0, blank=False, null=False)
 
