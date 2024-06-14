@@ -20,27 +20,27 @@ class EventAdmin(GuardedModelAdmin):
     fields = ['token', 'name', 'active']
 
 
-@admin.register(Sumula)
-class SumulaAdmin(GuardedModelAdmin):
+# @admin.register(Sumula)
+# class SumulaAdmin(GuardedModelAdmin):
 
-    def referees(self, obj):
-        referees = []
-        for referee in obj.referee.all():
-            referees.append(referee.__str__())
-        return ', '.join(referees)
+#     def referees(self, obj):
+#         referees = []
+#         for referee in obj.referee.all():
+#             referees.append(referee.__str__())
+#         return ', '.join(referees)
 
-    def player_scores(self, obj):
-        scores = []
-        for score in obj.scores.all():
-            scores.append(score.__str__())
-        return ', '.join(scores)
-    player_scores.short_description = 'Player Scores'
-    referees.short_description = 'Referees'
-    list_display = ['name', 'event', 'referees',
-                    'id', 'player_scores', 'active']
-    search_fields = ['referee__username', 'event__name', 'name']
-    fields = ['referee', 'event', 'name', 'active']
-    filter_horizontal = ['referee']
+#     def player_scores(self, obj):
+#         scores = []
+#         for score in obj.scores.all():
+#             scores.append(score.__str__())
+#         return ', '.join(scores)
+#     player_scores.short_description = 'Player Scores'
+#     referees.short_description = 'Referees'
+#     list_display = ['name', 'event', 'referees',
+#                     'id', 'player_scores', 'active']
+#     search_fields = ['referee__username', 'event__name', 'name']
+#     fields = ['referee', 'event', 'name', 'active']
+#     filter_horizontal = ['referee']
 
 
 @admin.register(PlayerScore)
@@ -50,9 +50,12 @@ class PlayerScoreAdmin(GuardedModelAdmin):
     # Define um cabeçalho para a coluna
     get_player_name.short_description = 'Player Name'
 
-    list_display = ['get_player_name', 'event', 'sumula', 'points', 'id']
-    search_fields = ['event', 'sumula', 'points', 'player']
-    fields = ['event', 'sumula', 'points', 'player']
+    list_display = ['get_player_name', 'event', 'sumula_classificatoria',
+                    'sumula_imortal', 'points', 'id']
+    search_fields = ['event', 'sumula_classificatoria',
+                     'sumula_imortal', 'points', 'player']
+    fields = ['event', 'sumula_classificatoria',
+              'sumula_imortal', 'points', 'player']
 
 
 @admin.register(Player)
