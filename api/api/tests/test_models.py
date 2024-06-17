@@ -419,9 +419,9 @@ class PlayerTest(TestCase):
 
         # Create player scores
         PlayerScore.objects.create(
-            player=self.player, event=self.event, sumula=self.sumulaImortal, points=10)
+            player=self.player, event=self.event, sumula_imortal=self.sumulaImortal, points=10)
         PlayerScore.objects.create(
-            player=self.player, event=self.event, sumula=self.sumulaImortal, points=20)
+            player=self.player, event=self.event, sumula_imortal=self.sumulaImortal, points=20)
 
         # Check if total score is updated
         self.assertEqual(self.player.total_score, 30)
@@ -431,16 +431,16 @@ class PlayerTest(TestCase):
 
         # Create player scores
         PlayerScore.objects.create(
-            player=self.player, event=self.event, sumula=self.sumulaImortal, points=10)
+            player=self.player, event=self.event, sumula_imortal=self.sumulaImortal, points=10)
         PlayerScore.objects.create(
-            player=self.player, event=self.event, sumula=self.sumulaImortal, points=20)
+            player=self.player, event=self.event, sumula_imortal=self.sumulaImortal, points=20)
 
         # Check if total score is updated
         self.assertEqual(self.player.total_score, 30)
 
         # Create another player score
         PlayerScore.objects.create(
-            player=self.player, event=self.event, sumula=self.sumulaImortal, points=5)
+            player=self.player, event=self.event, sumula_imortal=self.sumulaImortal, points=5)
 
         # Check if total score is updated
         self.assertEqual(self.player.total_score, 35)
