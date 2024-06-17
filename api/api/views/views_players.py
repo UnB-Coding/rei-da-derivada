@@ -119,7 +119,7 @@ class GetPlayerResults(APIView):
         operation_description='Retorna o resultado de pontuação do jogador atual do usuário logado.',
         manual_parameters=[openapi.Parameter(
             'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
-        responses={200: openapi.Response(200, PlayerSerializer), **Errors([400]).retrieve_erros()})
+        responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """ Retorna o resultado de pontuação do jogador atual do usuário logado."""
         try:
