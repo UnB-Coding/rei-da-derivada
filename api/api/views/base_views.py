@@ -1,7 +1,7 @@
 from django.forms import ValidationError
 from rest_framework.views import APIView
 from rest_framework.exceptions import NotFound
-from ..models import Event, PlayerScore, Sumula, Player
+from ..models import Event, PlayerScore, SumulaImortal, SumulaClassificatoria, Player
 
 EVENT_NOT_FOUND_ERROR_MESSAGE = "Evento não encontrado!"
 EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE = "Id do evento não fornecido!"
@@ -28,7 +28,21 @@ class BaseSumulaView(APIView):
 
         return True
 
-    def create_players_score(self, players: list, sumula: Sumula, event: Event) -> None:
+    def get_sumulas(self, event: Event, active: bool = None) -> tuple[list[SumulaImortal], list[SumulaClassificatoria]]:
+        """Retorna as sumulas de um evento de acordo com o parâmetro active."""
+        if active is None:
+            sumula_imortal = SumulaImortal.objects.filter(
+                event=event)
+            sumula_classificatoria = SumulaClassificatoria.objects.filter(
+                event=event)
+        else:
+            sumula_imortal = SumulaImortal.objects.filter(
+                event=event, active=active)
+            sumula_classificatoria = SumulaClassificatoria.objects.filter(
+                event=event, active=active)
+        return sumula_imortal, sumula_classificatoria
+
+    def create_players_score(self, players: list, sumula: SumulaImortal | SumulaClassificatoria, event: Event,) -> None:
         """Cria uma lista de PlayerScore associados a uma sumula."""
         for player in players:
             player_id = player.get('id')
@@ -37,8 +51,12 @@ class BaseSumulaView(APIView):
             player_obj = Player.objects.filter(id=player_id).first()
             if not player_obj:
                 continue
-            PlayerScore.objects.create(
-                player=player_obj, sumula=sumula, event=event)
+            if sumula.__class__ == SumulaImortal:
+                PlayerScore.objects.create(
+                    player=player_obj, sumula_imortal=sumula, event=event)
+            else:
+                PlayerScore.objects.create(
+                    player=player_obj, sumula_classificatoria=sumula, event=event)
 
     # def add_referee(self, sumula: Sumula, referees: list) -> None:
     #     """Adiciona um árbitro a uma sumula."""
