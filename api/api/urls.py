@@ -3,7 +3,7 @@ from django.urls import path, re_path
 from .views.views_event import TokenView, EventView
 from .views.views_staff import StaffView, AddStaffManager, AddStaffMembers
 from .views.views_players import PlayersView, GetPlayerResults, AddPlayers, PublishPlayersResults, Top4Players
-from .views.views_sumulas import SumulaView, ActiveSumulaView, FinishedSumulaView, GetSumulaForPlayer
+from .views.views_sumulas import SumulaView, ActiveSumulaView, FinishedSumulaView, GetSumulaForPlayer, SumulaImortalView, SumulaClassificatoriaView
 
 app_name = 'api'
 
@@ -15,6 +15,9 @@ urlpatterns = [
 
     # Rotas de sumula
     path('sumula/', SumulaView.as_view(), name='sumula'),
+    path('sumula/imortal/', SumulaImortalView.as_view(), name='sumula-imortal'),
+    path('sumula/classificatoria/', SumulaClassificatoriaView.as_view(),
+         name='sumula-classificatoria'),
     path('sumula/ativas/', ActiveSumulaView.as_view(), name='sumula-ativas'),
     path('sumula/encerradas/', FinishedSumulaView.as_view(),
          name='sumula-encerradas'),
