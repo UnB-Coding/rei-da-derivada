@@ -7,7 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import BasePermission
-from base_views import BaseSumulaView
+from .base_views import BaseSumulaView, SUMULA_NOT_FOUND_ERROR_MESSAGE, SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE
 from api.models import Event, SumulaClassificatoria, SumulaImortal, PlayerScore, Player
 from users.models import User
 from ..serializers import SumulaSerializer, SumulaForPlayerSerializer, SumulaImortalSerializer, SumulaClassificatoriaSerializer, ActiveSumulaSerializer, FinishedSumulaSerializer
@@ -16,11 +16,6 @@ from ..utils import handle_400_error
 from ..swagger import Errors, sumula_imortal_api_put_schema, sumula_classicatoria_api_put_schema
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-EVENT_NOT_FOUND_ERROR_MESSAGE = "Evento não encontrado!"
-EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE = "Id do evento não fornecido!"
-SUMULA_NOT_FOUND_ERROR_MESSAGE = "Sumula não encontrada!"
-SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE = "Id da sumula não fornecido!"
-SUMULA_NOT_FOUND_ERROR_MESSAGE = "Sumula não encontrada!"
 
 
 class HasSumulaPermission(BasePermission):
@@ -233,7 +228,7 @@ class SumulaImortalView(SumulaView):
         return response.Response(status=status.HTTP_200_OK)
 
 
-class ActiveSumulaView(APIView, BaseSumulaView):
+class ActiveSumulaView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
     @ swagger_auto_schema(
