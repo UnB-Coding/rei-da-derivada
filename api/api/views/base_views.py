@@ -6,6 +6,23 @@ from ..models import Event, PlayerScore, Sumula, Player
 
 
 class BaseSumulaView(APIView):
+    """Classe base para as views de sumula. Contém métodos comuns a todas as views de sumula."""
+
+    def validate_request_data(self, data):
+        """Valida se os dados fornecidos na requisição estão no formato correto."""
+        return data and isinstance(data, dict)
+
+    def validate_players(self, data):
+        """Valida se os jogadores fornecidos na requisição estão no formato correto."""
+        if 'players' not in data:
+            return False
+
+        for player in data['players']:
+            if 'id' not in player:
+                return False
+
+        return True
+
     def create_players_score(self, players: list, sumula: Sumula, event: Event) -> None:
         """Cria uma lista de PlayerScore associados a uma sumula."""
         for player in players:
@@ -42,8 +59,8 @@ class BaseSumulaView(APIView):
         return True
 
     def get_object(self) -> Event:
-        """ Verifica se o evento existe e se o usuário tem permissão para acessá-lo.
-        Retorna o evento associado ao id fornecido.
+        """ Verifica se o evento existe.
+        Retorna o evento associado ao id fornecido ou uma exceção.
         """
         if 'event_id' not in self.request.query_params:
             raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
