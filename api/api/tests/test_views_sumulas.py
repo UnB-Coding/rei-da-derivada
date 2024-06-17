@@ -179,7 +179,6 @@ class SumulaViewTest(BaseSumulaViewTest):
         url = f"{reverse('api:sumula-ativas')}?event_id={self.event.id}"
         self.client.force_authenticate(user=self.user_staff_manager)
         response = self.client.get(url)
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
         self.assertEqual(
@@ -199,6 +198,12 @@ class SumulaViewTest(BaseSumulaViewTest):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
+        self.assertEqual(
+            response.data['sumula_classificatoria'][0]['id'], self.sumula2.id)
+        self.assertEqual(
+            response.data['sumula_imortal'][0]['id'], self.sumula.id)
+        self.assertEqual(
+            response.data['sumula_imortal'][0]['referee'][0]['id'], self.staff1.id)
 
     def test_get_sumulas_unauthenticated(self):
         response = self.client.get(self.url_get)
@@ -278,8 +283,6 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
         response = self.client.post(
             self.url_post, self.data_post, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    """*********Testes de GET*********"""
 
     """*********Testes de update*********"""
 
