@@ -13,7 +13,7 @@ from users.models import User
 from ..serializers import SumulaSerializer, SumulaForPlayerSerializer, SumulaImortalSerializer, SumulaClassificatoriaSerializer
 from rest_framework.permissions import BasePermission
 from ..utils import handle_400_error
-from ..swagger import Errors, sumula_imortal_api_put_schema, sumula_classicatoria_api_put_schema
+from ..swagger import Errors, sumula_imortal_api_put_schema, sumula_classicatoria_api_put_schema, sumulas_response_schema
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -44,7 +44,7 @@ class SumulaView(BaseSumulaView):
         security=[{'Bearer': []}],
         manual_parameters=[openapi.Parameter(
             'event_id', openapi.IN_QUERY, description="Id do evento associado às sumulas.", type=openapi.TYPE_INTEGER, required=True)],
-        responses={200: openapi.Response('OK', SumulaSerializer), **Errors([400]).retrieve_erros()})
+        responses={200: openapi.Response('OK', sumulas_response_schema), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Retorna todas as sumulas associadas a um evento."""
         try:
@@ -87,7 +87,7 @@ class SumulaClassificatoriaView(SumulaView):
             required=['name', 'players'],
         ),
         responses={201: openapi.Response(
-            'Created', SumulaClassificatoriaSerializer), **Errors([400]).retrieve_erros()}
+            'Created', sumulas_response_schema), **Errors([400]).retrieve_erros()}
     )
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Cria uma nova sumula classificatoria e retorna a sumula criada.
@@ -155,7 +155,7 @@ class SumulaImortalView(SumulaView):
             required=['name', 'players'],
         ),
         responses={201: openapi.Response(
-            'Created', SumulaClassificatoriaSerializer), **Errors([400]).retrieve_erros()}
+            'Created', sumulas_response_schema), **Errors([400]).retrieve_erros()}
     )
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Cria uma nova sumula imortal e retorna a sumula criada.
@@ -239,7 +239,7 @@ class ActiveSumulaView(BaseSumulaView):
         manual_parameters=[openapi.Parameter(
                               'event_id', openapi.IN_QUERY, description="Id do evento associado às sumulas.", type=openapi.TYPE_INTEGER, required=True)],
         responses={200: openapi.Response(
-            'OK', SumulaSerializer), **Errors([400]).retrieve_erros()}
+            'OK', sumulas_response_schema), **Errors([400]).retrieve_erros()}
     )
     def get(self, request: request.Request):
         """Retorna todas as sumulas ativas."""
@@ -264,7 +264,7 @@ class FinishedSumulaView(BaseSumulaView):
         manual_parameters=[openapi.Parameter(
                               'event_id', openapi.IN_QUERY, description="Id do evento associado às sumulas.", type=openapi.TYPE_INTEGER, required=True)],
         responses={200: openapi.Response(
-            'OK', SumulaSerializer), **Errors([400]).retrieve_erros()}
+            'OK', sumulas_response_schema), **Errors([400]).retrieve_erros()}
     )
     def get(self, request: request.Request):
         """Retorna todas as sumulas encerradas."""
