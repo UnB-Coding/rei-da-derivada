@@ -128,12 +128,10 @@ class SumulaSerializer(serializers.Serializer):
         fields = ['sumula_classificatoria', 'sumula_imortal']
 
 
-class ActiveSumulaSerializer(serializers.Serializer, SumulaSerializer):
+class ActiveSumulaSerializer(SumulaSerializer):
     """ Serializer for the Sumula model.
     fields: id, active, description, referee, name, players_score
     """
-    sumula_classificatoria = serializers.SerializerMethodField()
-    sumula_imortal = serializers.SerializerMethodField()
 
     def get_sumula_classificatoria(self, obj):
         sumula_classificatoria = SumulaClassificatoria.objects.filter(
@@ -148,12 +146,10 @@ class ActiveSumulaSerializer(serializers.Serializer, SumulaSerializer):
         fields = ['sumula_classificatoria', 'sumula_imortal']
 
 
-class FinishedSumulaSerializer(serializers.Serializer, SumulaSerializer):
+class FinishedSumulaSerializer(SumulaSerializer):
     """ Serializer for the Sumula model.
     fields: id, active, description, referee, name, players_score
     """
-    sumula_classificatoria = serializers.SerializerMethodField()
-    sumula_imortal = serializers.SerializerMethodField()
 
     def get_sumula_classificatoria(self, obj):
         sumula_classificatoria = SumulaClassificatoria.objects.filter(
