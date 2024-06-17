@@ -1,5 +1,5 @@
 import random
-from django.db import models
+from django.db import models, IntegrityError
 from users.models import User
 import string
 import secrets
@@ -278,7 +278,14 @@ class PlayerScore(models.Model):
         return f'{self.player} - {self.points}'
 
     def save(self, *args, **kwargs) -> None:
-        super(PlayerScore, self).save(*args, **kwargs)
+        if self.sumula_classificatoria is None and self.sumula_imortal is None:
+            raise IntegrityError(
+                "Pelo menos um dos campos sumula_classificatoria ou sumula_imortal deve ser preenchido.")
+        elif self.sumula_classificatoria is not None and self.sumula_imortal is not None:
+            raise IntegrityError(
+                "Apenas um dos campos sumula_classificatoria ou sumula_imortal deve ser preenchido.")
+        else:
+            super(PlayerScore, self).save(*args, **kwargs)
 
-        if self.player is not None and self.event is not None:
-            self.player.update_total_score(self.event)
+            if self.player is not None and self.event is not None:
+                self.player.update_total_score(self.event)
