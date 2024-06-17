@@ -11,17 +11,17 @@ sumula_imortal_api_put_schema = openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
                 'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID da sumula', example=1),
-                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome da sumula', example='Sumula 1'),
+                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome da sumula', example='Imortais 01'),
                 'description': openapi.Schema(type=openapi.TYPE_STRING, description='Descrição da sumula', example='Sala S4'),
                 'referee': openapi.Schema(
                     type=openapi.TYPE_ARRAY,
                     items=openapi.Schema(
                         type=openapi.TYPE_OBJECT,
-                        title='User',
+                        title='Staff',
                         properties={
-                            'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do usuário', example=1),
-                            'first_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do usuário', example='João'),
-                            'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='Sobrenome do usuário', example='Silva'),
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do staff', example=1),
+                            'first_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do staff', example='João'),
+                            'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='Sobrenome do staff', example='Silva'),
                         },
                         required=['id']
                     )
@@ -62,7 +62,7 @@ sumula_classicatoria_api_put_schema = openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
                 'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID da sumula', example=1),
-                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome da sumula', example='Sumula 1'),
+                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome da sumula', example='Chave A'),
                 'description': openapi.Schema(type=openapi.TYPE_STRING, description='Descrição da sumula', example='Sala S4'),
                 'referee': openapi.Schema(
                     type=openapi.TYPE_ARRAY,
@@ -70,8 +70,8 @@ sumula_classicatoria_api_put_schema = openapi.Schema(
                         type=openapi.TYPE_OBJECT,
                         title='Staff',
                         properties={
-                            'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do usuário', example=1),
-                            'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do usuário', example='João'),
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do staff', example=1),
+                            'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do staff', example='João'),
                         },
                         required=['id']
                     )
@@ -121,8 +121,8 @@ sumulas_response_schema = openapi.Schema(
                             type=openapi.TYPE_OBJECT,
                             title='Staff',
                             properties={
-                                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do usuário', example=1),
-                                'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do usuário', example='João'),
+                                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do staff', example=1),
+                                'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do staff', example='João'),
                             },
                             required=['id']
                         )
@@ -168,8 +168,8 @@ sumulas_response_schema = openapi.Schema(
                             type=openapi.TYPE_OBJECT,
                             title='Staff',
                             properties={
-                                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do usuário', example=1),
-                                'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do usuário', example='João'),
+                                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do staff', example=1),
+                                'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do staff', example='João'),
                             },
                             required=['id']
                         )
