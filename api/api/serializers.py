@@ -132,7 +132,8 @@ class ActiveSumulaSerializer(serializers.Serializer, SumulaSerializer):
     """ Serializer for the Sumula model.
     fields: id, active, description, referee, name, players_score
     """
-
+    sumula_classificatoria = serializers.SerializerMethodField()
+    sumula_imortal = serializers.SerializerMethodField()
 
     def get_sumula_classificatoria(self, obj):
         sumula_classificatoria = SumulaClassificatoria.objects.filter(
@@ -142,6 +143,7 @@ class ActiveSumulaSerializer(serializers.Serializer, SumulaSerializer):
     def get_sumula_imortal(self, obj):
         sumula_imortal = SumulaImortal.objects.filter(event=obj, active=True)
         return SumulaImortalSerializer(sumula_imortal, many=True).data
+
     class Meta:
         fields = ['sumula_classificatoria', 'sumula_imortal']
 
@@ -150,6 +152,8 @@ class FinishedSumulaSerializer(serializers.Serializer, SumulaSerializer):
     """ Serializer for the Sumula model.
     fields: id, active, description, referee, name, players_score
     """
+    sumula_classificatoria = serializers.SerializerMethodField()
+    sumula_imortal = serializers.SerializerMethodField()
 
     def get_sumula_classificatoria(self, obj):
         sumula_classificatoria = SumulaClassificatoria.objects.filter(
@@ -159,6 +163,7 @@ class FinishedSumulaSerializer(serializers.Serializer, SumulaSerializer):
     def get_sumula_imortal(self, obj):
         sumula_imortal = SumulaImortal.objects.filter(event=obj, active=False)
         return SumulaImortalSerializer(sumula_imortal, many=True).data
+
     class Meta:
         fields = ['sumula_classificatoria', 'sumula_imortal']
 
@@ -203,11 +208,13 @@ class SumulaForPlayerSerializer(serializers.Serializer):
     sumula_imortal = serializers.SerializerMethodField()
 
     def get_sumula_classificatoria(self, obj):
-        sumula_classificatoria = [sumula for sumula in obj if isinstance(sumula, SumulaClassificatoria)]
+        sumula_classificatoria = [
+            sumula for sumula in obj if isinstance(sumula, SumulaClassificatoria)]
         return SumulaClassificatoriaForPlayerSerializer(sumula_classificatoria, many=True).data
 
     def get_sumula_imortal(self, obj):
-        sumula_imortal = [sumula for sumula in obj if isinstance(sumula, SumulaImortal)]
+        sumula_imortal = [
+            sumula for sumula in obj if isinstance(sumula, SumulaImortal)]
         return SumulaImortalForPlayerSerializer(sumula_imortal, many=True).data
 
     class Meta:
