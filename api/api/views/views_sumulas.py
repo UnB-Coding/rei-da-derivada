@@ -10,7 +10,7 @@ from rest_framework.permissions import BasePermission
 from .base_views import BaseSumulaView, SUMULA_NOT_FOUND_ERROR_MESSAGE, SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE
 from api.models import Event, SumulaClassificatoria, SumulaImortal, PlayerScore, Player
 from users.models import User
-from ..serializers import SumulaSerializer, SumulaForPlayerSerializer, SumulaImortalSerializer, SumulaClassificatoriaSerializer, ActiveSumulaSerializer, FinishedSumulaSerializer
+from ..serializers import SumulaSerializer, SumulaForPlayerSerializer, SumulaImortalSerializer, SumulaClassificatoriaSerializer
 from rest_framework.permissions import BasePermission
 from ..utils import handle_400_error
 from ..swagger import Errors, sumula_imortal_api_put_schema, sumula_classicatoria_api_put_schema
@@ -52,7 +52,9 @@ class SumulaView(BaseSumulaView):
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
-        data = SumulaSerializer(event).data
+        sumula_imortal, sumula_classificatoria = self.get_sumulas(event=event)
+        data = SumulaSerializer(
+            {'sumula_classificatoria': sumula_classificatoria, 'sumula_imortal': sumula_imortal}).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
 
@@ -246,7 +248,10 @@ class ActiveSumulaView(BaseSumulaView):
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
-        data = ActiveSumulaSerializer(event, many=True).data
+        sumula_imortal, sumula_classificatoria = self.get_sumulas(
+            event=event, active=True)
+        data = SumulaSerializer(
+            {'sumula_classificatoria': sumula_classificatoria, 'sumula_imortal': sumula_imortal}).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
 
@@ -268,7 +273,10 @@ class FinishedSumulaView(BaseSumulaView):
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
-        data = FinishedSumulaSerializer(event, many=True).data
+        sumula_imortal, sumula_classificatoria = self.get_sumulas(
+            event=event, active=False)
+        data = SumulaSerializer(
+            {'sumula_classificatoria': sumula_classificatoria, 'sumula_imortal': sumula_imortal}).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
 
