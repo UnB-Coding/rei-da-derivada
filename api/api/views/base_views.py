@@ -1,8 +1,13 @@
 from django.forms import ValidationError
 from rest_framework.views import APIView
 from rest_framework.exceptions import NotFound
-from views_sumulas import EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE, EVENT_NOT_FOUND_ERROR_MESSAGE
 from ..models import Event, PlayerScore, Sumula, Player
+
+EVENT_NOT_FOUND_ERROR_MESSAGE = "Evento não encontrado!"
+EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE = "Id do evento não fornecido!"
+SUMULA_NOT_FOUND_ERROR_MESSAGE = "Sumula não encontrada!"
+SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE = "Id da sumula não fornecido!"
+SUMULA_NOT_FOUND_ERROR_MESSAGE = "Sumula não encontrada!"
 
 
 class BaseSumulaView(APIView):
