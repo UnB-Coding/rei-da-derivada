@@ -257,6 +257,8 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(SumulaImortal.objects.count(), 4)
         self.assertEqual(PlayerScore.objects.count(), 2)
+        self.assertIsNotNone(SumulaImortal.objects.filter(
+            name='imortais 01').first())
 
     def test_create_sumula_unauthenticated(self):
         response = self.client.post(
