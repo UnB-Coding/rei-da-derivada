@@ -1,5 +1,6 @@
 import random
 from django.db import models, IntegrityError
+from django.forms import ValidationError
 from users.models import User
 import string
 import secrets
@@ -279,10 +280,10 @@ class PlayerScore(models.Model):
 
     def save(self, *args, **kwargs) -> None:
         if self.sumula_classificatoria is None and self.sumula_imortal is None:
-            raise IntegrityError(
+            raise ValidationError(
                 "Pelo menos um dos campos sumula_classificatoria ou sumula_imortal deve ser preenchido.")
         elif self.sumula_classificatoria is not None and self.sumula_imortal is not None:
-            raise IntegrityError(
+            raise ValidationError(
                 "Apenas um dos campos sumula_classificatoria ou sumula_imortal deve ser preenchido.")
         else:
             super(PlayerScore, self).save(*args, **kwargs)
