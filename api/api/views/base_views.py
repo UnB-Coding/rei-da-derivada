@@ -1,7 +1,7 @@
 from django.forms import ValidationError
 from rest_framework.views import APIView
 from rest_framework.exceptions import NotFound
-from ..models import Event, PlayerScore, SumulaImortal, SumulaClassificatoria, Player
+from ..models import Event, PlayerScore, Staff, SumulaImortal, SumulaClassificatoria, Player
 
 EVENT_NOT_FOUND_ERROR_MESSAGE = "Evento não encontrado!"
 EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE = "Id do evento não fornecido!"
@@ -42,7 +42,7 @@ class BaseSumulaView(APIView):
                 event=event, active=active)
         return sumula_imortal, sumula_classificatoria
 
-    def create_players_score(self, players: list, sumula: SumulaImortal | SumulaClassificatoria, event: Event,) -> None:
+    def create_players_score(self, players: list, sumula: SumulaImortal | SumulaClassificatoria, event: Event,) -> None | bool:
         """Cria uma lista de PlayerScore associados a uma sumula."""
         for player in players:
             player_id = player.get('id')
@@ -50,7 +50,8 @@ class BaseSumulaView(APIView):
                 continue
             player_obj = Player.objects.filter(id=player_id).first()
             if not player_obj:
-                continue
+                raise ValidationError(
+                    f"Jogador {player.get('name')} não encontrado!")
             if sumula.__class__ == SumulaImortal:
                 PlayerScore.objects.create(
                     player=player_obj, sumula_imortal=sumula, event=event)
@@ -58,14 +59,13 @@ class BaseSumulaView(APIView):
                 PlayerScore.objects.create(
                     player=player_obj, sumula_classificatoria=sumula, event=event)
 
-    # def add_referee(self, sumula: Sumula, referees: list) -> None:
-    #     """Adiciona um árbitro a uma sumula."""
-    #     for referee in referees:
-    #         user = User.objects.filter(id=referee['id']).first()
-    #         if not user:
-    #             continue
-    #         sumula.referee.add(user)
-    # Necessario refatorar com outra rota
+    def add_referees(self, sumula: SumulaImortal | SumulaClassificatoria, event: Event, referees: list) -> None:
+        """Adiciona um árbitro a uma sumula."""
+        for referee in referees:
+            staff = Staff.objects.filter(id=referee['id'], event=event).first()
+            if referee is not None:
+                sumula.referee.add(staff)
+        sumula.save()
 
     def update_player_score(self, players_score: list[dict]) -> bool:
         """Atualiza a pontuação de um jogador."""
