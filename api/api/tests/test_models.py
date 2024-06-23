@@ -1,4 +1,5 @@
 from django.db import IntegrityError
+from django.forms import ValidationError
 from django.test import TestCase
 from api.models import Player, Token, Event, SumulaImortal, SumulaClassificatoria, PlayerScore, Staff, TOKEN_LENGTH
 from users.models import User
@@ -339,12 +340,12 @@ class PlayerScoreTest(TestCase):
 
     def test_create_player_score_without_sumula(self):
         """Testa a criação de uma pontuação de jogador sem sumula"""
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             PlayerScore.objects.create(player=self.player, event=self.event)
 
     def test_create_player_score_with_sumula_imortal_and_sumula_classificatoria(self):
         """Testa a criação de uma pontuação de jogador com sumula imortal e sumula classificatoria"""
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             PlayerScore.objects.create(player=self.player, event=self.event,
                                        sumula_imortal=self.sumulaImortal, sumula_classificatoria=self.sumulaClassificatoria)
 
