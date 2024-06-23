@@ -34,7 +34,7 @@ class HasSumulaPermission(BasePermission):
         return True
 
 
-class SumulaView(BaseSumulaView):
+class GetSumulasView(BaseSumulaView):
     """Lida com os requests relacionados a sumulas."""
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
@@ -59,7 +59,7 @@ class SumulaView(BaseSumulaView):
         return response.Response(status=status.HTTP_200_OK, data=data)
 
 
-class SumulaClassificatoriaView(SumulaView):
+class SumulaClassificatoriaView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
     @swagger_auto_schema(
@@ -84,11 +84,17 @@ class SumulaClassificatoriaView(SumulaView):
                     ),
                     description='Lista de jogadores',
                 ),
+                'referees': openapi.Schema(
+                    type=openapi.TYPE_ARRAY, title='Staffs',
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do Staff')}),
+                    description='Lista de objetos Staff'),
             },
             required=['name', 'players'],
         ),
         responses={201: openapi.Response(
-            'Created', sumulas_response_schema), **Errors([400]).retrieve_erros()}
+            'Created', SumulaClassificatoriaSerializer), **Errors([400]).retrieve_erros()}
     )
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Cria uma nova sumula classificatoria e retorna a sumula criada.
@@ -158,10 +164,10 @@ class SumulaClassificatoriaView(SumulaView):
         return response.Response(status=status.HTTP_200_OK)
 
 
-class SumulaImortalView(SumulaView):
+class SumulaImortalView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
-    @swagger_auto_schema(
+    @ swagger_auto_schema(
         operation_summary="Cria uma nova sumula imortal.",
         operation_description="Cria uma nova sumula imortal e retorna a sumula criada com os jogadores e suas pontuações.",
         security=[{'Bearer': []}],
@@ -183,11 +189,17 @@ class SumulaImortalView(SumulaView):
                     ),
                     description='Lista de jogadores',
                 ),
+                'referees': openapi.Schema(
+                    type=openapi.TYPE_ARRAY, title='Staffs',
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        properties={'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do Staff')}),
+                    description='Lista de objetos Staff'),
             },
             required=['name', 'players'],
         ),
         responses={201: openapi.Response(
-            'Created', sumulas_response_schema), **Errors([400]).retrieve_erros()}
+            'Created', SumulaImortalSerializer), **Errors([400]).retrieve_erros()}
     )
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Cria uma nova sumula imortal e retorna a sumula criada.
