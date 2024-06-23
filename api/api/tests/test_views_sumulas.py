@@ -87,14 +87,10 @@ class SumulaViewTest(BaseSumulaViewTest):
                 "description": 'Sala S4',
                 "referee": [
                     {
-                        "id": self.user_staff_manager.id,
-                        "first_name": self.user_staff_manager.first_name,
-                        "last_name": self.user_staff_manager.last_name
+                        "id": self.staff1.id,
                     },
                     {
                         "id": self.user_staff_member.id,
-                        "first_name": self.user_staff_member.first_name,
-                        "last_name": self.user_staff_member.last_name
                     }
                 ],
                 "name": "imortais 01",
@@ -130,6 +126,12 @@ class SumulaViewTest(BaseSumulaViewTest):
                 {
                     "id": self.player2.id,
                     "total_score": self.player2.total_score, }
+            ],
+            "referees": [
+                {
+                    "id": self.staff1.id,
+                },
+
             ]
         }
 
@@ -226,9 +228,7 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
                 "description": 'Sala S4',
                 "referee": [
                     {
-                        "id": self.user_staff_manager.id,
-                        "first_name": self.user_staff_manager.first_name,
-                        "last_name": self.user_staff_manager.last_name
+                        "id": self.staff1.id,
                     },
                     {
                         "id": self.user_staff_member.id,
@@ -269,6 +269,12 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
                 {
                     "id": self.player2.id,
                     "total_score": self.player2.total_score, }
+            ],
+            "referees": [
+                {
+                    "id": self.staff1.id,
+                },
+
             ]
         }
 
@@ -437,15 +443,8 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
                 "description": 'Sala S4',
                 "referee": [
                     {
-                        "id": self.user_staff_manager.id,
-                        "first_name": self.user_staff_manager.first_name,
-                        "last_name": self.user_staff_manager.last_name
+                        "id": self.staff1.id,
                     },
-                    {
-                        "id": self.user_staff_member.id,
-                        "first_name": self.user_staff_member.first_name,
-                        "last_name": self.user_staff_member.last_name
-                    }
                 ],
                 "name": "imortais 01",
                 "players_score": [
@@ -480,6 +479,12 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
                 {
                     "id": self.player2.id,
                     "total_score": self.player2.total_score, }
+            ],
+            "referees": [
+                {
+                    "id": self.staff1.id,
+                },
+
             ]
         }
 
