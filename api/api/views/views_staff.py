@@ -96,8 +96,10 @@ class StaffView(APIView):
     @swagger_auto_schema(
         operation_description="""Retorna os todos usuários monitores associados ao evento.
         Procura por todos os objetos staff associados ao evento e retorna esses objetos.
+
+        Para a diferenciação entre monitores e gerentes de equipe, é necessário verificar o campo 'is_manager' de cada objeto retornado.
         """,
-        operation_summary="Retorna os usuários monitores associados ao evento.",
+        operation_summary="Retorna todos os usuários monitores associados ao evento.",
         manual_parameters=[openapi.Parameter(
             'event_id', openapi.IN_QUERY, description='ID do evento', type=openapi.TYPE_INTEGER)],
         responses={200: openapi.Response(
@@ -110,9 +112,7 @@ class StaffView(APIView):
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
-        # users = event.users.filter(groups__name='staff_member').exclude(
-        #     groups__name='staff_manager').exclude(groups__name='app_admin').exclude(groups__name='event_admin')
-        staffs = event.staff.filter(is_manager=False)
+        staffs = event.staff.all()
         data = StaffSerializer(staffs, many=True).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 

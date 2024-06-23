@@ -1,6 +1,7 @@
 from django.db import IntegrityError
+from django.forms import ValidationError
 from django.test import TestCase
-from api.models import Player, Token, Event, Sumula, PlayerScore, Staff, TOKEN_LENGTH
+from api.models import Player, Token, Event, SumulaImortal, SumulaClassificatoria, PlayerScore, Staff, TOKEN_LENGTH
 from users.models import User
 from unittest import TestCase
 import uuid
@@ -135,7 +136,7 @@ class EventTest(TestCase):
             Event.objects.all().delete()
 
 
-class SumulaTest(TestCase):
+class SumulaImortalTest(TestCase):
     def create_unique_email(self):
         return f'{uuid.uuid4()}@gmail.com'
 
@@ -149,19 +150,91 @@ class SumulaTest(TestCase):
         self.user_2 = User.objects.create(
             email=self.create_unique_email(), username=self.create_unique_username())
         self.event = Event.objects.create(name='Evento 1', token=self.token)
-        self.sumula = Sumula.objects.create(name='Sumula 1', event=self.event)
+        self.sumula = SumulaImortal.objects.create(
+            name='Sumula 1', event=self.event)
         self.staff1 = Staff.objects.create(user=self.user, event=self.event)
         self.staff2 = Staff.objects.create(user=self.user_2, event=self.event)
 
     def test_create_sumula_without_referee(self):
         """Testa a criação de uma sumula"""
-        sumula = Sumula.objects.create(name='Sumula 2', event=self.event)
+        sumula = SumulaImortal.objects.create(
+            name='Sumula 2', event=self.event)
         self.assertEqual(sumula.name, 'Sumula 2')
         self.assertEqual(sumula.event, self.event)
 
     def test_add_referee_to_sumula(self):
         """Testa a criação de uma sumula com árbitros"""
-        sumula = Sumula.objects.create(
+        sumula = SumulaImortal.objects.create(
+            name='Sumula 1', event=self.event)
+        sumula.referee.add(self.staff1)
+        sumula.referee.add(self.staff2)
+        self.assertIn(self.staff1, sumula.referee.all())
+        self.assertIn(self.staff2, sumula.referee.all())
+
+    def test_remove_one_referee_from_sumula(self):
+        """Testa a remoção de um árbitro de uma sumula"""
+        self.sumula.referee.add(self.staff1)
+        self.sumula.save()
+        self.sumula.referee.remove(self.staff1)
+        self.sumula.save()
+        self.sumula.refresh_from_db()
+        self.assertNotIn(self.staff1, self.sumula.referee.all())
+
+    def test_remove_all_referees_from_sumula(self):
+        """Testa a remoção de todos os árbitros de uma sumula"""
+        self.sumula.referee.add(self.staff1)
+        self.sumula.referee.add(self.staff2)
+        self.sumula.referee.clear()
+        self.assertEqual(self.sumula.referee.count(), 0)
+
+    def test_sumula_str(self):
+        """Testa a representação de uma sumula"""
+        self.assertEqual(self.sumula.__str__(), 'Sumula 1')
+
+    def tearDown(self) -> None:
+        self.token.delete()
+        self.user.delete()
+        self.user_2.delete()
+        self.event.delete()
+        self.sumula.delete()
+        return super().tearDown()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if User.objects.all().count() > 0:
+            User.objects.all().delete()
+        return super().tearDownClass()
+
+
+class SumulaClassificatoriaTest(TestCase):
+    def create_unique_email(self):
+        return f'{uuid.uuid4()}@gmail.com'
+
+    def create_unique_username(self):
+        return f'user_{uuid.uuid4().hex[:10]}'
+
+    def setUp(self):
+        self.token = Token.objects.create()
+        self.user = User.objects.create(
+            email=self.create_unique_email(), username=self.create_unique_username())
+        self.user_2 = User.objects.create(
+            email=self.create_unique_email(), username=self.create_unique_username())
+        self.event = Event.objects.create(name='Evento 1', token=self.token)
+        self.sumula = SumulaClassificatoria.objects.create(
+            name='Sumula 1', event=self.event)
+        self.staff1 = Staff.objects.create(user=self.user, event=self.event)
+        self.staff2 = Staff.objects.create(user=self.user_2, event=self.event)
+
+    def test_create_sumula_without_referee(self):
+        """Testa a criação de uma sumula"""
+        sumula = SumulaClassificatoria.objects.create(
+            name='Sumula 2', event=self.event)
+        self.assertEqual(sumula.name, 'Sumula 2')
+        self.assertEqual(sumula.event, self.event)
+
+    def test_add_referee_to_sumula(self):
+        """Testa a criação de uma sumula com árbitros"""
+        sumula = SumulaClassificatoria.objects.create(
             name='Sumula 1', event=self.event)
         sumula.referee.add(self.staff1)
         sumula.referee.add(self.staff2)
@@ -215,82 +288,101 @@ class PlayerScoreTest(TestCase):
         self.user = User.objects.create(
             email=self.create_unique_email(), username=self.create_unique_username(), first_name='Test', last_name='User')
         self.event = Event.objects.create(name='Evento 1', token=self.token)
-        self.sumula = Sumula.objects.create(name='Sumula 1', event=self.event)
+        self.sumulaImortal = SumulaImortal.objects.create(
+            name='Sumula Imortal', event=self.event)
+        self.sumulaClassificatoria = SumulaClassificatoria.objects.create(
+            name='Sumula Classificatoria', event=self.event)
         self.player = Player.objects.create(
             user=self.user, event=self.event, registration_email='email@teste.com')
-        self.player_score = PlayerScore.objects.create(
-            player=self.player, event=self.event, sumula=self.sumula, points=0)
-        self.player_score.save()
+        self.player_scoreImortal = PlayerScore.objects.create(
+            player=self.player, event=self.event, sumula_imortal=self.sumulaImortal, points=0)
+        self.player_scoreClassificatoria = PlayerScore.objects.create(
+            player=self.player, event=self.event, sumula_classificatoria=self.sumulaClassificatoria, points=0)
 
     def test_create_empty_player_score(self):
         """Testa a criação de uma pontuação de jogador"""
-        self.assertEqual(self.player_score.player, self.player)
-        self.assertEqual(self.player_score.event, self.event)
-        self.assertEqual(self.player_score.sumula, self.sumula)
-        self.assertEqual(self.player_score.points, 0)
+        self.assertEqual(self.player_scoreImortal.player, self.player)
+        self.assertEqual(self.player_scoreImortal.event, self.event)
+        self.assertEqual(
+            self.player_scoreImortal.sumula_imortal, self.sumulaImortal)
+        self.assertEqual(self.player_scoreImortal.points, 0)
+
+        self.assertEqual(self.player_scoreClassificatoria.player, self.player)
+        self.assertEqual(self.player_scoreClassificatoria.event, self.event)
+        self.assertEqual(
+            self.player_scoreClassificatoria.sumula_classificatoria, self.sumulaClassificatoria)
+        self.assertEqual(self.player_scoreImortal.points, 0)
 
     def test_edit_points_to_player_score(self):
-        self.player_score.points = 10
-        self.player_score.save()
-        self.assertEqual(self.player_score.points, 10)
-        self.assertEqual(str(self.player_score), f'{self.player} - 10')
+        self.player_scoreImortal.points = 10
+        self.player_scoreImortal.save()
+        self.assertEqual(self.player_scoreImortal.points, 10)
+        self.assertEqual(str(self.player_scoreImortal), f'{self.player} - 10')
 
     def test_update_total_score_within_save_method(self):
         self.assertEqual(self.player.total_score, 0)
-        self.player_score.points = 10
-        self.player_score.save()
+        self.player_scoreImortal.points = 10
+        self.player_scoreImortal.save()
 
         self.assertEqual(self.player.total_score, 10)
 
     def test_create_player_score_without_user(self):
         """Testa a criação de uma pontuação de jogador sem usuário"""
         with self.assertRaises(IntegrityError):
-            PlayerScore.objects.create(event=self.event, sumula=self.sumula)
+            PlayerScore.objects.create(
+                event=self.event, sumula_imortal=self.sumulaImortal, points=0)
 
     def test_create_player_score_without_event(self):
         """Testa a criação de uma pontuação de jogador sem evento"""
         with self.assertRaises(IntegrityError):
-            PlayerScore.objects.create(player=self.player, sumula=self.sumula)
+            PlayerScore.objects.create(
+                player=self.player, sumula_imortal=self.sumulaImortal)
 
     def test_create_player_score_without_sumula(self):
         """Testa a criação de uma pontuação de jogador sem sumula"""
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError):
             PlayerScore.objects.create(player=self.player, event=self.event)
+
+    def test_create_player_score_with_sumula_imortal_and_sumula_classificatoria(self):
+        """Testa a criação de uma pontuação de jogador com sumula imortal e sumula classificatoria"""
+        with self.assertRaises(ValidationError):
+            PlayerScore.objects.create(player=self.player, event=self.event,
+                                       sumula_imortal=self.sumulaImortal, sumula_classificatoria=self.sumulaClassificatoria)
 
     def test_create_player_score_without_points(self):
         """Testa a criação de uma pontuação de jogador sem pontos"""
         player_score = PlayerScore.objects.create(
-            player=self.player, event=self.event, sumula=self.sumula)
+            player=self.player, event=self.event, sumula_imortal=self.sumulaImortal)
         self.assertEqual(player_score.points, 0)
 
     def test_create_player_score_with_negative_points(self):
         """Testa a criação de uma pontuação de jogador com pontos negativos"""
         with self.assertRaises(IntegrityError):
             PlayerScore.objects.create(
-                player=self.player, event=self.event, sumula=self.sumula, points=-10)
+                player=self.player, event=self.event, sumula_imortal=self.sumulaImortal, points=-10)
 
     def test_delete_player_score(self):
         """Testa a deleção de uma pontuação de jogador"""
-        self.player_score.delete()
+        self.player_scoreImortal.delete()
         with self.assertRaises(PlayerScore.DoesNotExist):
             PlayerScore.objects.get(
-                player=self.player, event=self.event, sumula=self.sumula)
+                player=self.player, event=self.event, sumula_imortal=self.sumulaImortal)
 
     def test_player_score_str(self):
         """Testa a representação de uma pontuação de jogador"""
-        self.assertEqual(str(self.player_score), f'{self.player} - 0')
+        self.assertEqual(str(self.player_scoreImortal), f'{self.player} - 0')
 
     def tearDown(self):
-        self.token.delete()
-        self.user.delete()
-        self.player.delete()
-        self.event.delete()
-        self.sumula.delete()
-        if self.player_score.id is not None:
-            self.player_score.delete()
+        Event.objects.all().delete()
+        Token.objects.all().delete()
+        User.objects.all().delete()
+        SumulaImortal.objects.all().delete()
+        SumulaClassificatoria.objects.all().delete()
+        PlayerScore.objects.all().delete()
+        Player.objects.all().delete()
         return super().tearDown()
 
-    @classmethod
+    @ classmethod
     def tearDownClass(cls) -> None:
         if User.objects.all().count() > 0:
             User.objects.all().delete()
@@ -314,7 +406,8 @@ class PlayerTest(TestCase):
             username=self.unique_username, email='test@user1.com', first_name='Test', last_name='User')
         self.player = Player.objects.create(
             user=self.user, event=self.event, registration_email=self.unique_email)
-        self.sumula = Sumula.objects.create(name='Sumula 1', event=self.event)
+        self.sumulaImortal = SumulaImortal.objects.create(
+            name='Sumula 1', event=self.event)
 
     def test_create_player(self):
         self.assertIsNotNone(self.user)
@@ -327,9 +420,9 @@ class PlayerTest(TestCase):
 
         # Create player scores
         PlayerScore.objects.create(
-            player=self.player, event=self.event, sumula=self.sumula, points=10)
+            player=self.player, event=self.event, sumula_imortal=self.sumulaImortal, points=10)
         PlayerScore.objects.create(
-            player=self.player, event=self.event, sumula=self.sumula, points=20)
+            player=self.player, event=self.event, sumula_imortal=self.sumulaImortal, points=20)
 
         # Check if total score is updated
         self.assertEqual(self.player.total_score, 30)
@@ -339,16 +432,16 @@ class PlayerTest(TestCase):
 
         # Create player scores
         PlayerScore.objects.create(
-            player=self.player, event=self.event, sumula=self.sumula, points=10)
+            player=self.player, event=self.event, sumula_imortal=self.sumulaImortal, points=10)
         PlayerScore.objects.create(
-            player=self.player, event=self.event, sumula=self.sumula, points=20)
+            player=self.player, event=self.event, sumula_imortal=self.sumulaImortal, points=20)
 
         # Check if total score is updated
         self.assertEqual(self.player.total_score, 30)
 
         # Create another player score
         PlayerScore.objects.create(
-            player=self.player, event=self.event, sumula=self.sumula, points=5)
+            player=self.player, event=self.event, sumula_imortal=self.sumulaImortal, points=5)
 
         # Check if total score is updated
         self.assertEqual(self.player.total_score, 35)
@@ -359,7 +452,7 @@ class PlayerTest(TestCase):
         self.event.delete()
         self.player.delete()
         self.unique_email = None
-        self.sumula.delete()
+        self.sumulaImortal.delete()
 
     @classmethod
     def tearDownClass(cls) -> None:

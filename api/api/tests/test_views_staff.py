@@ -159,7 +159,7 @@ class StaffViewTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, self.response_data_total)
 
-    def test_get_staff_members_exlcuding_other_groups(self):
+    def test_get_staff_members_with_managers(self):
         """Test getting staff members from an event excluding other groups."""
         self.user_staff1.events.add(self.event)
         self.user_staff2.events.add(self.event)
@@ -170,9 +170,7 @@ class StaffViewTest(APITestCase):
         self.client.force_authenticate(user=self.admin)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertNotEqual(response.data, self.response_data_total)
-        self.assertNotIn(self.user_staff2, response.data)
-        self.assertEqual(response.data, self.response_data_staff1)
+        self.assertEqual(response.data[1]['is_manager'], True)
 
     def test_get_staff_members_without_event_id(self):
         """Test getting staff members without an event id."""

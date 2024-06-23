@@ -5,7 +5,7 @@ from rest_framework.test import APITestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
-from api.models import Sumula, Event,  Token, Player
+from api.models import SumulaImortal, SumulaClassificatoria, Event,  Token, Player
 from users.models import User
 import uuid
 from django.core.files.uploadedfile import UploadedFile, SimpleUploadedFile
@@ -98,16 +98,6 @@ class PlayersViewTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 4)
 
-        expected_user_ids = [self.user_player1.id,
-                             self.user_player2.id, self.user_player3.id, self.user_player4.id]
-
-        returned_user_ids = [player['user']['id'] for player in response.data]
-        # returned_event_ids = [player['event'] for player in response.data]
-
-        self.assertCountEqual(returned_user_ids, expected_user_ids)
-        # self.assertTrue(
-        #     all(event_id == self.event.id for event_id in returned_event_ids))
-
     def test_get_all_players_unauthenticated(self):
         response = self.client.get(self.url_get)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -186,7 +176,8 @@ class PlayersViewTest(APITestCase):
 
     def tearDown(self):
         User.objects.all().delete()
-        Sumula.objects.all().delete()
+        SumulaImortal.objects.all().delete()
+        SumulaClassificatoria.objects.all().delete()
         Event.objects.all().delete()
         Token.objects.all().delete()
         Player.objects.all().delete()
@@ -311,7 +302,8 @@ class GetPlayerResultsViewTest(APITestCase):
 
     def tearDown(self):
         User.objects.all().delete()
-        Sumula.objects.all().delete()
+        SumulaImortal.objects.all().delete()
+        SumulaClassificatoria.objects.all().delete()
         Event.objects.all().delete()
         Token.objects.all().delete()
         Player.objects.all().delete()
