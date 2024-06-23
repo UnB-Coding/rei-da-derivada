@@ -10,7 +10,7 @@ from rest_framework.permissions import BasePermission
 from .base_views import BaseSumulaView, SUMULA_NOT_FOUND_ERROR_MESSAGE, SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE
 from api.models import Event, SumulaClassificatoria, SumulaImortal, PlayerScore, Player
 from users.models import User
-from ..serializers import SumulaSerializer, SumulaForPlayerSerializer, SumulaImortalSerializer, SumulaClassificatoriaSerializer
+from ..serializers import SumulaSerializer, SumulaForPlayerSerializer, SumulaImortalSerializer, SumulaClassificatoriaSerializer, SumulaClassificatoriaForPlayerSerializer, SumulaImortalForPlayerSerializer
 from rest_framework.permissions import BasePermission
 from ..utils import handle_400_error
 from ..swagger import Errors, sumula_imortal_api_put_schema, sumula_classicatoria_api_put_schema, sumulas_response_schema
@@ -52,9 +52,10 @@ class SumulaView(BaseSumulaView):
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
-        sumula_imortal, sumula_classificatoria = self.get_sumulas(event=event)
+        sumulas_imortal, sumulas_classificatoria = self.get_sumulas(
+            event=event)
         data = SumulaSerializer(
-            {'sumula_classificatoria': sumula_classificatoria, 'sumula_imortal': sumula_imortal}).data
+            {'sumula_classificatoria': sumulas_classificatoria, 'sumula_imortal': sumulas_imortal}).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
 
@@ -130,7 +131,7 @@ class SumulaClassificatoriaView(SumulaView):
         sumula_id = request.data[0]['id']
         if not sumula_id:
             return handle_400_error(SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE)
-        sumula = SumulaImortal.objects.filter(id=sumula_id).first()
+        sumula = SumulaClassificatoria.objects.filter(id=sumula_id).first()
         if not sumula:
             return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
         try:
@@ -344,15 +345,26 @@ class GetSumulaForPlayer(BaseSumulaView):
         self.check_object_permissions(self.request, event)
 
         player = Player.objects.filter(user=request.user, event=event).first()
+        if not player:
+            return handle_400_error("Jogador não encontrado!")
+
         if player.is_imortal:
             player_scores = PlayerScore.objects.filter(
                 player=player, sumula_imortal__active=True)
+            if not player_scores:
+                return handle_400_error("Jogador não possui nenhuma sumula associada!")
+            sumulas = [
+                player_score.sumula_imortal for player_score in player_scores]
+            data = SumulaImortalForPlayerSerializer(
+                sumulas, many=True).data
         else:
             player_scores = PlayerScore.objects.filter(
                 player=player, sumula_classificatoria__active=True)
-        if not player_scores:
-            return handle_400_error("Jogador não possui nenhuma sumula associada!")
-        sumulas = [player_score.sumula_imortal for player_score in player_scores] if player.is_imortal else [
-            player_score.sumula_classificatoria for player_score in player_scores]
-        data = SumulaForPlayerSerializer(sumulas, many=True).data
+            if not player_scores:
+                return handle_400_error("Jogador não possui nenhuma sumula associada!")
+            sumulas = [
+                player_score.sumula_classificatoria for player_score in player_scores]
+            data = SumulaClassificatoriaForPlayerSerializer(
+                sumulas, many=True).data
+
         return response.Response(status=status.HTTP_200_OK, data=data)
