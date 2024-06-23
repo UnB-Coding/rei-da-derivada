@@ -66,7 +66,7 @@ class StaffSerializer(ModelSerializer):
 
     class Meta:
         model = Staff
-        fields = ['id', 'full_name', 'registration_email']
+        fields = ['id', 'full_name', 'registration_email', 'is_manager']
 
 
 class SumulaClassificatoriaSerializer(ModelSerializer):
@@ -150,8 +150,6 @@ class SumulaForPlayerSerializer(serializers.Serializer):
     """ Serializer for the Sumula model.
     fields: id, active, description, referee, name, players_score
     """
-
-    
 
 
 class UploadFileSerializer(serializers.Serializer):
