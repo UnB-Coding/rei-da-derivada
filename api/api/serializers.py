@@ -13,17 +13,6 @@ class UserSerializer(ModelSerializer):
         fields = ['id', 'first_name', 'last_name', 'email']
 
 
-class PlayerSerializer(ModelSerializer):
-    """ Serializer for the Player model.
-    fields: full_name, social_name event, total_score, registration_email, id
-    """
-    user = UserSerializer()
-
-    class Meta:
-        model = Player
-        fields = ['id', 'total_score', 'full_name', 'social_name', 'user']
-
-
 class PlayerResultsSerializer(ModelSerializer):
     """ Serializer for the Player model. Returns only the necessary fields for results.
     fields: 'id', 'total_score', 'full_name', 'social_name'
@@ -107,6 +96,7 @@ class SumulaImortalSerializer(ModelSerializer):
         fields = ['id', 'active', 'name',
                   'description', 'referee',  'players_score']
 
+
 class SumulaSerializer(serializers.Serializer):
     """ Serializer for the Sumula model.
     fields: id, active, description, referee, name, players_score
@@ -160,21 +150,8 @@ class SumulaForPlayerSerializer(serializers.Serializer):
     """ Serializer for the Sumula model.
     fields: id, active, description, referee, name, players_score
     """
-    sumula_classificatoria = serializers.SerializerMethodField()
-    sumula_imortal = serializers.SerializerMethodField()
 
-    def get_sumula_classificatoria(self, obj):
-        sumula_classificatoria = [
-            sumula for sumula in obj if isinstance(sumula, SumulaClassificatoria)]
-        return SumulaClassificatoriaForPlayerSerializer(sumula_classificatoria, many=True).data
-
-    def get_sumula_imortal(self, obj):
-        sumula_imortal = [
-            sumula for sumula in obj if isinstance(sumula, SumulaImortal)]
-        return SumulaImortalForPlayerSerializer(sumula_imortal, many=True).data
-
-    class Meta:
-        fields = ['sumula_classificatoria', 'sumula_imortal']
+    
 
 
 class UploadFileSerializer(serializers.Serializer):
