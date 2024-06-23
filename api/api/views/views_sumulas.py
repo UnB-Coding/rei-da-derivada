@@ -8,7 +8,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import BasePermission
 from .base_views import BaseSumulaView, SUMULA_NOT_FOUND_ERROR_MESSAGE, SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE
-from api.models import Event, SumulaClassificatoria, SumulaImortal, PlayerScore, Player
+from api.models import Event, Staff, SumulaClassificatoria, SumulaImortal, PlayerScore, Player
 from users.models import User
 from ..serializers import SumulaSerializer, SumulaForPlayerSerializer, SumulaImortalSerializer, SumulaClassificatoriaSerializer, SumulaClassificatoriaForPlayerSerializer, SumulaImortalForPlayerSerializer
 from rest_framework.permissions import BasePermission
@@ -80,6 +80,7 @@ class SumulaClassificatoriaView(BaseSumulaView):
                         type=openapi.TYPE_OBJECT,
                         properties={
                             'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador'),
+                            'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do jogador'),
                         }
                     ),
                     description='Lista de jogadores',
@@ -107,16 +108,18 @@ class SumulaClassificatoriaView(BaseSumulaView):
             event = self.get_object()
         except Exception as e:
             return handle_400_error(str(e))
-
-        if not self.validate_players(request.data):
-            return handle_400_error("Dados de players inválidos!")
         if 'name' not in request.data:
             return handle_400_error("Nome da sumula não fornecido!")
+        if not self.validate_players(request.data):
+            return handle_400_error("Dados de players inválidos!")
+
         self.check_object_permissions(self.request, event)
         name = request.data['name']
         players = request.data['players']
         sumula = SumulaClassificatoria.objects.create(event=event, name=name)
         self.create_players_score(players=players, sumula=sumula, event=event)
+        referees = request.data['referees']
+        self.add_referees(sumula=sumula, event=event, referees=referees)
         data = SumulaClassificatoriaSerializer(sumula).data
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
@@ -185,6 +188,7 @@ class SumulaImortalView(BaseSumulaView):
                         type=openapi.TYPE_OBJECT,
                         properties={
                             'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador'),
+                            'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do jogador'),
                         }
                     ),
                     description='Lista de jogadores',
@@ -216,13 +220,19 @@ class SumulaImortalView(BaseSumulaView):
             return handle_400_error("Nome da sumula não fornecido!")
         if not self.validate_players(request.data):
             return handle_400_error("Dados de players inválidos!")
-
         self.check_object_permissions(self.request, event)
 
         players = request.data['players']
         name = request.data['name']
-        sumula = SumulaImortal.objects.create(event=event, name=name)
-        self.create_players_score(players=players, sumula=sumula, event=event)
+        sumula = SumulaImortal.objects.create(
+            event=event, name=name)
+        try:
+            self.create_players_score(
+                players=players, sumula=sumula, event=event)
+        except Exception as e:
+            return handle_400_error(str(e))
+        referees = request.data['referees']
+        self.add_referees(sumula=sumula, event=event, referees=referees)
         data = SumulaImortalSerializer(sumula).data
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
