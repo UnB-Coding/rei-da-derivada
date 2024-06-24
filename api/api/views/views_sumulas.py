@@ -390,3 +390,47 @@ class GetSumulaForPlayer(BaseSumulaView):
                 sumulas, many=True).data
 
         return response.Response(status=status.HTTP_200_OK, data=data)
+
+
+class AddRefereeToSumulaImortalview(BaseSumulaView):
+    permission_classes = [IsAuthenticated, HasSumulaPermission]
+
+    @swagger_auto_schema(operation_description="Adiciona um árbitro a uma súmula imortal.",
+                         request_body=openapi.Schema(
+                             type=openapi.TYPE_OBJECT,
+                             properties={
+                                 'sumula_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID da súmula imortal'),
+                                 'referees': openapi.Schema(
+                                     type=openapi.TYPE_ARRAY, title='Staffs',
+                                     items=openapi.Schema(
+                                         type=openapi.TYPE_INTEGER, description='ID do Staff')),
+                             },
+                             required=['sumula_id', 'referees']
+                         ),
+                         responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
+    ##### repensar se o front-end envia os objetos staff ou eu pego o requst user e faço a busca no banco
+    def put(self, request: request.Request, *args, **kwargs):
+        if not self.validate_request_data(request.data):
+            return handle_400_error("Dados inválidos!")
+        try:
+            event = self.get_object()
+        except Exception as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(self.request, event)
+
+        sumula_id = request.data.get('sumula_id')
+        if not sumula_id:
+            return handle_400_error(SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE)
+        sumula = SumulaImortal.objects.filter(id=sumula_id).first()
+        if not sumula:
+            return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
+        referees = request.data.get('referees')
+        if not referees:
+            return handle_400_error("Árbitros não fornecidos!")
+        for referee in referees:
+            staff = Staff.objects.filter(id=referee).first()
+            if not staff:
+                return handle_400_error("Staff não encontrado!")
+            sumula.referees.add(staff)
+
+        return response.Response(status=status.HTTP_200_OK)
