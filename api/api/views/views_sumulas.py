@@ -117,7 +117,11 @@ class SumulaClassificatoriaView(BaseSumulaView):
         name = request.data['name']
         players = request.data['players']
         sumula = SumulaClassificatoria.objects.create(event=event, name=name)
-        self.create_players_score(players=players, sumula=sumula, event=event)
+        try:
+            self.create_players_score(
+                players=players, sumula=sumula, event=event)
+        except Exception as e:
+            return handle_400_error(str(e))
         referees = request.data['referees']
         self.add_referees(sumula=sumula, event=event, referees=referees)
         data = SumulaClassificatoriaSerializer(sumula).data
@@ -392,23 +396,32 @@ class GetSumulaForPlayer(BaseSumulaView):
         return response.Response(status=status.HTTP_200_OK, data=data)
 
 
-class AddRefereeToSumulaImortalview(BaseSumulaView):
+class AddRefereeToSumulaView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
-    @swagger_auto_schema(operation_description="Adiciona um árbitro a uma súmula imortal.",
-                         request_body=openapi.Schema(
-                             type=openapi.TYPE_OBJECT,
-                             properties={
-                                 'sumula_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID da súmula imortal'),
-                                 'referees': openapi.Schema(
-                                     type=openapi.TYPE_ARRAY, title='Staffs',
-                                     items=openapi.Schema(
-                                         type=openapi.TYPE_INTEGER, description='ID do Staff')),
-                             },
-                             required=['sumula_id', 'referees']
-                         ),
-                         responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
-    ##### repensar se o front-end envia os objetos staff ou eu pego o requst user e faço a busca no banco
+    @swagger_auto_schema(
+        operation_description="""
+        Adiciona um árbitro a uma súmula que já existe.
+        Caso uma súmula seja criada sem nenhum árbitro, é possível que um usuário monitor se auto adicione como árbitro ao selecionar a sumula desejada.
+        Apenas o usuário que fez a requisição será adicionado como árbitro da súmula.
+        Esta rota verifica se o usuário em questão tem as permissões necessárias para ser um árbitro no evenot e se possui um objeto staff associado a ele.
+
+            É necessário fornecer o id da súmula e indicar se a súmula é imortal ou classificatória no corpo da requisição.
+        """,
+        operation_summary="Adiciona um árbitro a uma súmula.",
+        request_body=openapi.Schema(
+            title='Sumula',
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'sumula_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='Id da sumula imortal'),
+                'is_imortal': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Indica se a sumula é imortal ou classificatória', example=True)
+            },
+            required=['sumula_id', 'is_imortal'],
+        ),
+        manual_parameters=[
+            openapi.Parameter('event_id', openapi.IN_QUERY, description="Id do evento associado a sumula.",
+                              type=openapi.TYPE_INTEGER, required=True)],
+        responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
     def put(self, request: request.Request, *args, **kwargs):
         if not self.validate_request_data(request.data):
             return handle_400_error("Dados inválidos!")
@@ -417,20 +430,20 @@ class AddRefereeToSumulaImortalview(BaseSumulaView):
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
-
+        staff = Staff.objects.filter(user=request.user, event=event).first()
+        if not staff:
+            return handle_400_error("Usuário não é um monitor do evento!")
+        if 'sumula_id' not in request.data or 'is_imortal' not in request.data:
+            return handle_400_error(SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE)
         sumula_id = request.data.get('sumula_id')
         if not sumula_id:
             return handle_400_error(SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE)
-        sumula = SumulaImortal.objects.filter(id=sumula_id).first()
+        is_imortal = request.data.get('is_imortal')
+        if is_imortal:
+            sumula = SumulaImortal.objects.filter(id=sumula_id).first()
+        else:
+            sumula = SumulaClassificatoria.objects.filter(id=sumula_id).first()
         if not sumula:
             return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
-        referees = request.data.get('referees')
-        if not referees:
-            return handle_400_error("Árbitros não fornecidos!")
-        for referee in referees:
-            staff = Staff.objects.filter(id=referee).first()
-            if not staff:
-                return handle_400_error("Staff não encontrado!")
-            sumula.referees.add(staff)
-
+        sumula.referee.add(staff)
         return response.Response(status=status.HTTP_200_OK)
