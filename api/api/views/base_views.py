@@ -42,7 +42,7 @@ class BaseSumulaView(APIView):
                 event=event, active=active)
         return sumula_imortal, sumula_classificatoria
 
-    def create_players_score(self, players: list, sumula: SumulaImortal | SumulaClassificatoria, event: Event,) -> None | bool:
+    def create_players_score(self, players: list, sumula: SumulaImortal | SumulaClassificatoria, event: Event,) -> None | ValidationError:
         """Cria uma lista de PlayerScore associados a uma sumula."""
         for player in players:
             player_id = player.get('id')
@@ -61,6 +61,8 @@ class BaseSumulaView(APIView):
 
     def add_referees(self, sumula: SumulaImortal | SumulaClassificatoria, event: Event, referees: list) -> None:
         """Adiciona um árbitro a uma sumula."""
+        if referees == []:
+            return
         for referee in referees:
             staff = Staff.objects.filter(id=referee['id'], event=event).first()
             if referee is not None:

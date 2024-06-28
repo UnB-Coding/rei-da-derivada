@@ -319,6 +319,19 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
         self.assertEqual(PlayerScore.objects.count(), 2)
         self.assertIsNotNone(SumulaImortal.objects.filter(
             name='imortais 01').first())
+        sumula_id = response.data['id']
+        sumula = SumulaImortal.objects.get(id=sumula_id)
+        self.assertEqual(sumula.referee.count(), 1)
+
+    def test_create_sumula_without_referee(self):
+        self.data_post['referees'] = []
+        self.client.force_authenticate(user=self.user_staff_manager)
+        response = self.client.post(
+            self.url_post, self.data_post, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        sumula_id = response.data['id']
+        sumula = SumulaImortal.objects.get(id=sumula_id)
+        self.assertEqual(sumula.referee.count(), 0)
 
     def test_create_sumula_unauthenticated(self):
         response = self.client.post(
@@ -788,3 +801,72 @@ class GetSumulaForPlayerTest(APITestCase):
         User.objects.all().delete()
         Group.objects.all().delete()
         Token.objects.all().delete()
+
+
+class AddRefereeToSumulaTestCase(BaseSumulaViewTest):
+    def setUpSumula(self):
+        self.sumula_imortal1 = SumulaImortal.objects.create(event=self.event)
+        self.sumula_classficatoria1 = SumulaClassificatoria.objects.create(
+            event=self.event)
+        self.sumula_imortal2 = SumulaImortal.objects.create(event=self.event)
+
+    def setUp(self):
+        self.client = APIClient()
+        self.setUpEvent()
+        self.setupUser()
+        self.setUpGroup()
+        self.SetUpStaff()
+        self.setUpSumula()
+        self.setUpPermissions()
+        self.url = f"{reverse('api:sumula-add-referee')}?event_id={self.event.id}"
+        self.data = {
+            "sumula_id": self.sumula_imortal1.id,
+            "is_imortal": True
+        }
+
+    def test_add_referee_to_sumula_all_correct(self):
+        self.client.force_authenticate(user=self.user_staff_manager)
+        response = self.client.put(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.sumula_imortal1.refresh_from_db()
+        self.assertEqual(self.sumula_imortal1.referee.count(), 1)
+        self.assertIn(self.staff1, self.sumula_imortal1.referee.all())
+
+    def test_add_referee_to_sumula_unauthenticated(self):
+        response = self.client.put(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_add_referee_to_sumula_with_unauthorized_user(self):
+        self.remove_permissions()
+        self.client.force_authenticate(user=self.user_staff_manager)
+        response = self.client.put(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_add_referee_to_sumula_with_no_staff_object_associated(self):
+        Staff.objects.all().delete()
+        self.client.force_authenticate(user=self.user_staff_manager)
+        response = self.client.put(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_add_referee_to_sumula_without_sumula_id(self):
+        self.data.pop('sumula_id')
+        self.client.force_authenticate(user=self.user_staff_manager)
+        response = self.client.put(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_add_refere_to_sumula_without_is_imortal(self):
+        self.data.pop('is_imortal')
+        self.client.force_authenticate(user=self.user_staff_manager)
+        response = self.client.put(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def tearDown(self) -> None:
+        Event.objects.all().delete()
+        SumulaImortal.objects.all().delete()
+        SumulaClassificatoria.objects.all().delete()
+        Player.objects.all().delete()
+        PlayerScore.objects.all().delete()
+        User.objects.all().delete()
+        Group.objects.all().delete()
+        Token.objects.all().delete()
+        Staff.objects.all().delete()
