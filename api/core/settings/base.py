@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from datetime import timedelta
+import os
 from pathlib import Path
 from decouple import config
 
@@ -30,6 +31,8 @@ SECRET_KEY = config("DJANGO_SECRET_KEY")
 # Application definition
 
 INSTALLED_APPS = [
+    "admin_interface",
+    "colorfield",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -62,9 +65,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.locale.LocaleMiddleware",
 ]
 
 ROOT_URLCONF = 'core.urls'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 TEMPLATES = [
     {
@@ -117,7 +122,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
-
+LANGUAGES = (
+    ("en", ("English")),
+    ("pt-br", ("Portuguese (Brazil)")),
+    # more than one language is expected here
+)
 LANGUAGE_CODE = 'en-us'
 
 USE_I18N = True
@@ -174,3 +183,12 @@ AUTHENTICATION_BACKENDS = (
 FILE_UPLOAD_HANDLERS = ["django.core.files.uploadhandler.MemoryFileUploadHandler",
                         "django.core.files.uploadhandler.TemporaryFileUploadHandler",
                         ]
+
+CACHES = {
+    # ...
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "TIMEOUT": 60 * 5,
+    },
+    # ...
+}

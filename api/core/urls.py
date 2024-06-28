@@ -19,7 +19,7 @@ from django.urls import path, include, re_path
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
-
+from django.conf.urls.i18n import i18n_patterns
 schema_view = get_schema_view(
     openapi.Info(
         title="Rei e Rainha da Derivada - API",
@@ -41,8 +41,9 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
+    path("i18n/", include("django.conf.urls.i18n")),
     # Admin
-    path('admin/', admin.site.urls),
+    # path('admin/', admin.site.urls),
 
     # Views
     path('users/', include('users.urls')),
@@ -54,3 +55,4 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc',
          cache_timeout=0), name='schema-redoc'),
 ]
+urlpatterns += i18n_patterns(path("admin/", admin.site.urls))

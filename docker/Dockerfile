@@ -12,7 +12,7 @@ RUN apk update && apk add postgresql-dev gcc python3-dev musl-dev
 
 RUN pip install --upgrade pip
 RUN pip install -r /usr/src/api/requirements.txt
-
+RUN apk add --no-cache gettext
 COPY ./api /usr/src/api/
 
 #CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
