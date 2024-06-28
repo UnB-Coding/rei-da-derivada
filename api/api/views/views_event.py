@@ -119,7 +119,7 @@ class EventView(APIView):
         Por padrão, o evento possui *o mesmo email do usuário que o criou*. Caso outro usuário tente acessar o evento como administrador, *ele não terá permissão*.
 
         Status code 200 é retornado caso o evento já exista e o status code 201 é retornado caso o evento seja criado com sucesso.
-        Status code 400 é retornado caso o token não seja fornecido ou não exista, ou caso o token já tenha sido utilizado para criar um evento.
+        Status code 400 é retornado caso o token não seja fornecido ou não exista.
         Status code 403 é retornado caso o usuário que tenta acessar o evento não seja o administrador do evento.
         """,
         operation_summary="Cria um novo evento.",
@@ -166,7 +166,7 @@ class EventView(APIView):
     def get_or_create_event(self, token):
         return Event.objects.get_or_create(token=token)
 
-    def handle_event_permissions(self, request, event, created):
+    def handle_event_permissions(self, request, event, created) -> tuple[int, dict]:
         data = EventSerializer(event).data
         if not created and request.user.email != event.admin_email:
             return status.HTTP_403_FORBIDDEN, data
