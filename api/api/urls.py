@@ -24,6 +24,7 @@ urlpatterns = [
     path('sumula/player/', GetSumulaForPlayer.as_view(), name='sumula-player'),
     path('sumula/add-referee/', AddRefereeToSumulaView.as_view(),
          name='sumula-add-referee'),
+    
     # Rotas de jogadores
     path('players/', PlayersView.as_view(), name='players'),
     path('player/', GetPlayerResults.as_view(), name='player'),

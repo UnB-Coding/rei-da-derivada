@@ -116,12 +116,6 @@ class SumulaClassificatoriaView(BaseSumulaView):
                 players=players, sumula=sumula, event=event)
         except Exception as e:
             return handle_400_error(str(e))
-        sumula = SumulaClassificatoria.objects.create(event=event, name=name)
-        try:
-            self.create_players_score(
-                players=players, sumula=sumula, event=event)
-        except Exception as e:
-            return handle_400_error(str(e))
         data = SumulaClassificatoriaSerializer(sumula).data
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 

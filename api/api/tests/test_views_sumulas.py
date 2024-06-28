@@ -445,6 +445,7 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
         Group.objects.all().delete()
         self.remove_permissions()
         self.data_update = None
+        self.data_post = None
 
 
 class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
@@ -656,6 +657,7 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
         Group.objects.all().delete()
         self.remove_permissions()
         self.data_update = None
+        self.data_post = None
 
 
 class GetSumulaForPlayerTest(APITestCase):
