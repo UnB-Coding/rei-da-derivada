@@ -1,15 +1,9 @@
-from django.forms import ValidationError
 from django.contrib.auth.models import Group
-from django.db.models import Q
 from rest_framework import status, request, response
-from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import PermissionDenied
-from rest_framework.exceptions import NotFound
 from rest_framework.permissions import BasePermission
 from .base_views import BaseSumulaView, SUMULA_NOT_FOUND_ERROR_MESSAGE, SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE
-from api.models import Event, Staff, SumulaClassificatoria, SumulaImortal, PlayerScore, Player
-from users.models import User
+from api.models import Staff, SumulaClassificatoria, SumulaImortal, PlayerScore, Player
 from ..serializers import SumulaSerializer, SumulaForPlayerSerializer, SumulaImortalSerializer, SumulaClassificatoriaSerializer, SumulaClassificatoriaForPlayerSerializer, SumulaImortalForPlayerSerializer
 from rest_framework.permissions import BasePermission
 from ..utils import handle_400_error
@@ -122,8 +116,12 @@ class SumulaClassificatoriaView(BaseSumulaView):
                 players=players, sumula=sumula, event=event)
         except Exception as e:
             return handle_400_error(str(e))
-        referees = request.data['referees']
-        self.add_referees(sumula=sumula, event=event, referees=referees)
+        sumula = SumulaClassificatoria.objects.create(event=event, name=name)
+        try:
+            self.create_players_score(
+                players=players, sumula=sumula, event=event)
+        except Exception as e:
+            return handle_400_error(str(e))
         data = SumulaClassificatoriaSerializer(sumula).data
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
@@ -134,7 +132,7 @@ class SumulaClassificatoriaView(BaseSumulaView):
         security=[{'Bearer': []}],
         manual_parameters=[openapi.Parameter('event_id', openapi.IN_QUERY, description="Id do evento associado a sumula.",
                                              type=openapi.TYPE_INTEGER, required=True)],
-        request_body=sumula_imortal_api_put_schema,
+        request_body=sumula_classicatoria_api_put_schema,
         responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
     def put(self, request: request.Request, *args, **kwargs):
         """Atualiza uma sumula de Classificatoria"""
