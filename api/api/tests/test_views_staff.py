@@ -33,12 +33,16 @@ class StaffViewTest(APITestCase):
             username=self.create_unique_username(), email=self.create_unique_email(), first_name='Staff1', last_name='Member1')
         self.user_staff2 = User.objects.create(
             username=self.create_unique_username(), email=self.create_unique_email(), first_name='Staff2', last_name='Member2')
+        self.user_staff3 = User.objects.create(
+            username=self.create_unique_username(), email=self.create_unique_email(), first_name='Staff3', last_name='Member3')
         self.admin = User.objects.create(
             username=self.create_unique_username(), email=self.create_unique_email(), first_name='Admin', last_name='User')
 
     def setUpEvent(self):
         self.token = Token.objects.create()
         self.event = Event.objects.create(name='Evento 1', token=self.token)
+        self.token2 = Token.objects.create()
+        self.event2 = Event.objects.create(name='Evento 2', token=self.token2)
 
     def setUpGroup(self):
         self.group = Group.objects.create(name='staff_member')
@@ -57,9 +61,11 @@ class StaffViewTest(APITestCase):
 
     def setUpStaff(self):
         self.staff1 = Staff.objects.create(
-            user=self.user_staff1, event=self.event, registration_email='example@email.com', full_name='Staff1')
+            user=self.user_staff1, event=self.event, registration_email=self.user_staff1.email, full_name='Staff1')
         self.staff2 = Staff.objects.create(
-            user=self.user_staff2, event=self.event, registration_email='example2@email.com', full_name='Staff2')
+            user=self.user_staff2, event=self.event, registration_email=self.user_staff2.email, full_name='Staff2')
+        self.staff3 = Staff.objects.create(
+            user=self.user_staff3, event=self.event2, registration_email=self.user_staff1.email, full_name='Staff1')
 
     def setUp(self):
         self.setUpEvent()
@@ -72,11 +78,9 @@ class StaffViewTest(APITestCase):
     def test_add_staff_member(self):
         """Test adding a staff member to an event."""
         url = reverse('api:staff')
-        data = {'token_code': self.token.token_code,
-                'email': self.staff1.registration_email}
+        data = {'join_token': self.event.join_token, }
         self.client.force_authenticate(user=self.user_staff1)
         response = self.client.post(url, data, format='json')
-
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.user_staff1.events.count(), 1)
         self.assertEqual(self.staff1.user, self.user_staff1)
@@ -94,7 +98,7 @@ class StaffViewTest(APITestCase):
     def test_add_staff_member_with_invalid_token(self):
         """Test adding a staff member with an invalid token."""
         url = reverse('api:staff')
-        data = {'token_code': 'invalid_token'}
+        data = {'join_token': 'invalid_token'}
         self.client.force_authenticate(user=self.user_staff1)
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -102,52 +106,19 @@ class StaffViewTest(APITestCase):
     def test_add_staff_member_with_unauthenticated_user(self):
         """Test adding a staff member without authentication."""
         url = reverse('api:staff')
-        data = {'token_code': self.token.token_code}
+        data = {'join_token': self.event.join_token}
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_add_staff_member_with_another_user(self):
+    def test_add_staff_member_with_another_staff_from_other_event(self):
         """Test adding a staff member with another user."""
         url = reverse('api:staff')
-        data = {'token_code': self.token.token_code,
-                'email': self.staff1.registration_email}
+        data = {'join_token': self.event.join_token}
         # User different from the one in the data
-        self.client.force_authenticate(user=self.user_staff2)
+        self.client.force_authenticate(user=self.user_staff3)
         response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(self.user_staff1.events.count(), 0)
-
-    def test_add_staff_member_with_invalid_email(self):
-        """Test adding a staff member with an invalid email."""
-        url = reverse('api:staff')
-        data = {'token_code': self.token.token_code, 'email': 'invalid_email'}
-        self.client.force_authenticate(user=self.user_staff1)
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_add_staff_member_without_email(self):
-        """Test adding a staff member without an email."""
-        url = reverse('api:staff')
-        data = {'token_code': self.token.token_code}
-        self.client.force_authenticate(user=self.user_staff1)
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_add_staff_member_without_token_and_email(self):
-        """Test adding a staff member without a token and email."""
-        url = reverse('api:staff')
-        self.client.force_authenticate(user=self.user_staff1)
-        response = self.client.post(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_add_staff_member_with_invalid_token_and_valid_email(self):
-        """Test adding a staff member with an invalid token and email."""
-        url = reverse('api:staff')
-        data = {'token_code': 'invalid_token',
-                'email': self.staff1.registration_email}
-        self.client.force_authenticate(user=self.user_staff1)
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_get_staff_members(self):
         """Test getting staff members from an event."""

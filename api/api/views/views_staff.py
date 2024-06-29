@@ -39,10 +39,6 @@ class StaffView(APIView):
         """Retorna um token com o código-token fornecido."""
         return Token.objects.filter(token_code=token_code).first()
 
-    def get_event_by_token(self, token: Token) -> Optional[Event]:
-        """Retorna um evento com o token fornecido."""
-        return Event.objects.filter(token=token).first()
-
     @ swagger_auto_schema(
         operation_description="""Adiciona um novo membro da equipe ao evento.
         O usuário terá permissões de Monitor no evento associado ao token fornecido.
@@ -51,10 +47,10 @@ class StaffView(APIView):
         operation_summary="Adiciona um novo membro da equipe ao evento.",
 
         request_body=openapi.Schema(
-            title='Token e Email do Monitor', type=openapi.TYPE_OBJECT,
-            properties={'token_code': openapi.Schema(type=openapi.TYPE_STRING, description='Código do token', example='123456'),
-                        'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do monitor', example='example@email.com')},
-            required=['token_code', 'email']),
+            title='Token de join do Evento', type=openapi.TYPE_OBJECT,
+            properties={'join_token': openapi.Schema(
+                type=openapi.TYPE_STRING, description='Código do token', example='123456')},
+            required=['join_token']),
         responses={200: openapi.Response(
             'OK', EventSerializer), **Errors([400]).retrieve_erros()}
     )
@@ -63,29 +59,19 @@ class StaffView(APIView):
         e terá permissões de Staff Member no evento associado ao token fornecido.
 
         """
-        if request.data is None or 'token_code' not in request.data or 'email' not in request.data:
+        if request.data is None or 'join_token' not in request.data:
             return handle_400_error('Dados inválidos!')
-        token_code = request.data['token_code']
-        if not token_code:
-            return handle_400_error(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
-        email = request.data['email']
-        if not email:
-            return handle_400_error('Email não fornecido!')
-        token = self.get_token(token_code)
+        token = request.data['join_token']
         if not token:
-            return handle_400_error(TOKEN_NOT_FOUND_ERROR_MESSAGE)
-        event = self.get_event_by_token(token)
+            return handle_400_error(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
+        event = Event.objects.filter(join_token=token).first()
         if not event:
             return handle_400_error(EVENT_NOT_FOUND_ERROR_MESSAGE)
         staff = Staff.objects.filter(
-            registration_email=email, event=event).first()
+            registration_email=request.user.email, event=event).first()
         if not staff:
             return handle_400_error('Este email não está cadastrado como monitor para este evento.')
-        if staff.user is None:
-            staff.user = request.user
-        elif staff.user != request.user:
-            return response.Response(status=status.HTTP_403_FORBIDDEN, data='Este email já está cadastrado como monitor para este evento.')
-
+        staff.user = request.user
         group = Group.objects.get(name='staff_member')
         request.user.groups.add(group)
         request.user.events.add(event)

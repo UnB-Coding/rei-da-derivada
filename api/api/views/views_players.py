@@ -66,20 +66,20 @@ class PlayersView(APIView):
         Para um jogador entrar no evento, ele deve informar o email que foi utilizado na inscrição e o token de jogador fornecido pelo administrador do evento.
         """,
         operation_summary='Adiciona um jogador ao evento.',
-        request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do jogador'), 'players_token': openapi.Schema(
-            type=openapi.TYPE_STRING, description='Token do evento')}, required=['email', 'players_token']),
+        request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do jogador'), 'join_token': openapi.Schema(
+            type=openapi.TYPE_STRING, description='Token do evento')}, required=['email', 'join_token']),
         responses={200: openapi.Response(
             200), **Errors([400]).retrieve_erros()}
     )
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         """ Adiciona um jogador ao evento através do email fornecido na inscirção."""
-        if 'email' not in request.data or 'players_token' not in request.data:
+        if 'email' not in request.data or 'join_token' not in request.data:
             return handle_400_error('Email e token são obrigatórios!')
         email = request.data['email']
-        players_token = request.data['players_token']
-        if not email or not players_token:
+        join_token = request.data['join_token']
+        if not email or not join_token:
             return handle_400_error('Email e token são obrigatórios!')
-        event = Event.objects.filter(players_token=players_token).first()
+        event = Event.objects.filter(join_token=join_token).first()
         if not event:
             return handle_400_error('Evento não encontrado!')
         player = Player.objects.filter(

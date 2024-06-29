@@ -68,10 +68,8 @@ class Event (models.Model):
     """
     token = models.OneToOneField(
         Token, on_delete=models.CASCADE, related_name='event')
-    players_token = models.CharField(
-        default='', max_length=TOKEN_LENGTH, blank=True, null=False, unique=True)
-    staff_token = models.CharField(
-        default='', max_length=TOKEN_LENGTH, unique=True, blank=True, null=False)
+    join_token = models.CharField(
+        default='', max_length=TOKEN_LENGTH, blank=True)
     name = models.CharField(default='', max_length=64, blank=True, null=True)
     active = models.BooleanField(default=True)
     admin_email = models.EmailField(default='', blank=True, null=True)
@@ -108,21 +106,13 @@ class Event (models.Model):
         """Gera um token aleatório de TOKEN_LENGTH caracteres."""
         alphabet = string.ascii_uppercase
         while True:
-            staff_letters = ''.join(secrets.choice(alphabet)
-                                    for i in range(TOKEN_LENGTH - 2))
-            staff_numbers = ''.join(secrets.choice(string.digits)
-                                    for i in range(2))
-            self.staff_token = ''.join(random.sample(
-                staff_letters + staff_numbers, len(staff_letters + staff_numbers)))
-
-            players_letters = ''.join(secrets.choice(alphabet)
-                                      for i in range(TOKEN_LENGTH - 2))
-            players_numbers = ''.join(secrets.choice(
-                string.digits) for i in range(2))
-            self.players_token = ''.join(random.sample(
-                players_letters + players_numbers, len(players_letters + players_numbers)))
-
-            if not Event.objects.filter(staff_token=self.staff_token).exists() and not Event.objects.filter(players_token=self.players_token).exists():
+            letters = ''.join(secrets.choice(alphabet)
+                              for i in range(TOKEN_LENGTH - 2))
+            numbers = ''.join(secrets.choice(string.digits)
+                              for i in range(2))
+            self.join_token = ''.join(random.sample(
+                letters + numbers, len(letters + numbers)))
+            if not Event.objects.filter(join_token=self.join_token).exists():
                 break
 
     def is_active(self) -> bool:
@@ -131,7 +121,7 @@ class Event (models.Model):
 
     def save(self, *args, **kwargs) -> None:
         """Sobrescreve o método save para gerar um token caso não exista."""
-        if not self.players_token or not self.staff_token:
+        if not self.join_token:
             self.generate_token()
         super(Event, self).save(*args, **kwargs)
 

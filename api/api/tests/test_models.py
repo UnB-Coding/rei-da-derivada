@@ -86,8 +86,8 @@ class EventTest(TestCase):
         self.assertEqual(event.name, 'Evento 1')
         self.assertEqual(event.token, self.token)
         self.assertEqual(event.active, True)
-        self.assertIsNotNone(event.players_token)
-        self.assertTrue(len(event.players_token) == TOKEN_LENGTH)
+        self.assertIsNotNone(event.join_token)
+        self.assertTrue(len(event.join_token) == TOKEN_LENGTH)
 
     def test_create_event_without_anything(self):
         """Testa a criação de um evento sem nada"""

@@ -133,7 +133,7 @@ class PlayersViewTest(APITestCase):
     def test_post_add_user_to_event(self):
         self.client.force_authenticate(user=self.user_player1)
         data = {"email": self.player.registration_email,
-                "players_token": self.event.players_token}
+                "join_token": self.event.join_token}
         response = self.client.post(self.url_post, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, 'Jogador adicionado com sucesso!')
@@ -149,7 +149,7 @@ class PlayersViewTest(APITestCase):
         ), first_name=self.generate_random_name(), last_name=self.generate_random_name())
         self.client.force_authenticate(user=user)
         data = {"email": self.create_unique_email(),
-                "players_token": self.event.players_token}
+                "join_token": self.event.join_token}
         response = self.client.post(self.url_post, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(response.data, {'errors': 'Jogador não encontrado!'})
@@ -158,7 +158,7 @@ class PlayersViewTest(APITestCase):
 
     def test_post_add_user_to_event_without_email(self):
         self.client.force_authenticate(user=self.user_player1)
-        data = {"players_token": self.event.players_token}
+        data = {"join_token": self.event.join_token}
         response = self.client.post(self.url_post, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -170,7 +170,7 @@ class PlayersViewTest(APITestCase):
 
     def test_post_unauthenticated(self):
         data = {"email": self.create_unique_email(),
-                "players_token": self.event.players_token}
+                "join_token": self.event.join_token}
         response = self.client.post(self.url_post, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
