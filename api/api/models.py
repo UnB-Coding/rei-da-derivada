@@ -1,6 +1,9 @@
 import random
-from django.db import models, IntegrityError
+from django.db import IntegrityError, models
 from django.forms import ValidationError
+from django.dispatch import receiver
+from django.db.models.signals import post_save, post_delete, pre_delete
+from django.db.models import Sum, F
 from users.models import User
 import string
 import secrets
@@ -241,12 +244,22 @@ class Player(models.Model):
         verbose_name_plural = ("Players")
         unique_together = ['user', 'event']
 
-    def update_total_score(self, event):
-        """ Calculate the total score of the player for an event. """
-        self.total_score = PlayerScore.objects.filter(
-            player=self, event=event
-        ).aggregate(total=models.Sum('points'))['total'] or 0
-        self.save()
+    # Atualiza a pontuação total após salvar uma instância de PlayerScore
+    @receiver(post_save, sender='api.PlayerScore')
+    def update_player_total_score_on_save(sender, instance, **kwargs):
+        if instance.player and instance.player.event == instance.event:
+            instance.player.total_score = PlayerScore.objects.filter(
+                player=instance.player, event=instance.event).aggregate(Sum('points'))['points__sum'] or 0
+            instance.player.save()
+
+    # Atualiza a pontuação total após deletar uma instância de PlayerScore
+    @receiver(pre_delete, sender='api.PlayerScore')
+    def update_player_total_score_on_delete(sender, instance, **kwargs):
+        if instance.player and instance.player.event == instance.event:
+            instance.player.total_score -= instance.points
+            if instance.player.total_score < 0:
+                instance.player.total_score = 0
+            instance.player.save()
 
     def __str__(self) -> str:
         return self.full_name
@@ -261,9 +274,9 @@ class PlayerScore(models.Model):
     - points: IntegerField com a pontuacao do player
     """
     player = models.ForeignKey(
-        Player, on_delete=models.CASCADE, related_name='scores')
+        Player, on_delete=models.CASCADE, related_name='scores', default=None, blank=False, null=False)
     event = models.ForeignKey(
-        Event, on_delete=models.CASCADE, related_name='scores')
+        Event, on_delete=models.CASCADE, related_name='scores', default=None, blank=False, null=False)
     sumula_classificatoria = models.ForeignKey(
         SumulaClassificatoria, on_delete=models.CASCADE, related_name='scores', null=True, blank=True, default=None)
     sumula_imortal = models.ForeignKey(
@@ -278,15 +291,45 @@ class PlayerScore(models.Model):
     def __str__(self):
         return f'{self.player} - {self.points}'
 
-    def save(self, *args, **kwargs) -> None:
-        if self.sumula_classificatoria is None and self.sumula_imortal is None:
+    def save(self, *args, **kwargs):
+        if self.player is None or self.event is None:
+            raise IntegrityError("Player e Evento são campos obrigatórios!")
+        try:
+            self.validar_evento_player()
+            self.validar_evento_sumula()
+            self.validar_sumulas()
+        except ValidationError as e:
+            raise ValidationError(e)
+        super().save(*args, **kwargs)
+
+    def validar_sumulas(self):
+        if not any([self.sumula_classificatoria, self.sumula_imortal]):
             raise ValidationError(
                 "Pelo menos um dos campos sumula_classificatoria ou sumula_imortal deve ser preenchido.")
-        elif self.sumula_classificatoria is not None and self.sumula_imortal is not None:
+        if all([self.sumula_classificatoria, self.sumula_imortal]):
             raise ValidationError(
                 "Apenas um dos campos sumula_classificatoria ou sumula_imortal deve ser preenchido.")
-        else:
-            super(PlayerScore, self).save(*args, **kwargs)
 
-            if self.player is not None and self.event is not None:
-                self.player.update_total_score(self.event)
+    def validar_evento_player(self):
+        if self.player.event != self.event:
+            raise ValidationError(
+                "O evento de Player deve ser o mesmo Evento do objeto de PlayerScore!")
+
+    def validar_evento_sumula(self):
+        if self.sumula_classificatoria and self.sumula_classificatoria.event != self.event:
+            raise ValidationError(
+                "O evento de uma Sumula deve ser o mesmo Evento do objeto de PlayerScore!")
+        elif self.sumula_imortal and self.sumula_imortal.event != self.event:
+            raise ValidationError(
+                "O evento de uma Sumula deve ser o mesmo Evento do objeto de PlayerScore!")
+        # if self.player is not None and self.event is not None:
+        #     self.player.update_total_score(self.event)
+
+    # def delete(self, *args, **kwargs):
+    #     player = self.player
+    #     event = self.event
+    #     if player and event:
+    #         super(PlayerScore, self).delete(*args, **kwargs)
+    #         player.update_total_score(event)
+    #     else:
+    #         super(PlayerScore, self).delete(*args, **kwargs)
