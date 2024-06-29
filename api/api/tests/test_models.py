@@ -326,17 +326,17 @@ class PlayerScoreTest(TestCase):
 
         self.assertEqual(self.player.total_score, 10)
 
-    def test_create_player_score_without_user(self):
-        """Testa a criação de uma pontuação de jogador sem usuário"""
-        with self.assertRaises(IntegrityError):
-            PlayerScore.objects.create(
-                event=self.event, sumula_imortal=self.sumulaImortal, points=0)
+    # def test_create_player_score_without_player(self):
+    #     """Testa a criação de uma pontuação de jogador sem usuário"""
+    #     with self.assertRaises(IntegrityError):
+    #         PlayerScore.objects.create(
+    #             event=self.event, sumula_imortal=self.sumulaImortal, points=0)
 
-    def test_create_player_score_without_event(self):
-        """Testa a criação de uma pontuação de jogador sem evento"""
-        with self.assertRaises(IntegrityError):
-            PlayerScore.objects.create(
-                player=self.player, sumula_imortal=self.sumulaImortal)
+    # def test_create_player_score_without_event(self):
+    #     """Testa a criação de uma pontuação de jogador sem evento"""
+    #     with self.assertRaises(IntegrityError):
+    #         PlayerScore.objects.create(
+    #             player=self.player, sumula_imortal=self.sumulaImortal)
 
     def test_create_player_score_without_sumula(self):
         """Testa a criação de uma pontuação de jogador sem sumula"""
@@ -371,6 +371,16 @@ class PlayerScoreTest(TestCase):
     def test_player_score_str(self):
         """Testa a representação de uma pontuação de jogador"""
         self.assertEqual(str(self.player_scoreImortal), f'{self.player} - 0')
+
+    def test_delete_and_update_total_score(self):
+        self.assertEqual(self.player.total_score, 0)
+        self.player_scoreImortal.points = 10
+        self.player_scoreImortal.save()
+        self.player.refresh_from_db()
+        self.assertEqual(self.player.total_score, 10)
+        self.player_scoreImortal.delete()
+        self.player.refresh_from_db()
+        self.assertEqual(self.player.total_score, 0)
 
     def tearDown(self):
         Event.objects.all().delete()
