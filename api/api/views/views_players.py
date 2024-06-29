@@ -13,7 +13,7 @@ from drf_yasg.utils import swagger_auto_schema
 from api.models import Event, Player
 from ..utils import handle_400_error
 from ..serializers import PlayerSerializer, UploadFileSerializer, PlayerResultsSerializer
-from ..swagger import Errors
+from ..swagger import Errors, manual_parameter_event_id
 from ..permissions import assign_permissions
 import pandas as pd
 
@@ -38,8 +38,7 @@ class PlayersView(APIView):
     @ swagger_auto_schema(security=[{'Bearer': []}],
                           operation_description='Retorna todos os jogadores de um evento.',
                           operation_summary='Retorna todos os jogadores de um evento.',
-                          manual_parameters=[openapi.Parameter(
-                              'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
+                          manual_parameters=manual_parameter_event_id,
                           responses={200: openapi.Response(200, PlayerSerializer), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """ Retorna todos os jogadores de um evento."""
@@ -117,8 +116,7 @@ class GetPlayerResults(APIView):
         security=[{'Bearer': []}],
         operation_summary='Retorna o resultado a pontuação do jogador',
         operation_description='Retorna o resultado de pontuação do jogador atual do usuário logado.',
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
+        manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """ Retorna o resultado de pontuação do jogador atual do usuário logado."""
@@ -164,8 +162,7 @@ class PublishPlayersResults(APIView):
         security=[{'Bearer': []}],
         operation_description='Publica os resultados dos jogadores do evento.',
         operation_summary="""Publica os resultados dos jogadores do evento. Os jogadores poderão ver suas pontuações e os 4 primeiros colocados.""",
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
+        manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(
             200), **Errors([400]).retrieve_erros()}
     )
@@ -199,8 +196,7 @@ class Top4Players(APIView):
         security=[{'Bearer': []}],
         operation_description='Retorna os 4 primeiros colocados do evento.',
         operation_summary='Retorna os 4 primeiros colocados do evento.',
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
+        manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         try:
@@ -233,8 +229,7 @@ class AddPlayers(APIView):
     @swagger_auto_schema(
         operation_description='Adiciona os jogadores ao evento através do excel fornecido pelo administrador com os participantes do evento.',
         operation_summary='Adiciona multiplos jogadores ao evento.',
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
+        manual_parameters=manual_parameter_event_id,
         request_body=UploadFileSerializer,
         responses={201: openapi.Response(
             201), **Errors([400]).retrieve_erros()})

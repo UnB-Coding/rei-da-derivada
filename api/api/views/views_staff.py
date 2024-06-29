@@ -15,7 +15,7 @@ from users.models import User
 from ..serializers import EventSerializer, StaffSerializer, UploadFileSerializer
 from .views_event import TOKEN_NOT_PROVIDED_ERROR_MESSAGE, TOKEN_NOT_FOUND_ERROR_MESSAGE, EVENT_NOT_FOUND_ERROR_MESSAGE
 from ..utils import handle_400_error
-from ..swagger import Errors
+from ..swagger import Errors, manual_parameter_event_id
 from ..permissions import assign_permissions
 
 from drf_yasg import openapi
@@ -86,8 +86,7 @@ class StaffView(APIView):
         Para a diferenciação entre monitores e gerentes de equipe, é necessário verificar o campo 'is_manager' de cada objeto retornado.
         """,
         operation_summary="Retorna todos os usuários monitores associados ao evento.",
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, description='ID do evento', type=openapi.TYPE_INTEGER)],
+        manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(
             'OK', StaffSerializer), **Errors([400]).retrieve_erros()}
     )
@@ -129,8 +128,7 @@ class AddStaffManager(APIView):
         Deve ser enviado o email do usuário a ser promovido a Gerente de Equipe. Quem envia a requisição é o Admin do evento.
         """,
         operation_summary="Promove um monitor a Gerente de Equipe.",
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, description='ID do evento', type=openapi.TYPE_INTEGER)],
+        manual_parameters=manual_parameter_event_id,
         request_body=openapi.Schema
         (title='Email do Usuário', type=openapi.TYPE_OBJECT,
          properties={'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do usuário', example='example@email.com')}),
@@ -199,8 +197,7 @@ class AddStaffMembers(APIView):
     @swagger_auto_schema(
         operation_description='Adiciona monitores ao evento através do excel fornecido pelo administrador.',
         operation_summary='Adiciona multiplos monitores ao evento.',
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
+        manual_parameters=manual_parameter_event_id,
         request_body=UploadFileSerializer,
         responses={201: openapi.Response(
             201), **Errors([400]).retrieve_erros()})
