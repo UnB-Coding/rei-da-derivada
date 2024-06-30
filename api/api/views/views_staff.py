@@ -40,6 +40,7 @@ class StaffView(BaseView):
         return Token.objects.filter(token_code=token_code).first()
 
     @ swagger_auto_schema(
+        tags=['staff'],
         operation_description="""Adiciona um novo membro da equipe ao evento.
         O usuário terá permissões de Monitor no evento associado ao token fornecido.
         Retorna o evento no qual o usuário foi adicionado.
@@ -86,6 +87,7 @@ class StaffView(BaseView):
         return response.Response(status=status.HTTP_200_OK, data=data)
 
     @ swagger_auto_schema(
+        tags=['staff'],
         operation_description="""Retorna os todos usuários monitores associados ao evento.
         Procura por todos os objetos staff associados ao evento e retorna esses objetos.
 
@@ -130,6 +132,7 @@ class AddStaffManager(BaseView):
     permission_classes = [IsAuthenticated, AddStaffManagerPermissions]
 
     @ swagger_auto_schema(
+        tags=['staff'],
         operation_description="""Promove um usuário monitor a Gerente de Equipe no evento associado.
         Deve ser enviado o email do usuário a ser promovido a Gerente de Equipe. Quem envia a requisição é o Admin do evento.
         """,
@@ -201,6 +204,7 @@ class AddStaffMembers(BaseView):
     parser_classes = [MultiPartParser]
 
     @ swagger_auto_schema(
+        tags=['staff'],
         operation_description='Adiciona monitores ao evento através do excel fornecido pelo administrador.',
         operation_summary='Adiciona multiplos monitores ao evento.',
         manual_parameters=manual_parameter_event_id,
@@ -278,6 +282,7 @@ class AddSingleStaff(BaseView):
     permission_classes = [IsAuthenticated, AddStaffPermissions]
 
     @swagger_auto_schema(
+        tags=['staff'],
         operation_description="""Adiciona um monitor manualmente ao evento.
             Devem ser enviados os dados do monitor a ser adicionado.
                 Obrigatório: Nome Completo, E-mail e se é Gerente de Equipe ou não.""",
@@ -318,6 +323,7 @@ class EditStaffData(BaseView):
     permission_classes = [IsAuthenticated, AddStaffPermissions]
 
     @swagger_auto_schema(
+        tags=['staff'],
         operation_description="""Edita os dados de um monitor do evento.
             Devem ser enviados os dados do monitor a ser editado.
             Obrigatório: Nome Completo, E-mail e se é Gerente de Equipe ou não.

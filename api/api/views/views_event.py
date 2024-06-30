@@ -22,34 +22,34 @@ EVENT_NOT_FOUND_ERROR_MESSAGE = "Nenhum evento encontrado!"
 EVENT_DOES_NOT_EXIST_ERROR_MESSAGE = "Este evento não existe!"
 
 
-class TokenPermissions(BasePermission):
-    def has_permission(self, request, view):
-        if request.method == 'POST':
-            return request.user.has_perm('api.add_token')
-        if request.method == 'GET':
-            return request.user.has_perm('api.view_token')
-        if request.method == 'DELETE':
-            return request.user.has_perm('api.delete_token')
+# class TokenPermissions(BasePermission):
+#     def has_permission(self, request, view):
+#         if request.method == 'POST':
+#             return request.user.has_perm('api.add_token')
+#         if request.method == 'GET':
+#             return request.user.has_perm('api.view_token')
+#         if request.method == 'DELETE':
+#             return request.user.has_perm('api.delete_token')
 
 
-class TokenView(BaseView):
-    permission_classes = [IsAuthenticated, TokenPermissions]
+# class TokenView(BaseView):
+#     permission_classes = [IsAuthenticated, TokenPermissions]
 
-    @swagger_auto_schema(
+#     @swagger_auto_schema(
 
-        security=[{'Bearer': []}],
-        responses={200: openapi.Response(
-            'OK', TokenSerializer), **Errors([403]).retrieve_erros()}
-    )
-    def post(self, request):
-        """Cria um novo token e retorna o código do token gerado.
+#         security=[{'Bearer': []}],
+#         responses={200: openapi.Response(
+#             'OK', TokenSerializer), **Errors([403]).retrieve_erros()}
+#     )
+#     def post(self, request):
+#         """Cria um novo token e retorna o código do token gerado.
 
-        Permissões necessárias: IsAthenticated ,CanAddToken"""
-        if not request.user.has_perm('api.add_token'):
-            return response.Response(status=status.HTTP_403_FORBIDDEN)
-        token = Token.objects.create()
-        data = TokenSerializer(token).data
-        return response.Response(status=status.HTTP_200_OK, data=data)
+#         Permissões necessárias: IsAthenticated ,CanAddToken"""
+#         if not request.user.has_perm('api.add_token'):
+#             return response.Response(status=status.HTTP_403_FORBIDDEN)
+#         token = Token.objects.create()
+#         data = TokenSerializer(token).data
+#         return response.Response(status=status.HTTP_200_OK, data=data)
 
 
 class EventPermissions(BasePermission):
@@ -64,6 +64,7 @@ class EventView(BaseView):
     permission_classes = [IsAuthenticated, EventPermissions]
 
     @ swagger_auto_schema(
+        tags=['event'],
         operation_summary="Deleta um evento associado a um token.",
         operation_description='Deleta um evento associado a um token.',
         security=[{'Bearer': []}],
@@ -96,6 +97,7 @@ class EventView(BaseView):
         return response.Response(status=status.HTTP_200_OK)
 
     @ swagger_auto_schema(
+        tags=['event'],
         operation_summary="Retorna todos os eventos associados ao usuário logado.",
         operation_description='Retorna todos os eventos associados ao usuário logado. Caso não haja eventos, retorna uma lista vazia.',
         security=[{'Bearer': []}],
@@ -109,6 +111,7 @@ class EventView(BaseView):
         return response.Response(status=status.HTTP_200_OK, data=data)
 
     @ swagger_auto_schema(
+        tags=['event'],
         operation_description=""" __Cria um novo evento associado a um token e retorna o evento criado.__
         Caso o evento já exista, retorna o evento existente. Isso foi feito para permitir novamente o login do adminsitrador do evento caso ele tenha fechado a aplicação ou feito logout.
         Por padrão, o evento possui *o mesmo email do usuário que o criou*. Caso outro usuário tente acessar o evento como administrador, *ele não terá permissão*.

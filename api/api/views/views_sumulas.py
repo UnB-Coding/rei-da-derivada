@@ -31,6 +31,7 @@ class GetSumulasView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
     @ swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Retorna todas as sumulas associadas a um evento.",
         operation_description="Retorna todas as sumulas associadas a um evento com seus jogadores e pontuações.",
         security=[{'Bearer': []}],
@@ -54,6 +55,7 @@ class SumulaClassificatoriaView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
     @swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Cria uma nova sumula classificatoria.",
         operation_description="Cria uma nova sumula classificatoria e retorna a sumula criada com os jogadores e suas pontuações.",
         security=[{'Bearer': []}],
@@ -116,6 +118,7 @@ class SumulaClassificatoriaView(BaseSumulaView):
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
     @ swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Atualiza uma sumula.",
         operation_description="""Atualiza os dados associados a uma sumula criada.
                          """,
@@ -162,6 +165,7 @@ class SumulaImortalView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
     @ swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Cria uma nova sumula imortal.",
         operation_description="Cria uma nova sumula imortal e retorna a sumula criada com os jogadores e suas pontuações.",
         security=[{'Bearer': []}],
@@ -227,6 +231,7 @@ class SumulaImortalView(BaseSumulaView):
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
     @ swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Atualiza uma sumula Imortal.",
         operation_description="""Atualiza uma sumula
         Obtém o id da sumula a ser atualizada e atualiza os dados associados a ela.
@@ -280,6 +285,7 @@ class ActiveSumulaView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
     @ swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Retorna todas as sumulas ativas associadas a um evento.",
         operation_description="Retorna todas as sumulas ativas associadas a um evento, com seus jogadores e pontuações.",
         manual_parameters=manual_parameter_event_id,
@@ -304,6 +310,7 @@ class FinishedSumulaView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
     @ swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Retorna todas as sumulas encerradas associadas a um evento.",
         operation_description="Retorna todas as sumulas encerradas associadas a um evento, com seus jogadores e pontuações.",
         manual_parameters=manual_parameter_event_id,
@@ -335,6 +342,7 @@ class GetSumulaForPlayer(BaseSumulaView):
     permission_classes = [IsAuthenticated, GetSumulaForPlayerPermission]
 
     @ swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Retorna as sumulas ativas para um jogador.",
         operation_description="""
         Retorna todas as sumulas ativas para o jogador. São omitidos pontuações da sumula.""",
@@ -380,6 +388,7 @@ class AddRefereeToSumulaView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
     @swagger_auto_schema(
+        tags=['sumula'],
         operation_description="""
         Adiciona um árbitro a uma súmula que já existe.
         Caso uma súmula seja criada sem nenhum árbitro, é possível que um usuário monitor se auto adicione como árbitro ao selecionar a sumula desejada.

@@ -37,6 +37,7 @@ class PlayersView(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
 
     @ swagger_auto_schema(security=[{'Bearer': []}],
+                          tags=['player'],
                           operation_description='Retorna todos os jogadores de um evento.',
                           operation_summary='Retorna todos os jogadores de um evento.',
                           manual_parameters=manual_parameter_event_id,
@@ -62,6 +63,7 @@ class PlayersView(BaseView):
 
     @swagger_auto_schema(
         security=[{'Bearer': []}],
+        tags=['player'],
         operation_description="""Adiciona um jogador ao evento através do email fornecido na inscrição.
         Para um jogador entrar no evento, ele deve informar o email que foi utilizado na inscrição e o token de jogador fornecido pelo administrador do evento.
         """,
@@ -114,6 +116,7 @@ class GetPlayerResults(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
 
     @swagger_auto_schema(
+        tags=['player'],
         security=[{'Bearer': []}],
         operation_summary='Retorna o resultado a pontuação do jogador',
         operation_description='Retorna o resultado de pontuação do jogador atual do usuário logado.',
@@ -160,6 +163,7 @@ class PublishPlayersResults(BaseView):
     permission_classes = [IsAuthenticated, PublishPlayersPermissions]
 
     @swagger_auto_schema(
+        tags=['player'],
         security=[{'Bearer': []}],
         operation_description='Publica os resultados dos jogadores do evento.',
         operation_summary="""Publica os resultados dos jogadores do evento. Os jogadores poderão ver suas pontuações e os 4 primeiros colocados.""",
@@ -190,13 +194,14 @@ class PublishPlayersResults(BaseView):
         return event
 
 
-class Top4Players(BaseView):
+class Top3Players(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
 
     @swagger_auto_schema(
+        tags=['player'],
         security=[{'Bearer': []}],
-        operation_description='Retorna os 4 primeiros colocados do evento.',
-        operation_summary='Retorna os 4 primeiros colocados do evento.',
+        operation_description='Retorna os 3 jogadores com mais pontos do evento.',
+        operation_summary='Retorna os 3 primeiros jogadores do evento.',
         manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
@@ -206,7 +211,7 @@ class Top4Players(BaseView):
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
         players = Player.objects.filter(
-            event=event).order_by('-total_score')[:4]
+            event=event).order_by('-total_score')[:3]
         data = PlayerResultsSerializer(players, many=True).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
@@ -228,6 +233,7 @@ class AddPlayersExcel(BaseView):
     parser_classes = [MultiPartParser]
 
     @swagger_auto_schema(
+        tags=['player'],
         operation_description='Adiciona os jogadores ao evento através do excel fornecido pelo administrador com os participantes do evento.',
         operation_summary='Adiciona multiplos jogadores ao evento.',
         manual_parameters=manual_parameter_event_id,
@@ -310,6 +316,7 @@ class AddSinglePlayer(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
 
     @swagger_auto_schema(
+        tags=['player'],
         operation_description="""Adiciona um jogador manualmente ao evento.
         Deve ser fornecido o nome completo do jogador como _request body_ e o ID do evento como _manual parameter_. Nome social e email são opcionais.
 

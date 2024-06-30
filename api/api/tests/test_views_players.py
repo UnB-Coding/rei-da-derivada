@@ -512,7 +512,7 @@ class PublishPlayersResultsViewTestCase(APITestCase):
         self.data = None
 
 
-class Top4PlayersViewTest(APITestCase):
+class Top3PlayersViewTest(APITestCase):
     def create_unique_email(self):
         return f'{uuid.uuid4()}@gmail.com'
 
@@ -569,10 +569,10 @@ class Top4PlayersViewTest(APITestCase):
         response = self.client.get(self.url, {'event_id': self.event.id})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 4)
+        self.assertEqual(len(response.data), 3)
 
         expected_player_ids = [self.player4.id,
-                               self.player3.id, self.player2.id, self.player1.id]
+                               self.player3.id, self.player2.id]
         returned_player_ids = [player['id'] for player in response.data]
 
         self.assertEqual(returned_player_ids, expected_player_ids)
