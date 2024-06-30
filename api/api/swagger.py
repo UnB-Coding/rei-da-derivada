@@ -202,6 +202,9 @@ sumulas_response_schema = openapi.Schema(
     }
 )
 
+manual_parameter_event_id = [openapi.Parameter(
+    'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')]
+
 
 class Errors():
 

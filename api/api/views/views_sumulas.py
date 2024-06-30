@@ -7,15 +7,13 @@ from api.models import Staff, SumulaClassificatoria, SumulaImortal, PlayerScore,
 from ..serializers import SumulaSerializer, SumulaForPlayerSerializer, SumulaImortalSerializer, SumulaClassificatoriaSerializer, SumulaClassificatoriaForPlayerSerializer, SumulaImortalForPlayerSerializer
 from rest_framework.permissions import BasePermission
 from ..utils import handle_400_error
-from ..swagger import Errors, sumula_imortal_api_put_schema, sumula_classicatoria_api_put_schema, sumulas_response_schema
+from ..swagger import Errors, sumula_imortal_api_put_schema, sumula_classicatoria_api_put_schema, sumulas_response_schema, manual_parameter_event_id
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
 
 class HasSumulaPermission(BasePermission):
     def has_object_permission(self, request, view, obj) -> bool:
-        if Group.objects.get(name='app_admin') in request.user.groups.all():
-            return True
 
         if request.method == 'POST':
             return request.user.has_perm('api.add_sumula_event', obj)
@@ -33,11 +31,11 @@ class GetSumulasView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
     @ swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Retorna todas as sumulas associadas a um evento.",
         operation_description="Retorna todas as sumulas associadas a um evento com seus jogadores e pontuações.",
         security=[{'Bearer': []}],
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, description="Id do evento associado às sumulas.", type=openapi.TYPE_INTEGER, required=True)],
+        manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response('OK', sumulas_response_schema), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Retorna todas as sumulas associadas a um evento."""
@@ -57,11 +55,11 @@ class SumulaClassificatoriaView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
     @swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Cria uma nova sumula classificatoria.",
         operation_description="Cria uma nova sumula classificatoria e retorna a sumula criada com os jogadores e suas pontuações.",
         security=[{'Bearer': []}],
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, description="Id do evento associado a sumula.", type=openapi.TYPE_INTEGER, required=True)],
+        manual_parameters=manual_parameter_event_id,
         request_body=openapi.Schema(
             title='Sumula',
             type=openapi.TYPE_OBJECT,
@@ -120,12 +118,12 @@ class SumulaClassificatoriaView(BaseSumulaView):
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
     @ swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Atualiza uma sumula.",
         operation_description="""Atualiza os dados associados a uma sumula criada.
                          """,
         security=[{'Bearer': []}],
-        manual_parameters=[openapi.Parameter('event_id', openapi.IN_QUERY, description="Id do evento associado a sumula.",
-                                             type=openapi.TYPE_INTEGER, required=True)],
+        manual_parameters=manual_parameter_event_id,
         request_body=sumula_classicatoria_api_put_schema,
         responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
     def put(self, request: request.Request, *args, **kwargs):
@@ -167,11 +165,11 @@ class SumulaImortalView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
     @ swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Cria uma nova sumula imortal.",
         operation_description="Cria uma nova sumula imortal e retorna a sumula criada com os jogadores e suas pontuações.",
         security=[{'Bearer': []}],
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, description="Id do evento associado a sumula.", type=openapi.TYPE_INTEGER, required=True)],
+        manual_parameters=manual_parameter_event_id,
         request_body=openapi.Schema(
             title='Sumula',
             type=openapi.TYPE_OBJECT,
@@ -233,14 +231,14 @@ class SumulaImortalView(BaseSumulaView):
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
     @ swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Atualiza uma sumula Imortal.",
         operation_description="""Atualiza uma sumula
         Obtém o id da sumula a ser atualizada e atualiza os dados associados a ela.
         Obtém uma lista da pontuação dos jogadores e atualiza as pontuações associados a sumula.
         Marca a sumula como encerrada """,
         security=[{'Bearer': []}],
-        manual_parameters=[openapi.Parameter('event_id', openapi.IN_QUERY, description="Id do evento associado a sumula.",
-                                             type=openapi.TYPE_INTEGER, required=True)],
+        manual_parameters=manual_parameter_event_id,
         request_body=sumula_imortal_api_put_schema,
         responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
     def put(self, request: request.Request, *args, **kwargs) -> response.Response:
@@ -287,10 +285,10 @@ class ActiveSumulaView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
     @ swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Retorna todas as sumulas ativas associadas a um evento.",
         operation_description="Retorna todas as sumulas ativas associadas a um evento, com seus jogadores e pontuações.",
-        manual_parameters=[openapi.Parameter(
-                              'event_id', openapi.IN_QUERY, description="Id do evento associado às sumulas.", type=openapi.TYPE_INTEGER, required=True)],
+        manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(
             'OK', sumulas_response_schema), **Errors([400]).retrieve_erros()}
     )
@@ -312,10 +310,10 @@ class FinishedSumulaView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
     @ swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Retorna todas as sumulas encerradas associadas a um evento.",
         operation_description="Retorna todas as sumulas encerradas associadas a um evento, com seus jogadores e pontuações.",
-        manual_parameters=[openapi.Parameter(
-                              'event_id', openapi.IN_QUERY, description="Id do evento associado às sumulas.", type=openapi.TYPE_INTEGER, required=True)],
+        manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(
             'OK', sumulas_response_schema), **Errors([400]).retrieve_erros()}
     )
@@ -335,8 +333,6 @@ class FinishedSumulaView(BaseSumulaView):
 
 class GetSumulaForPlayerPermission(BasePermission):
     def has_object_permission(self, request, view, obj) -> bool:
-        if Group.objects.get(name='app_admin') in request.user.groups.all():
-            return True
         if request.method == 'GET':
             return request.user.has_perm('api.view_event', obj)
         return False
@@ -346,11 +342,11 @@ class GetSumulaForPlayer(BaseSumulaView):
     permission_classes = [IsAuthenticated, GetSumulaForPlayerPermission]
 
     @ swagger_auto_schema(
+        tags=['sumula'],
         operation_summary="Retorna as sumulas ativas para um jogador.",
         operation_description="""
         Retorna todas as sumulas ativas para o jogador. São omitidos pontuações da sumula.""",
-        manual_parameters=[openapi.Parameter(
-                              'event_id', openapi.IN_QUERY, description="Id do evento associado às sumulas.", type=openapi.TYPE_INTEGER, required=True)],
+        manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(
             'OK', SumulaForPlayerSerializer), **Errors([400]).retrieve_erros()}
     )
@@ -392,6 +388,7 @@ class AddRefereeToSumulaView(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
     @swagger_auto_schema(
+        tags=['sumula'],
         operation_description="""
         Adiciona um árbitro a uma súmula que já existe.
         Caso uma súmula seja criada sem nenhum árbitro, é possível que um usuário monitor se auto adicione como árbitro ao selecionar a sumula desejada.
@@ -410,9 +407,7 @@ class AddRefereeToSumulaView(BaseSumulaView):
             },
             required=['sumula_id', 'is_imortal'],
         ),
-        manual_parameters=[
-            openapi.Parameter('event_id', openapi.IN_QUERY, description="Id do evento associado a sumula.",
-                              type=openapi.TYPE_INTEGER, required=True)],
+        manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
     def put(self, request: request.Request, *args, **kwargs):
         if not self.validate_request_data(request.data):

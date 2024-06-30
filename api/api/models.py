@@ -222,7 +222,7 @@ class Player(models.Model):
         default='', max_length=128, blank=True, null=True)
     total_score = models.PositiveSmallIntegerField(default=0)
     registration_email = models.EmailField(
-        blank=False, unique=False, null=False)
+        blank=True, unique=False, null=True)
     is_imortal = models.BooleanField(default=False)
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='player', null=True, blank=True, default=None)
