@@ -2,12 +2,11 @@ from typing import Optional
 from django.contrib.auth.models import Group
 
 from rest_framework import status, request, response
-from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import BasePermission
 
+from ..views.base_views import BaseView
 from api.models import Token, Event
-from users.models import User
 from ..serializers import EventSerializer, TokenSerializer
 from ..utils import handle_400_error
 from ..swagger import Errors
@@ -33,7 +32,7 @@ class TokenPermissions(BasePermission):
             return request.user.has_perm('api.delete_token')
 
 
-class TokenView(APIView):
+class TokenView(BaseView):
     permission_classes = [IsAuthenticated, TokenPermissions]
 
     @swagger_auto_schema(
@@ -64,7 +63,7 @@ class EventPermissions(BasePermission):
             return request.user.has_perm('api.delete_event', obj)
 
 
-class EventView(APIView):
+class EventView(BaseView):
     """Lida com os requests relacionados a eventos."""
     permission_classes = [IsAuthenticated, EventPermissions]
 
