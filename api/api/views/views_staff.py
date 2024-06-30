@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import BasePermission
 from rest_framework.parsers import MultiPartParser
 
+from ..views.base_views import BaseView
 from api.models import Token, Event, Staff
 from users.models import User
 from ..serializers import EventSerializer, StaffSerializer, UploadFileSerializer
@@ -28,11 +29,11 @@ class StaffPermissions(BasePermission):
         if Group.objects.get(name='app_admin') in request.user.groups.all():
             return True
         if request.method == 'GET':
-            return request.user.has_perm('api.change_event', obj)
+            return request.user.has_perm('api.add_sumula_event', obj)
         return False
 
 
-class StaffView(APIView):
+class StaffView(BaseView):
     permission_classes = [IsAuthenticated, StaffPermissions]
 
     def get_token(self, token_code: str) -> Optional[Token]:
@@ -71,15 +72,21 @@ class StaffView(APIView):
             registration_email=request.user.email, event=event).first()
         if not staff:
             return handle_400_error('Este email não está cadastrado como monitor para este evento.')
-        staff.user = request.user
-        group = Group.objects.get(name='staff_member')
-        request.user.groups.add(group)
-        request.user.events.add(event)
-        assign_permissions(user=request.user, group=group, event=event)
+        if not staff.user:
+            staff.user = request.user
+            group = None
+            if staff.is_manager:
+                group = Group.objects.get(name='staff_manager')
+            else:
+                group = Group.objects.get(name='staff_member')
+            request.user.groups.add(group)
+            request.user.events.add(event)
+            assign_permissions(user=request.user, group=group, event=event)
+            staff.save()
         data = EventSerializer(event).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
-    @swagger_auto_schema(
+    @ swagger_auto_schema(
         operation_description="""Retorna os todos usuários monitores associados ao evento.
         Procura por todos os objetos staff associados ao evento e retorna esses objetos.
 
@@ -120,10 +127,10 @@ class AddStaffManagerPermissions(BasePermission):
         return False
 
 
-class AddStaffManager(APIView):
+class AddStaffManager(BaseView):
     permission_classes = [IsAuthenticated, AddStaffManagerPermissions]
 
-    @swagger_auto_schema(
+    @ swagger_auto_schema(
         operation_description="""Promove um usuário monitor a Gerente de Equipe no evento associado.
         Deve ser enviado o email do usuário a ser promovido a Gerente de Equipe. Quem envia a requisição é o Admin do evento.
         """,
@@ -190,11 +197,11 @@ class AddStaffPermissions(BasePermission):
         return False
 
 
-class AddStaffMembers(APIView):
+class AddStaffMembers(BaseView):
     permission_classes = [IsAuthenticated, AddStaffPermissions]
     parser_classes = [MultiPartParser]
 
-    @swagger_auto_schema(
+    @ swagger_auto_schema(
         operation_description='Adiciona monitores ao evento através do excel fornecido pelo administrador.',
         operation_summary='Adiciona multiplos monitores ao evento.',
         manual_parameters=manual_parameter_event_id,
@@ -266,3 +273,43 @@ class AddStaffMembers(APIView):
         if not event:
             raise ValidationError('Evento não encontrado!')
         return event
+
+
+class AddSingleStaff(BaseView):
+    permission_classes = [IsAuthenticated, AddStaffPermissions]
+
+    @swagger_auto_schema(
+        operation_description="""Adiciona um monitor manualmente ao evento.
+            Devem ser enviados os dados do monitor a ser adicionado.
+                Obrigatório: Nome Completo, E-mail e se é Gerente de Equipe ou não.""",
+        operation_summary='Adiciona um monitor ao evento.',
+        manual_parameters=manual_parameter_event_id,
+        request_body=openapi.Schema(
+            title='Dados do Monitor', type=openapi.TYPE_OBJECT,
+            properties={'full_name': openapi.Schema(
+                type=openapi.TYPE_STRING, description='Nome Completo', example='João da Silva'),
+                'registration_email': openapi.Schema(
+                type=openapi.TYPE_STRING, description='E-mail', example='joao@email.com'),
+                'is_manager': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Gerente de Equipe', example=False)}),
+        required=['full_name', 'registration_email', 'is_manager'],
+        responses={201: openapi.Response(
+            'Monitor adicionado com sucesso!'), **Errors([400]).retrieve_erros()}
+    )
+    def post(self, request: request.Request, *args, **kwargs):
+        if request.data is None or 'full_name' not in request.data or 'registration_email' not in request.data or 'is_manager' not in request.data:
+            return handle_400_error('Dados inválidos!')
+        try:
+            event = self.get_object()
+        except Exception as e:
+            return handle_400_error(str(e))
+
+        self.check_object_permissions(self.request, event)
+        full_name = request.data['full_name']
+        registration_email = request.data['registration_email']
+        is_manager = request.data['is_manager']
+        staff, created = Staff.objects.get_or_create(
+            full_name=full_name, registration_email=registration_email, event=event, is_manager=is_manager)
+        if not created:
+            return handle_400_error('Monitor já cadastrado para este evento!')
+
+        return response.Response(status=status.HTTP_201_CREATED, data='Monitor adicionado com sucesso!')

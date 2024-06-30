@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.urls import path, re_path
 from .views.views_event import TokenView, EventView
-from .views.views_staff import StaffView, AddStaffManager, AddStaffMembers
-from .views.views_players import PlayersView, GetPlayerResults, AddPlayers, PublishPlayersResults, Top4Players
+from .views.views_staff import StaffView, AddStaffManager, AddStaffMembers, AddSingleStaff
+from .views.views_players import PlayersView, GetPlayerResults, AddPlayersExcel, PublishPlayersResults, Top4Players, AddSinglePlayer
 from .views.views_sumulas import GetSumulasView, ActiveSumulaView, FinishedSumulaView, GetSumulaForPlayer, SumulaImortalView, SumulaClassificatoriaView, AddRefereeToSumulaView
 
 app_name = 'api'
@@ -24,16 +24,18 @@ urlpatterns = [
     path('sumula/player/', GetSumulaForPlayer.as_view(), name='sumula-player'),
     path('sumula/add-referee/', AddRefereeToSumulaView.as_view(),
          name='sumula-add-referee'),
-    
+
     # Rotas de jogadores
     path('players/', PlayersView.as_view(), name='players'),
     path('player/', GetPlayerResults.as_view(), name='player'),
-    path('upload-player/', AddPlayers.as_view(), name='upload-player'),
+    path('upload-player/', AddPlayersExcel.as_view(), name='upload-player'),
     path('top4/', Top4Players.as_view(), name='top4'),
     path('publish-results/', PublishPlayersResults.as_view(), name='publish-results'),
+    path('player/add/', AddSinglePlayer.as_view(), name='add-player'),
 
     # Rotas de staff
     path('staff/', StaffView.as_view(), name='staff'),
+    path('staff/add', AddSingleStaff.as_view(), name='add-staff'),
     path('staff-manager/', AddStaffManager.as_view(), name='staff-manager'),
     path('upload-staff/', AddStaffMembers.as_view(), name='upload-staff'),
 ]
