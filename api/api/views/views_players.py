@@ -10,10 +10,11 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import BasePermission
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from ..views.base_views import BaseView
 from api.models import Event, Player
 from ..utils import handle_400_error
 from ..serializers import PlayerSerializer, UploadFileSerializer, PlayerResultsSerializer
-from ..swagger import Errors
+from ..swagger import Errors, manual_parameter_event_id
 from ..permissions import assign_permissions
 import pandas as pd
 
@@ -31,15 +32,15 @@ class PlayersPermission(BasePermission):
         return True
 
 
-class PlayersView(APIView):
+class PlayersView(BaseView):
 
     permission_classes = [IsAuthenticated, PlayersPermission]
 
     @ swagger_auto_schema(security=[{'Bearer': []}],
+                          tags=['player'],
                           operation_description='Retorna todos os jogadores de um evento.',
                           operation_summary='Retorna todos os jogadores de um evento.',
-                          manual_parameters=[openapi.Parameter(
-                              'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
+                          manual_parameters=manual_parameter_event_id,
                           responses={200: openapi.Response(200, PlayerSerializer), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """ Retorna todos os jogadores de um evento."""
@@ -62,24 +63,25 @@ class PlayersView(APIView):
 
     @swagger_auto_schema(
         security=[{'Bearer': []}],
+        tags=['player'],
         operation_description="""Adiciona um jogador ao evento através do email fornecido na inscrição.
         Para um jogador entrar no evento, ele deve informar o email que foi utilizado na inscrição e o token de jogador fornecido pelo administrador do evento.
         """,
         operation_summary='Adiciona um jogador ao evento.',
-        request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do jogador'), 'players_token': openapi.Schema(
-            type=openapi.TYPE_STRING, description='Token do evento')}, required=['email', 'players_token']),
+        request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do jogador'), 'join_token': openapi.Schema(
+            type=openapi.TYPE_STRING, description='Token do evento')}, required=['email', 'join_token']),
         responses={200: openapi.Response(
             200), **Errors([400]).retrieve_erros()}
     )
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         """ Adiciona um jogador ao evento através do email fornecido na inscirção."""
-        if 'email' not in request.data or 'players_token' not in request.data:
+        if 'email' not in request.data or 'join_token' not in request.data:
             return handle_400_error('Email e token são obrigatórios!')
         email = request.data['email']
-        players_token = request.data['players_token']
-        if not email or not players_token:
+        join_token = request.data['join_token']
+        if not email or not join_token:
             return handle_400_error('Email e token são obrigatórios!')
-        event = Event.objects.filter(players_token=players_token).first()
+        event = Event.objects.filter(join_token=join_token).first()
         if not event:
             return handle_400_error('Evento não encontrado!')
         player = Player.objects.filter(
@@ -110,16 +112,16 @@ class PlayersView(APIView):
         return event
 
 
-class GetPlayerResults(APIView):
+class GetPlayerResults(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
 
     @swagger_auto_schema(
+        tags=['player'],
         security=[{'Bearer': []}],
         operation_summary='Retorna o resultado a pontuação do jogador',
         operation_description='Retorna o resultado de pontuação do jogador atual do usuário logado.',
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
-        responses={200: openapi.Response(200, PlayerSerializer), **Errors([400]).retrieve_erros()})
+        manual_parameters=manual_parameter_event_id,
+        responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """ Retorna o resultado de pontuação do jogador atual do usuário logado."""
         try:
@@ -157,15 +159,15 @@ class PublishPlayersPermissions(BasePermission):
         return True
 
 
-class PublishPlayersResults(APIView):
+class PublishPlayersResults(BaseView):
     permission_classes = [IsAuthenticated, PublishPlayersPermissions]
 
     @swagger_auto_schema(
+        tags=['player'],
         security=[{'Bearer': []}],
         operation_description='Publica os resultados dos jogadores do evento.',
         operation_summary="""Publica os resultados dos jogadores do evento. Os jogadores poderão ver suas pontuações e os 4 primeiros colocados.""",
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
+        manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(
             200), **Errors([400]).retrieve_erros()}
     )
@@ -192,15 +194,15 @@ class PublishPlayersResults(APIView):
         return event
 
 
-class Top4Players(APIView):
+class Top3Players(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
 
     @swagger_auto_schema(
+        tags=['player'],
         security=[{'Bearer': []}],
-        operation_description='Retorna os 4 primeiros colocados do evento.',
-        operation_summary='Retorna os 4 primeiros colocados do evento.',
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
+        operation_description='Retorna os 3 jogadores com mais pontos do evento.',
+        operation_summary='Retorna os 3 primeiros jogadores do evento.',
+        manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         try:
@@ -209,7 +211,7 @@ class Top4Players(APIView):
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
         players = Player.objects.filter(
-            event=event).order_by('-total_score')[:4]
+            event=event).order_by('-total_score')[:3]
         data = PlayerResultsSerializer(players, many=True).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
@@ -226,15 +228,15 @@ class Top4Players(APIView):
         return event
 
 
-class AddPlayers(APIView):
+class AddPlayersExcel(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
     parser_classes = [MultiPartParser]
 
     @swagger_auto_schema(
+        tags=['player'],
         operation_description='Adiciona os jogadores ao evento através do excel fornecido pelo administrador com os participantes do evento.',
         operation_summary='Adiciona multiplos jogadores ao evento.',
-        manual_parameters=[openapi.Parameter(
-            'event_id', openapi.IN_QUERY, type=openapi.TYPE_INTEGER, description='Id do evento')],
+        manual_parameters=manual_parameter_event_id,
         request_body=UploadFileSerializer,
         responses={201: openapi.Response(
             201), **Errors([400]).retrieve_erros()})
@@ -308,3 +310,45 @@ class AddPlayers(APIView):
         if not event:
             raise ValidationError('Evento não encontrado!')
         return event
+
+
+class AddSinglePlayer(BaseView):
+    permission_classes = [IsAuthenticated, PlayersPermission]
+
+    @swagger_auto_schema(
+        tags=['player'],
+        operation_description="""Adiciona um jogador manualmente ao evento.
+        Deve ser fornecido o nome completo do jogador como _request body_ e o ID do evento como _manual parameter_. Nome social e email são opcionais.
+
+        """,
+        operation_summary='Adiciona um jogador manualmente ao evento.',
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João da Silva'),
+                'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='Joana Silva'),
+                'registration_email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do jogador', example='joao@gmail.com')},
+        ),
+        required=['full_name'],
+        manual_parameters=manual_parameter_event_id,
+        responses={201: openapi.Response(
+            201, PlayerSerializer), **Errors([400]).retrieve_erros()}
+    )
+    def post(self, request: request.Request, *args, **kwargs) -> response.Response:
+        """Adiciona um jogador manualmente ao evento."""
+        if request.data is None or 'full_name' not in request.data or 'registration_email' not in request.data or 'social_name' not in request.data:
+            return handle_400_error('Dados Inválidos!')
+        try:
+            event = self.get_object()
+        except Exception as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+        full_name = request.data['full_name']
+        social_name = request.data['social_name']
+        email = request.data['registration_email']
+        if not full_name:
+            return handle_400_error('Nome completo é obrigatório para criar um jogador!')
+        player = Player.objects.create(
+            full_name=full_name, social_name=social_name, registration_email=email, event=event)
+        data = PlayerSerializer(player).data
+        return response.Response(status=status.HTTP_201_CREATED, data=data)

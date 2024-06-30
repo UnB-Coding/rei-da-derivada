@@ -1,5 +1,7 @@
+from django import forms
 from django.contrib import admin
-from .models import Token, Event, Sumula, PlayerScore, Player, Staff
+from django.forms import ValidationError
+from .models import Token, Event, SumulaImortal, SumulaClassificatoria, PlayerScore, Player, Staff
 from guardian.admin import GuardedModelAdmin
 
 
@@ -14,13 +16,12 @@ class TokenAdmin(GuardedModelAdmin):
 
 @admin.register(Event)
 class EventAdmin(GuardedModelAdmin):
-    list_display = ['id', 'token', 'staff_token',
-                    'players_token', 'name', 'active']
+    list_display = ['id', 'token', 'join_token',
+                    'join_token', 'name', 'active']
     search_fields = ['token', 'name', 'active']
     fields = ['token', 'name', 'active']
 
 
-@admin.register(Sumula)
 class SumulaAdmin(GuardedModelAdmin):
 
     def referees(self, obj):
@@ -43,16 +44,73 @@ class SumulaAdmin(GuardedModelAdmin):
     filter_horizontal = ['referee']
 
 
+@admin.register(SumulaImortal)
+class SumulaImortalAdmin(SumulaAdmin):
+    pass
+
+
+@admin.register(SumulaClassificatoria)
+class SumulaClassificatoriaAdmin(SumulaAdmin):
+    pass
+
+
+class PlayerScoreForm(forms.ModelForm):
+    class Meta:
+        model = PlayerScore
+        fields = '__all__'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        self.validar_sumulas(cleaned_data)
+        self.validar_evento_player(cleaned_data)
+        self.validar_evento_sumula(cleaned_data)
+        return cleaned_data
+
+    def validar_sumulas(self, cleaned_data):
+        sumula_classificatoria = cleaned_data.get("sumula_classificatoria")
+        sumula_imortal = cleaned_data.get("sumula_imortal")
+        if sumula_classificatoria and sumula_imortal:
+            raise ValidationError(
+                "Um jogador não pode estar em duas súmulas ao mesmo tempo.")
+        elif not sumula_classificatoria and not sumula_imortal:
+            raise ValidationError(
+                "Um jogador deve estar em pelo menos uma súmula.")
+
+    def validar_evento_player(self, cleaned_data):
+        player = cleaned_data.get("player")
+        event = cleaned_data.get("event")
+        if player.event != event:
+            raise ValidationError(
+                "O evento de Player deve ser o mesmo Evento do objeto de PlayerScore!")
+
+    def validar_evento_sumula(self, cleaned_data):
+        sumula_classificatoria = cleaned_data.get("sumula_classificatoria")
+        sumula_imortal = cleaned_data.get("sumula_imortal")
+        event = cleaned_data.get("event")
+        if sumula_classificatoria and sumula_classificatoria.event != event:
+            raise ValidationError(
+                "O evento de uma Sumula deve ser o mesmo Evento do objeto de PlayerScore!")
+        elif sumula_imortal and sumula_imortal.event != event:
+            raise ValidationError(
+                "O evento de uma Sumula deve ser o mesmo Evento do objeto de PlayerScore!")
+
+# Atualize a classe PlayerScoreAdmin para usar o ModelForm personalizado
+
+
 @admin.register(PlayerScore)
 class PlayerScoreAdmin(GuardedModelAdmin):
+    form = PlayerScoreForm
+
     def get_player_name(self, obj):
         return obj.player.__str__()
-    # Define um cabeçalho para a coluna
     get_player_name.short_description = 'Player Name'
 
-    list_display = ['get_player_name', 'event', 'sumula', 'points', 'id']
-    search_fields = ['event', 'sumula', 'points', 'player']
-    fields = ['event', 'sumula', 'points', 'player']
+    list_display = ['get_player_name', 'event', 'sumula_classificatoria',
+                    'sumula_imortal', 'points', 'id']
+    search_fields = ['event', 'sumula_classificatoria',
+                     'sumula_imortal', 'points', 'player']
+    fields = ['event', 'sumula_classificatoria',
+              'sumula_imortal', 'points', 'player']
 
 
 @admin.register(Player)

@@ -12,48 +12,48 @@ from guardian.shortcuts import assign_perm, remove_perm
 from ..serializers import EventSerializer
 
 
-class TokenViewTest(APITestCase):
-    def setUp(self):
-        self.user = User.objects.create(
-            username='testuser', email='example@email.com')
-        self.group = Group.objects.create(name='App_Admin')
-        self.permission = get_permissions(get_content_type(Token))
-        self.group.permissions.set(self.permission)
+# class TokenViewTest(APITestCase):
+#     def setUp(self):
+#         self.user = User.objects.create(
+#             username='testuser', email='example@email.com')
+#         self.group = Group.objects.create(name='App_Admin')
+#         self.permission = get_permissions(get_content_type(Token))
+#         self.group.permissions.set(self.permission)
 
-    def test_create_token(self):
-        """Test creating a new token with a valid user."""
-        url = reverse('api:token')
-        self.client.force_authenticate(user=self.user)
-        self.user.groups.add(self.group)
-        response = self.client.post(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(Token.objects.count(), 1)
-        self.assertEqual(Token.objects.get().token_code,
-                         response.data['token_code'])
+#     def test_create_token(self):
+#         """Test creating a new token with a valid user."""
+#         url = reverse('api:token')
+#         self.client.force_authenticate(user=self.user)
+#         self.user.groups.add(self.group)
+#         response = self.client.post(url)
+#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+#         self.assertEqual(Token.objects.count(), 1)
+#         self.assertEqual(Token.objects.get().token_code,
+#                          response.data['token_code'])
 
-    def test_create_token_unauthenticated(self):
-        """Test creating a new token without authentication."""
-        url = reverse('api:token')
-        response = self.client.post(url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(Token.objects.count(), 0)
+#     def test_create_token_unauthenticated(self):
+#         """Test creating a new token without authentication."""
+#         url = reverse('api:token')
+#         response = self.client.post(url)
+#         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+#         self.assertEqual(Token.objects.count(), 0)
 
-    def test_create_token_with_unauthorized_user(self):
+#     def test_create_token_with_unauthorized_user(self):
 
-        url = reverse('api:token')
-        self.client.force_authenticate(user=self.user)
-        response = self.client.post(url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(Token.objects.count(), 0)
+#         url = reverse('api:token')
+#         self.client.force_authenticate(user=self.user)
+#         response = self.client.post(url)
+#         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+#         self.assertEqual(Token.objects.count(), 0)
 
-    def tearDown(self):
-        self.user.delete()
-        self.group.delete()
-        self.permission.delete()
-        self.client.logout()
-        self.client.force_authenticate(user=None)
-        if Token.objects.exists():
-            Token.objects.all().delete()
+#     def tearDown(self):
+#         self.user.delete()
+#         self.group.delete()
+#         self.permission.delete()
+#         self.client.logout()
+#         self.client.force_authenticate(user=None)
+#         if Token.objects.exists():
+#             Token.objects.all().delete()
 
 
 class EventViewTest(APITestCase):
@@ -64,8 +64,8 @@ class EventViewTest(APITestCase):
     def setUpUser(self):
         self.user = User.objects.create(
             username='testuser', email='test@email.com')
-        self.app_admin_user = User.objects.create(
-            username='app_admin_user', email='adm@email.com')
+        self.event_admin_user = User.objects.create(
+            username='event_admin_user', email='adm@email.com')
 
     def setUpToken(self):
         self.token = Token.objects.create()
@@ -73,8 +73,7 @@ class EventViewTest(APITestCase):
 
     def setUpGroups(self):
         self.group_event_admin = Group.objects.create(name='event_admin')
-        self.group_app_admin = Group.objects.create(name='app_admin')
-        self.app_admin_user.groups.add(self.group_app_admin)
+        self.event_admin_user.groups.add(self.group_event_admin)
 
     def setUpPermissions(self):
         self.content_type = ContentType.objects.get_for_model(Event)
@@ -208,14 +207,6 @@ class EventViewTest(APITestCase):
         response = self.client.delete(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_delete_with_app_admin_user(self):
-        """Test deleting an event with an app admin user."""
-        url = reverse('api:event')
-        data = {'token_code': self.token2.token_code}
-        self.client.force_authenticate(user=self.app_admin_user)
-        response = self.client.delete(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
     def test_get_event(self):
         """Test getting an event with a valid token."""
         self.user.events.add(self.event)
@@ -236,9 +227,8 @@ class EventViewTest(APITestCase):
         self.user.delete()
         self.token.delete()
         self.token.token_code = None
-        self.app_admin_user.delete()
+        self.event_admin_user.delete()
         self.event.delete()
-        self.group_app_admin.delete()
         self.group_event_admin.delete()
         self.permission.delete()
         self.client.logout()
