@@ -16,8 +16,8 @@ class TokenAdmin(GuardedModelAdmin):
 
 @admin.register(Event)
 class EventAdmin(GuardedModelAdmin):
-    list_display = ['id', 'token', 'staff_token',
-                    'players_token', 'name', 'active']
+    list_display = ['id', 'token', 'join_token',
+                    'join_token', 'name', 'active']
     search_fields = ['token', 'name', 'active']
     fields = ['token', 'name', 'active']
 
@@ -61,10 +61,14 @@ class PlayerScoreForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        self.validar_sumulas(cleaned_data)
+        self.validar_evento_player(cleaned_data)
+        self.validar_evento_sumula(cleaned_data)
+        return cleaned_data
+
+    def validar_sumulas(self, cleaned_data):
         sumula_classificatoria = cleaned_data.get("sumula_classificatoria")
         sumula_imortal = cleaned_data.get("sumula_imortal")
-
-        # Verifica se ambas ou nenhuma das súmulas estão preenchidas
         if sumula_classificatoria and sumula_imortal:
             raise ValidationError(
                 "Um jogador não pode estar em duas súmulas ao mesmo tempo.")
@@ -72,7 +76,23 @@ class PlayerScoreForm(forms.ModelForm):
             raise ValidationError(
                 "Um jogador deve estar em pelo menos uma súmula.")
 
-        return cleaned_data
+    def validar_evento_player(self, cleaned_data):
+        player = cleaned_data.get("player")
+        event = cleaned_data.get("event")
+        if player.event != event:
+            raise ValidationError(
+                "O evento de Player deve ser o mesmo Evento do objeto de PlayerScore!")
+
+    def validar_evento_sumula(self, cleaned_data):
+        sumula_classificatoria = cleaned_data.get("sumula_classificatoria")
+        sumula_imortal = cleaned_data.get("sumula_imortal")
+        event = cleaned_data.get("event")
+        if sumula_classificatoria and sumula_classificatoria.event != event:
+            raise ValidationError(
+                "O evento de uma Sumula deve ser o mesmo Evento do objeto de PlayerScore!")
+        elif sumula_imortal and sumula_imortal.event != event:
+            raise ValidationError(
+                "O evento de uma Sumula deve ser o mesmo Evento do objeto de PlayerScore!")
 
 # Atualize a classe PlayerScoreAdmin para usar o ModelForm personalizado
 

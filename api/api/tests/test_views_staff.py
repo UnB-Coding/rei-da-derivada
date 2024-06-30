@@ -3,7 +3,7 @@ from api.models import Token, Event, Staff
 from users.models import User
 from ..serializers import StaffSerializer
 from ..permissions import assign_permissions
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from django.urls import reverse
 from django.contrib.auth.models import Group
@@ -33,12 +33,16 @@ class StaffViewTest(APITestCase):
             username=self.create_unique_username(), email=self.create_unique_email(), first_name='Staff1', last_name='Member1')
         self.user_staff2 = User.objects.create(
             username=self.create_unique_username(), email=self.create_unique_email(), first_name='Staff2', last_name='Member2')
+        self.user_staff3 = User.objects.create(
+            username=self.create_unique_username(), email=self.create_unique_email(), first_name='Staff3', last_name='Member3')
         self.admin = User.objects.create(
             username=self.create_unique_username(), email=self.create_unique_email(), first_name='Admin', last_name='User')
 
     def setUpEvent(self):
         self.token = Token.objects.create()
         self.event = Event.objects.create(name='Evento 1', token=self.token)
+        self.token2 = Token.objects.create()
+        self.event2 = Event.objects.create(name='Evento 2', token=self.token2)
 
     def setUpGroup(self):
         self.group = Group.objects.create(name='staff_member')
@@ -57,9 +61,11 @@ class StaffViewTest(APITestCase):
 
     def setUpStaff(self):
         self.staff1 = Staff.objects.create(
-            user=self.user_staff1, event=self.event, registration_email='example@email.com', full_name='Staff1')
+            user=self.user_staff1, event=self.event, registration_email=self.user_staff1.email, full_name='Staff1')
         self.staff2 = Staff.objects.create(
-            user=self.user_staff2, event=self.event, registration_email='example2@email.com', full_name='Staff2')
+            user=self.user_staff2, event=self.event, registration_email=self.user_staff2.email, full_name='Staff2')
+        self.staff3 = Staff.objects.create(
+            user=self.user_staff3, event=self.event2, registration_email=self.user_staff1.email, full_name='Staff1')
 
     def setUp(self):
         self.setUpEvent()
@@ -72,11 +78,12 @@ class StaffViewTest(APITestCase):
     def test_add_staff_member(self):
         """Test adding a staff member to an event."""
         url = reverse('api:staff')
-        data = {'token_code': self.token.token_code,
-                'email': self.staff1.registration_email}
+        data = {'join_token': self.event.join_token, }
         self.client.force_authenticate(user=self.user_staff1)
+        self.staff1.user = None
+        self.staff1.save()
         response = self.client.post(url, data, format='json')
-
+        self.staff1.refresh_from_db()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.user_staff1.events.count(), 1)
         self.assertEqual(self.staff1.user, self.user_staff1)
@@ -94,7 +101,7 @@ class StaffViewTest(APITestCase):
     def test_add_staff_member_with_invalid_token(self):
         """Test adding a staff member with an invalid token."""
         url = reverse('api:staff')
-        data = {'token_code': 'invalid_token'}
+        data = {'join_token': 'invalid_token'}
         self.client.force_authenticate(user=self.user_staff1)
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -102,52 +109,19 @@ class StaffViewTest(APITestCase):
     def test_add_staff_member_with_unauthenticated_user(self):
         """Test adding a staff member without authentication."""
         url = reverse('api:staff')
-        data = {'token_code': self.token.token_code}
+        data = {'join_token': self.event.join_token}
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_add_staff_member_with_another_user(self):
+    def test_add_staff_member_with_another_staff_from_other_event(self):
         """Test adding a staff member with another user."""
         url = reverse('api:staff')
-        data = {'token_code': self.token.token_code,
-                'email': self.staff1.registration_email}
+        data = {'join_token': self.event.join_token}
         # User different from the one in the data
-        self.client.force_authenticate(user=self.user_staff2)
+        self.client.force_authenticate(user=self.user_staff3)
         response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(self.user_staff1.events.count(), 0)
-
-    def test_add_staff_member_with_invalid_email(self):
-        """Test adding a staff member with an invalid email."""
-        url = reverse('api:staff')
-        data = {'token_code': self.token.token_code, 'email': 'invalid_email'}
-        self.client.force_authenticate(user=self.user_staff1)
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_add_staff_member_without_email(self):
-        """Test adding a staff member without an email."""
-        url = reverse('api:staff')
-        data = {'token_code': self.token.token_code}
-        self.client.force_authenticate(user=self.user_staff1)
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_add_staff_member_without_token_and_email(self):
-        """Test adding a staff member without a token and email."""
-        url = reverse('api:staff')
-        self.client.force_authenticate(user=self.user_staff1)
-        response = self.client.post(url, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_add_staff_member_with_invalid_token_and_valid_email(self):
-        """Test adding a staff member with an invalid token and email."""
-        url = reverse('api:staff')
-        data = {'token_code': 'invalid_token',
-                'email': self.staff1.registration_email}
-        self.client.force_authenticate(user=self.user_staff1)
-        response = self.client.post(url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_get_staff_members(self):
         """Test getting staff members from an event."""
@@ -403,3 +377,144 @@ class AddStaffMembersTestCase(APITestCase):
         self.excel_file.close()
         self.csv_file.close()
         Token.objects.all().delete()
+
+
+class AddSingleStaffTestCase(APITestCase):
+
+    def create_unique_email(self):
+        return f'{uuid.uuid4()}@gmail.com'
+
+    def create_unique_username(self):
+        return f'user_{uuid.uuid4().hex[:10]}'
+
+    def setUpUser(self):
+        self.admin = User.objects.create(
+            username=self.create_unique_username(), email=self.create_unique_email(), first_name='User', last_name='Zero')
+        self.user_not_admin = User.objects.create(username=self.create_unique_username(
+        ), email=self.create_unique_email(), first_name='User', last_name='One')
+
+    def setUpEvent(self):
+        self.token = Token.objects.create()
+        self.event = Event.objects.create(name='Evento 1', token=self.token)
+
+    def setUpGroup(self):
+        self.group_admin = Group.objects.create(name='event_admin')
+
+    def setUpPermissions(self):
+        assign_permissions(self.admin, self.group_admin, self.event)
+
+    def setUp(self):
+        self.setUpUser()
+        self.setUpEvent()
+        self.setUpGroup()
+        self.setUpPermissions()
+        self.url = f'{reverse("api:add-staff")}?event_id={self.event.id}'
+        self.data = {
+            "full_name": "João da Silva",
+            "registration_email": "joao@email.com",
+            "is_manager": False
+        }
+        self.client = APIClient()
+
+    def test_add_staff_member_valid_data(self):
+        Staff.objects.all().delete()
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        staff = Staff.objects.get(event=self.event)
+        self.assertEqual(staff.full_name, self.data['full_name'])
+        self.assertEqual(staff.registration_email,
+                         self.data['registration_email'])
+        self.assertEqual(staff.is_manager, self.data['is_manager'])
+
+    def test_add_staff_manager_valid_data(self):
+        self.data['is_manager'] = True
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        staff = Staff.objects.get(event=self.event)
+        self.assertEqual(staff.is_manager, True)
+
+    def test_add_staff_member_invalid_data(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(self.url, {}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_add_staff_member_without_permission(self):
+        self.client.force_authenticate(user=self.user_not_admin)
+        response = self.client.post(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_add_staff_member_without_event_id(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(
+            reverse('api:add-staff'), self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_add_staff_member_with_invalid_event_id(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(
+            f'{reverse("api:add-staff")}?event_id=99999', self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class EditStaffDataTestCase(APITestCase):
+    def create_unique_email(self):
+        return f'{uuid.uuid4()}@gmail.com'
+
+    def create_unique_username(self):
+        return f'user_{uuid.uuid4().hex[:10]}'
+
+    def setUpUser(self):
+        self.admin = User.objects.create(
+            username=self.create_unique_username(), email=self.create_unique_email(), first_name='User', last_name='Zero')
+        self.user_not_admin = User.objects.create(username=self.create_unique_username(
+        ), email=self.create_unique_email(), first_name='User', last_name='One')
+
+    def setUpEvent(self):
+        self.token = Token.objects.create()
+        self.event = Event.objects.create(name='Evento 1', token=self.token)
+
+    def setUpGroup(self):
+        self.group_admin = Group.objects.create(name='event_admin')
+
+    def setUpPermissions(self):
+        assign_permissions(self.admin, self.group_admin, self.event)
+
+    def setUpStaff(self):
+        self.staff = Staff.objects.create(
+            user=self.admin, event=self.event, registration_email=self.admin.email, full_name=self.admin.get_full_name())
+
+    def setUp(self):
+        self.setUpUser()
+        self.setUpEvent()
+        self.setUpGroup()
+        self.setUpStaff()
+        self.setUpPermissions()
+        self.url = f'{reverse("api:edit-staff")}?event_id={self.event.id}'
+        self.data = {
+            "full_name": "João da Silva",
+            "registration_email": self.admin.email,
+            "is_manager": False,
+            "new_email": "novo@email.com"
+        }
+        self.client = APIClient()
+
+    def test_edit_staff_data_valid_request(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        staff = Staff.objects.get(event=self.event)
+        self.assertEqual(staff.full_name, self.data['full_name'])
+        self.assertEqual(staff.registration_email,
+                         self.data['new_email'])
+        self.assertEqual(staff.is_manager, self.data['is_manager'])
+
+    def test_edit_staff_data_invalid_request(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(self.url, {}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_edit_staff_unauthenticated_user(self):
+        response = self.client.post(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
