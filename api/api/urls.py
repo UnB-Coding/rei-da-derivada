@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, re_path
 from .views.views_event import TokenView, EventView
-from .views.views_staff import StaffView, AddStaffManager, AddStaffMembers, AddSingleStaff
+from .views.views_staff import StaffView, AddStaffManager, AddStaffMembers, AddSingleStaff, EditStaffData
 from .views.views_players import PlayersView, GetPlayerResults, AddPlayersExcel, PublishPlayersResults, Top4Players, AddSinglePlayer
 from .views.views_sumulas import GetSumulasView, ActiveSumulaView, FinishedSumulaView, GetSumulaForPlayer, SumulaImortalView, SumulaClassificatoriaView, AddRefereeToSumulaView
 
@@ -36,6 +36,7 @@ urlpatterns = [
     # Rotas de staff
     path('staff/', StaffView.as_view(), name='staff'),
     path('staff/add', AddSingleStaff.as_view(), name='add-staff'),
+    path('staff/edit', EditStaffData.as_view(), name='edit-staff'),
     path('staff-manager/', AddStaffManager.as_view(), name='staff-manager'),
     path('upload-staff/', AddStaffMembers.as_view(), name='upload-staff'),
 ]

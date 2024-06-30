@@ -456,3 +456,65 @@ class AddSingleStaffTestCase(APITestCase):
         response = self.client.post(
             f'{reverse("api:add-staff")}?event_id=99999', self.data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class EditStaffDataTestCase(APITestCase):
+    def create_unique_email(self):
+        return f'{uuid.uuid4()}@gmail.com'
+
+    def create_unique_username(self):
+        return f'user_{uuid.uuid4().hex[:10]}'
+
+    def setUpUser(self):
+        self.admin = User.objects.create(
+            username=self.create_unique_username(), email=self.create_unique_email(), first_name='User', last_name='Zero')
+        self.user_not_admin = User.objects.create(username=self.create_unique_username(
+        ), email=self.create_unique_email(), first_name='User', last_name='One')
+
+    def setUpEvent(self):
+        self.token = Token.objects.create()
+        self.event = Event.objects.create(name='Evento 1', token=self.token)
+
+    def setUpGroup(self):
+        self.group_admin = Group.objects.create(name='event_admin')
+
+    def setUpPermissions(self):
+        assign_permissions(self.admin, self.group_admin, self.event)
+
+    def setUpStaff(self):
+        self.staff = Staff.objects.create(
+            user=self.admin, event=self.event, registration_email=self.admin.email, full_name=self.admin.get_full_name())
+
+    def setUp(self):
+        self.setUpUser()
+        self.setUpEvent()
+        self.setUpGroup()
+        self.setUpStaff()
+        self.setUpPermissions()
+        self.url = f'{reverse("api:edit-staff")}?event_id={self.event.id}'
+        self.data = {
+            "full_name": "João da Silva",
+            "registration_email": self.admin.email,
+            "is_manager": False,
+            "new_email": "novo@email.com"
+        }
+        self.client = APIClient()
+
+    def test_edit_staff_data_valid_request(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        staff = Staff.objects.get(event=self.event)
+        self.assertEqual(staff.full_name, self.data['full_name'])
+        self.assertEqual(staff.registration_email,
+                         self.data['new_email'])
+        self.assertEqual(staff.is_manager, self.data['is_manager'])
+
+    def test_edit_staff_data_invalid_request(self):
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(self.url, {}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_edit_staff_unauthenticated_user(self):
+        response = self.client.post(self.url, self.data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

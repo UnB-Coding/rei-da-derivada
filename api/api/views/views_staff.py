@@ -26,8 +26,7 @@ from django.core.files.uploadedfile import UploadedFile
 
 class StaffPermissions(BasePermission):
     def has_object_permission(self, request, view, obj):
-        if Group.objects.get(name='app_admin') in request.user.groups.all():
-            return True
+
         if request.method == 'GET':
             return request.user.has_perm('api.add_sumula_event', obj)
         return False
@@ -313,3 +312,53 @@ class AddSingleStaff(BaseView):
             return handle_400_error('Monitor já cadastrado para este evento!')
 
         return response.Response(status=status.HTTP_201_CREATED, data='Monitor adicionado com sucesso!')
+
+
+class EditStaffData(BaseView):
+    permission_classes = [IsAuthenticated, AddStaffPermissions]
+
+    @swagger_auto_schema(
+        operation_description="""Edita os dados de um monitor do evento.
+            Devem ser enviados os dados do monitor a ser editado.
+            Obrigatório: Nome Completo, E-mail e se é Gerente de Equipe ou não.
+            Esta rota permite que o nome de um monitor seja alterado e se ele é gerente de equipe ou não.
+                """,
+        operation_summary='Edita os dados de um monitor do evento.',
+        manual_parameters=manual_parameter_event_id,
+        request_body=openapi.Schema(
+            title='Dados do Monitor', type=openapi.TYPE_OBJECT,
+            properties={
+                'full_name': openapi.Schema(
+                    type=openapi.TYPE_STRING, description='Nome Completo', example='João da Silva'),
+                'registration_email': openapi.Schema(
+                    type=openapi.TYPE_STRING, description='E-mail atual do monitor', example='joao@email.com'),
+                'is_manager': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Gerente de Equipe', example=False),
+                'new_email': openapi.Schema(type=openapi.TYPE_STRING, description='Novo e-mail do monitor', example='joao1234@outroemail.com')
+            }
+        ),
+        required=['registration_email'],
+        responses={200: openapi.Response(
+            'Monitor editado com sucesso!'), **Errors([400]).retrieve_erros()}
+    )
+    def post(self, request: request.Request, *args, **kwargs):
+        if request.data is None or 'full_name' not in request.data or 'registration_email' not in request.data or 'is_manager' not in request.data or 'new_email' not in request.data:
+            return handle_400_error('Dados inválidos!')
+        try:
+            event = self.get_object()
+        except Exception as e:
+            return handle_400_error(str(e))
+
+        self.check_object_permissions(self.request, event)
+        full_name = request.data['full_name']
+        registration_email = request.data['registration_email']
+        new_email = request.data['new_email']
+        is_manager = request.data['is_manager']
+        staff = Staff.objects.filter(
+            registration_email=registration_email, event=event).first()
+        if not staff:
+            return handle_400_error('Monitor não encontrado para este evento!')
+        staff.is_manager = is_manager
+        staff.full_name = full_name
+        staff.registration_email = new_email
+        staff.save()
+        return response.Response(status=status.HTTP_200_OK, data='Monitor editado com sucesso!')
