@@ -14,8 +14,6 @@ from drf_yasg import openapi
 
 class HasSumulaPermission(BasePermission):
     def has_object_permission(self, request, view, obj) -> bool:
-        if Group.objects.get(name='app_admin') in request.user.groups.all():
-            return True
 
         if request.method == 'POST':
             return request.user.has_perm('api.add_sumula_event', obj)
@@ -328,8 +326,6 @@ class FinishedSumulaView(BaseSumulaView):
 
 class GetSumulaForPlayerPermission(BasePermission):
     def has_object_permission(self, request, view, obj) -> bool:
-        if Group.objects.get(name='app_admin') in request.user.groups.all():
-            return True
         if request.method == 'GET':
             return request.user.has_perm('api.view_event', obj)
         return False

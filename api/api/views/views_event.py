@@ -54,10 +54,6 @@ class TokenView(BaseView):
 
 class EventPermissions(BasePermission):
     def has_object_permission(self, request, view, obj):
-        # Se o usuário pertence ao grupo 'App_admin', conceda total permissão
-        if Group.objects.get(name='app_admin') in request.user.groups.all():
-            return True
-
         # Verifica se o usuário tem a permissão 'delete_event' para o objeto específico
         if request.method == 'DELETE':
             return request.user.has_perm('api.delete_event', obj)
