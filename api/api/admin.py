@@ -119,7 +119,7 @@ class PlayerAdmin(GuardedModelAdmin):
                     'event', 'total_score', 'registration_email', 'is_imortal']
     search_fields = ['user', 'total_score', 'event', 'registration_email']
     fields = ['user', 'total_score', 'event',
-              'registration_email', 'full_name', 'social_name', 'is_mortal']
+              'registration_email', 'full_name', 'social_name', 'is_imortal']
 
     def username(self, obj):
         return obj.username
