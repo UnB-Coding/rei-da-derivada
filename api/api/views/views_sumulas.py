@@ -1,4 +1,3 @@
-from django.contrib.auth.models import Group
 from rest_framework import status, request, response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import BasePermission
@@ -94,17 +93,12 @@ class SumulaClassificatoriaView(BaseSumulaView):
 
         Permissões necessárias: IsAuthenticated, HasSumulaPermission
         """
-        if not self.validate_request_data(request.data):
+        if not self.validate_request_data(request.data) or 'name' not in request.data or not self.validate_players(request.data) or not self.validate_referees(request.data):
             return handle_400_error("Dados inválidos!")
         try:
             event = self.get_object()
         except Exception as e:
             return handle_400_error(str(e))
-        if 'name' not in request.data:
-            return handle_400_error("Nome da sumula não fornecido!")
-        if not self.validate_players(request.data):
-            return handle_400_error("Dados de players inválidos!")
-
         self.check_object_permissions(self.request, event)
         name = request.data['name']
         players = request.data['players']
@@ -114,50 +108,45 @@ class SumulaClassificatoriaView(BaseSumulaView):
                 players=players, sumula=sumula, event=event)
         except Exception as e:
             return handle_400_error(str(e))
+        referees = request.data['referees']
+        self.add_referees(sumula=sumula, event=event, referees=referees)
         data = SumulaClassificatoriaSerializer(sumula).data
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
     @ swagger_auto_schema(
         tags=['sumula'],
-        operation_summary="Atualiza uma sumula.",
-        operation_description="""Atualiza os dados associados a uma sumula criada.
-                         """,
+        operation_summary="Encerra uma sumula classificatoria.",
+        operation_description="""Esta rota serve para salvar os dados da sumula e marcar a sumula como **encerrada**.
+        As pontuações dos jogadores devem ser enviadas no corpo da requisição e serão atualizadas no banco de dados.
+        Devem ser enviados os jogadores **não-classificados** como **IMORTAIS** (is_imortal = True). Já os jogadores **classificados** devem ser enviados como **is_imortal = False.**
+        A sumula **não** pode ser mais salva/editada por um monitor comum após encerrada.""",
         security=[{'Bearer': []}],
         manual_parameters=manual_parameter_event_id,
         request_body=sumula_classicatoria_api_put_schema,
         responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
     def put(self, request: request.Request, *args, **kwargs):
         """Atualiza uma sumula de Classificatoria"""
-        if not request.data or not isinstance(request.data, list) or 'id' not in request.data[0]:
+        if not request.data or not isinstance(request.data, list) or 'id' not in request.data or 'name' not in request.data or 'description' not in request.data:
             return handle_400_error("Dados inválidos!")
-
-        sumula_id = request.data[0]['id']
+        if not self.validate_players_score(request.data):
+            return handle_400_error("Dados inválidos!")
+        sumula_id = request.data['id']
         if not sumula_id:
             return handle_400_error(SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE)
         sumula = SumulaClassificatoria.objects.filter(id=sumula_id).first()
         if not sumula:
             return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
+        if not sumula.active:
+            return handle_400_error("Súmula já encerrada!")
         try:
             event = self.get_object()
         except Exception as e:
             return handle_400_error(str(e))
-
-        # Verifica se o usuário tem permissão para acessar o evento
         self.check_object_permissions(request, event)
-        if 'name' not in request.data[0] or 'description' not in request.data[0] or 'referee' not in request.data[0]:
-            return handle_400_error("Dados inválidos!")
-        sumula.name = request.data[0]['name']
-        sumula.description = request.data[0]['description']
-        # referees = request.data[0]['referee']
-        # self.add_referee(sumula, referees) necessario refatorar com outra rota apenas para atribuir referee.
-        ########## FALTA IMPLEMENTAR: lógica de tornar os players não classificados como imortal ##########
-        players_score = request.data[0]['players_score']
-
-        if not self.update_player_score(players_score):
-            return handle_400_error("Dados de pontuação inválidos!")
-
-        sumula.active = False
-        sumula.save()
+        try:
+            self.update_sumula(sumula=sumula, event=event)
+        except Exception as e:
+            return handle_400_error(str(e))
         return response.Response(status=status.HTTP_200_OK)
 
 
@@ -204,16 +193,12 @@ class SumulaImortalView(BaseSumulaView):
 
         Permissões necessárias: IsAuthenticated, HasSumulaPermission
         """
-        if not self.validate_request_data(request.data):
+        if not self.validate_request_data(request.data) or 'name' not in request.data or not self.validate_players(request.data) or not self.validate_referees(request.data):
             return handle_400_error("Dados inválidos!")
         try:
             event = self.get_object()
         except Exception as e:
             return handle_400_error(str(e))
-        if 'name' not in request.data:
-            return handle_400_error("Nome da sumula não fornecido!")
-        if not self.validate_players(request.data):
-            return handle_400_error("Dados de players inválidos!")
         self.check_object_permissions(self.request, event)
 
         players = request.data['players']
@@ -232,11 +217,10 @@ class SumulaImortalView(BaseSumulaView):
 
     @ swagger_auto_schema(
         tags=['sumula'],
-        operation_summary="Atualiza uma sumula Imortal.",
-        operation_description="""Atualiza uma sumula
-        Obtém o id da sumula a ser atualizada e atualiza os dados associados a ela.
-        Obtém uma lista da pontuação dos jogadores e atualiza as pontuações associados a sumula.
-        Marca a sumula como encerrada """,
+        operation_summary="Encerra uma sumula imortal.",
+        operation_description="""Esta rota serve para salvar os dados da sumula e marcar a sumula como **encerrada**.
+        As pontuações dos jogadores devem ser enviadas no corpo da requisição e serão atualizadas no banco de dados.
+        A sumula **não** pode ser mais salva/editada por um monitor comum após encerrada.""",
         security=[{'Bearer': []}],
         manual_parameters=manual_parameter_event_id,
         request_body=sumula_imortal_api_put_schema,
@@ -247,10 +231,8 @@ class SumulaImortalView(BaseSumulaView):
         Obtém uma lista da pontuação dos jogadores e atualiza as pontuações associados a sumula.
         Marca a sumula como encerrada.
         """
-
-        if not request.data or not isinstance(request.data, list) or 'id' not in request.data[0]:
+        if not request.data or not isinstance(request.data, list) or 'id' not in request.data[0] or 'name' not in request.data[0] or 'description' not in request.data[0]:
             return handle_400_error("Dados inválidos!")
-
         sumula_id = request.data[0]['id']
         if not sumula_id:
             return handle_400_error(SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE)
@@ -261,23 +243,11 @@ class SumulaImortalView(BaseSumulaView):
             event = self.get_object()
         except Exception as e:
             return handle_400_error(str(e))
-
-        # Verifica se o usuário tem permissão para acessar o evento
         self.check_object_permissions(request, event)
-        if 'name' not in request.data[0] or 'description' not in request.data[0] or 'referee' not in request.data[0]:
-            return handle_400_error("Dados inválidos!")
-        sumula.name = request.data[0]['name']
-        sumula.description = request.data[0]['description']
-        # referees = request.data[0]['referee']
-        # self.add_referee(sumula, referees) necessario refatorar com outra rota apenas para atribuir referee.
-
-        players_score = request.data[0]['players_score']
-
-        if not self.update_player_score(players_score):
-            return handle_400_error("Dados de pontuação inválidos!")
-
-        sumula.active = False
-        sumula.save()
+        try:
+            self.update_sumula(sumula=sumula, event=event)
+        except Exception as e:
+            return handle_400_error(str(e))
         return response.Response(status=status.HTTP_200_OK)
 
 
@@ -393,7 +363,7 @@ class AddRefereeToSumulaView(BaseSumulaView):
         Adiciona um árbitro a uma súmula que já existe.
         Caso uma súmula seja criada sem nenhum árbitro, é possível que um usuário monitor se auto adicione como árbitro ao selecionar a sumula desejada.
         Apenas o usuário que fez a requisição será adicionado como árbitro da súmula.
-        Esta rota verifica se o usuário em questão tem as permissões necessárias para ser um árbitro no evenot e se possui um objeto staff associado a ele.
+        Esta rota verifica se o usuário em questão tem as permissões necessárias para ser um árbitro no evento e se possui um objeto staff associado a ele.
 
             É necessário fornecer o id da súmula e indicar se a súmula é imortal ou classificatória no corpo da requisição.
         """,
@@ -410,8 +380,11 @@ class AddRefereeToSumulaView(BaseSumulaView):
         manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
     def put(self, request: request.Request, *args, **kwargs):
-        if not self.validate_request_data(request.data):
+        if not self.validate_request_data(request.data) or 'sumula_id' not in request.data or 'is_imortal' not in request.data:
             return handle_400_error("Dados inválidos!")
+        sumula_id = request.data.get('sumula_id')
+        if not sumula_id:
+            return handle_400_error(SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE)
         try:
             event = self.get_object()
         except Exception as e:
@@ -420,11 +393,6 @@ class AddRefereeToSumulaView(BaseSumulaView):
         staff = Staff.objects.filter(user=request.user, event=event).first()
         if not staff:
             return handle_400_error("Usuário não é um monitor do evento!")
-        if 'sumula_id' not in request.data or 'is_imortal' not in request.data:
-            return handle_400_error(SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE)
-        sumula_id = request.data.get('sumula_id')
-        if not sumula_id:
-            return handle_400_error(SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE)
         is_imortal = request.data.get('is_imortal')
         if is_imortal:
             sumula = SumulaImortal.objects.filter(id=sumula_id).first()
@@ -432,5 +400,7 @@ class AddRefereeToSumulaView(BaseSumulaView):
             sumula = SumulaClassificatoria.objects.filter(id=sumula_id).first()
         if not sumula:
             return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
+        if sumula.referee.all().count() > 0:
+            return handle_400_error("Súmula já possui um ou mais árbitros!")
         sumula.referee.add(staff)
         return response.Response(status=status.HTTP_200_OK)

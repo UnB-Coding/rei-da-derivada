@@ -44,6 +44,33 @@ class BaseSumulaView(BaseView):
 
         return True
 
+    def validate_players_score(self, data):
+        """Valida se os jogadores fornecidos na requisição estão no formato correto."""
+        if 'players_score' not in data:
+            return False
+
+        for player_score in data['players_score']:
+            if 'points' not in player_score or 'player' not in player_score:
+                return False
+            if 'id' not in player_score['player']:
+                return False
+
+        return True
+
+    def validate_referees(self, data):
+        """Valida se os árbitros fornecidos na requisição estão no formato correto."""
+        if 'referees' not in data:
+            return False
+
+        for referee in data['referees']:
+            if 'id' not in referee:
+                return False
+        return True
+
+    def check_sumula_referee(self, sumula: SumulaImortal | SumulaClassificatoria, staff: Staff) -> bool:
+        """Verifica se um árbitro está associado a uma sumula."""
+        return staff in sumula.referee.all()
+
     def get_sumulas(self, event: Event, active: bool = None) -> tuple[list[SumulaImortal], list[SumulaClassificatoria]]:
         """Retorna as sumulas de um evento de acordo com o parâmetro active."""
         if active is None:
@@ -98,6 +125,26 @@ class BaseSumulaView(BaseView):
             player_score_obj.points = player_score['points']
             player_score_obj.save()
         return True
+
+    def update_sumula(self, sumula: SumulaImortal | SumulaClassificatoria, event: Event) -> None | ValidationError:
+        """Atualiza uma sumula."""
+        staff = Staff.objects.filter(
+            user=self.request.user, event=event).first()
+        if not staff:
+            raise ValidationError("Usuário não é um monitor do evento!")
+
+        if not self.check_sumula_referee(sumula, staff):
+            raise ValidationError("Usuário não é um árbitro da sumula!")
+
+        sumula.name = self.request.data['name']
+        sumula.description = self.request.data['description']
+        players_score = self.request.data['players_score']
+
+        if not self.update_player_score(players_score):
+            raise ValidationError("Dados de pontuação inválidos!")
+
+        sumula.active = False
+        sumula.save()
 
     def get_object(self) -> Event:
         """ Verifica se o evento existe.

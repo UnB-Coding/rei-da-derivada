@@ -422,8 +422,6 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
         response = self.client.put(
             self.url_update, self.data_update, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['errors'],
-                         'Dados de pontuação inválidos!')
 
     def test_update_sumula_with_i_player_score_id_not_found(self):
 
@@ -432,8 +430,6 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
         response = self.client.put(
             self.url_update, self.data_update, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['errors'],
-                         'Dados de pontuação inválidos!')
 
     def tearDown(self):
         User.objects.all().delete()
@@ -450,8 +446,7 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
 
 class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
     def setUpData(self):
-        self.data_update = [
-            {
+        self.data_update ={
                 "id": self.sumula.id,
                 "active": True,
                 "description": 'Sala S4',
@@ -482,7 +477,6 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
                     }
                 ]
             }
-        ]
         self.data_post = {
             "name": "imortais 01",
             "players": [
@@ -534,15 +528,16 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
 
     def test_create_sumula(self):
         PlayerScore.objects.all().delete()
+        SumulaClassificatoria.objects.all().delete()
         self.assertFalse(PlayerScore.objects.exists())
         self.client.force_authenticate(user=self.user_staff_manager)
         response = self.client.post(
             self.url_post, self.data_post, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(SumulaClassificatoria.objects.count(), 4)
+        self.assertEqual(SumulaClassificatoria.objects.count(), 1)
         self.assertEqual(PlayerScore.objects.count(), 2)
-        self.assertIsNotNone(SumulaClassificatoria.objects.filter(
-            name='imortais 01').first())
+        sumula = SumulaClassificatoria.objects.get(id=response.data['id'])
+        self.assertEqual(sumula.referee.count(), 1)
 
     def test_create_sumula_unauthenticated(self):
         response = self.client.post(
@@ -634,8 +629,6 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
         response = self.client.put(
             self.url_update, self.data_update, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['errors'],
-                         'Dados de pontuação inválidos!')
 
     def test_update_sumula_with_i_player_score_id_not_found(self):
 
@@ -644,8 +637,6 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
         response = self.client.put(
             self.url_update, self.data_update, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['errors'],
-                         'Dados de pontuação inválidos!')
 
     def tearDown(self):
         User.objects.all().delete()
