@@ -13,7 +13,7 @@ from rest_framework.parsers import MultiPartParser
 from ..views.base_views import BaseView
 from api.models import Token, Event, Staff
 from users.models import User
-from ..serializers import EventSerializer, StaffSerializer, UploadFileSerializer
+from ..serializers import EventSerializer, StaffSerializer, UploadFileSerializer, StaffLoginSerializer
 from .views_event import TOKEN_NOT_PROVIDED_ERROR_MESSAGE, TOKEN_NOT_FOUND_ERROR_MESSAGE, EVENT_NOT_FOUND_ERROR_MESSAGE
 from ..utils import handle_400_error
 from ..swagger import Errors, manual_parameter_event_id
@@ -41,11 +41,12 @@ class StaffView(BaseView):
 
     @ swagger_auto_schema(
         tags=['staff'],
-        operation_description="""Adiciona um novo membro da equipe ao evento.
+        operation_description="""Realiza o login de um membro da equipe ao evento.
         O usuário terá permissões de Monitor no evento associado ao token fornecido.
-        Retorna o evento no qual o usuário foi adicionado.
+        Retorna objeto STAFF associado ao usuario e o evento.
+        Para a verificacao de rotas no front-end pode-se usar o parametro de 'is_manager' do objeto retornado.
         """,
-        operation_summary="Adiciona um novo membro da equipe ao evento.",
+        operation_summary="Realiza o login de um membro da equipe ao evento.",
 
         request_body=openapi.Schema(
             title='Token de join do Evento', type=openapi.TYPE_OBJECT,
@@ -53,7 +54,7 @@ class StaffView(BaseView):
                 type=openapi.TYPE_STRING, description='Código do token', example='123456')},
             required=['join_token']),
         responses={200: openapi.Response(
-            'OK', EventSerializer), **Errors([400]).retrieve_erros()}
+            'OK', StaffLoginSerializer), **Errors([400]).retrieve_erros()}
     )
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Adiciona um novo membro da equipe ao evento. O usuário será atribuido ao grupo 'staff_member'
@@ -83,7 +84,7 @@ class StaffView(BaseView):
             request.user.events.add(event)
             assign_permissions(user=request.user, group=group, event=event)
             staff.save()
-        data = EventSerializer(event).data
+        data = StaffLoginSerializer(staff).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
     @ swagger_auto_schema(
