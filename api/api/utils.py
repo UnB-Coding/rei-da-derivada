@@ -2,7 +2,6 @@ from rest_framework import status, response
 from django.contrib.contenttypes.models import ContentType
 from rest_framework import status, response
 from django.contrib.auth.models import Permission
-import uuid
 import random
 
 
@@ -22,14 +21,6 @@ def get_content_type(model):
 def get_permissions(content_type):
     """ Função para retornar as permissões de um content type."""
     return Permission.objects.filter(content_type=content_type)
-
-
-def create_unique_email():
-    return f'{uuid.uuid4()}@gmail.com'
-
-
-def create_unique_username():
-    return f'user_{uuid.uuid4().hex[:10]}'
 
 
 def generate_random_name():
