@@ -4,7 +4,7 @@ import DisplayComponent from "./DisplayPlayerComponent";
 import NoResults from "./NoResults";
 
 export default function ResultsComponent() {
-    const [ isPlayer, setIsPlayer ] = useState<boolean>(true);
+    const [ isPlayer, setIsPlayer ] = useState<boolean>(false);
     const [ result, setResult ] = useState<boolean>(false);
 
     return result ? <NoResults/> :

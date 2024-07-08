@@ -16,10 +16,9 @@ class TokenAdmin(GuardedModelAdmin):
 
 @admin.register(Event)
 class EventAdmin(GuardedModelAdmin):
-    list_display = ['id', 'token', 'join_token',
-                    'join_token', 'name', 'active']
-    search_fields = ['token', 'name', 'active']
-    fields = ['token', 'name', 'active']
+    list_display = ['id', 'token', 'join_token', 'name', 'active']
+    search_fields = ['token', 'name', 'active', 'join_token']
+    fields = ['token', 'name', 'active', 'admin_email']
 
 
 class SumulaAdmin(GuardedModelAdmin):
@@ -115,11 +114,11 @@ class PlayerScoreAdmin(GuardedModelAdmin):
 
 @admin.register(Player)
 class PlayerAdmin(GuardedModelAdmin):
-    list_display = ['user', 'full_name', 'social_name',
-                    'event', 'total_score', 'registration_email', 'id']
+    list_display = ['id', 'user', 'full_name', 'social_name',
+                    'event', 'total_score', 'registration_email', 'is_imortal']
     search_fields = ['user', 'total_score', 'event', 'registration_email']
     fields = ['user', 'total_score', 'event',
-              'registration_email', 'full_name', 'social_name']
+              'registration_email', 'full_name', 'social_name', 'is_imortal']
 
     def username(self, obj):
         return obj.username

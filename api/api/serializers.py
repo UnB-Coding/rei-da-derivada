@@ -43,12 +43,18 @@ class EventSerializer(ModelSerializer):
         fields = ['id', 'name', 'active']
 
 
-# class PlayerScoreSerializer(ModelSerializer):
-#     player = PlayerSerializer()
+class UserEventsSerializer(serializers.Serializer):
+    role = serializers.SerializerMethodField()
+    event = serializers.SerializerMethodField()
 
-#     class Meta:
-#         model = PlayerScore
-#         fields = ['id', 'player', 'sumula', 'points']
+    class Meta:
+        fields = ['event', 'role']
+
+    def get_role(self, obj):
+        return obj["role"]
+
+    def get_event(self, obj):
+        return EventSerializer(obj['event']).data
 
 
 class PlayerScoreSerializer(ModelSerializer):
@@ -154,3 +160,19 @@ class SumulaForPlayerSerializer(serializers.Serializer):
 
 class UploadFileSerializer(serializers.Serializer):
     file = serializers.FileField()
+
+
+class StaffLoginSerializer(ModelSerializer):
+    event = EventSerializer()
+
+    class Meta:
+        model = Staff
+        fields = ['id', 'full_name', 'is_manager', 'event']
+
+
+class PlayerLoginSerializer(ModelSerializer):
+    event = EventSerializer()
+
+    class Meta:
+        model = Player
+        fields = ['id', 'full_name', 'social_name', 'is_imortal', 'event']
