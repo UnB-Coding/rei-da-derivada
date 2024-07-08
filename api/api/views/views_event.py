@@ -6,8 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import BasePermission
 
 from ..views.base_views import BaseView
-from api.models import Token, Event
-from ..serializers import EventSerializer, TokenSerializer
+from api.models import Token, Event, Staff, Player
+from ..serializers import EventSerializer, UserEventsSerializer
 from ..utils import handle_400_error
 from ..swagger import Errors
 from ..permissions import assign_permissions
@@ -98,16 +98,41 @@ class EventView(BaseView):
 
     @ swagger_auto_schema(
         tags=['event'],
-        operation_summary="Retorna todos os eventos associados ao usuário logado.",
-        operation_description='Retorna todos os eventos associados ao usuário logado. Caso não haja eventos, retorna uma lista vazia.',
+        operation_summary="Retorna todos os eventos associados ao usuário logado e seu cargo no evento.",
+        operation_description="""Retorna todos os eventos associados ao usuário logado. Retorna o cargo que o usuário possui no evento.
+        Caso não haja eventos, retorna uma lista vazia.""",
         security=[{'Bearer': []}],
         responses={200: openapi.Response(
-            'OK', EventSerializer), **Errors([400]).retrieve_erros()}
+            'OK', UserEventsSerializer), **Errors([400]).retrieve_erros()}
     )
     def get(self, request: request.Request, *args, **kwargs):
-        """Retorna todos os eventos associados ao usuário que fez a requisição."""
+        """Retorna todos os eventos associados ao usuário que fez a requisição.
+        E o cargo dele no evento.
+        """
         events = request.user.events.all()
-        data = EventSerializer(events, many=True).data
+        data_to_serialize = []
+        for event in events:
+            if event.admin_email == request.user.email:
+                data_to_serialize.append(
+                    {'event': event, 'role': 'admin'})
+                continue
+            staff = Staff.objects.filter(
+                event=event, user=request.user).first()
+            if staff and staff.is_manager:
+                data_to_serialize.append(
+                    {'event': event, 'role': 'manager'})
+                continue
+            elif staff:
+                data_to_serialize.append(
+                    {'event': event, 'role': 'staff'})
+                continue
+            else:
+                player = Player.objects.filter(
+                    event=event, user=request.user).first()
+                if player:
+                    data_to_serialize.append(
+                        {'event': event, 'role': 'player'})
+        data = UserEventsSerializer(data_to_serialize, many=True).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
     @ swagger_auto_schema(
