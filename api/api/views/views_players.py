@@ -13,7 +13,7 @@ from drf_yasg.utils import swagger_auto_schema
 from ..views.base_views import BaseView
 from api.models import Event, Player
 from ..utils import handle_400_error
-from ..serializers import PlayerSerializer, UploadFileSerializer, PlayerResultsSerializer
+from ..serializers import PlayerSerializer, UploadFileSerializer, PlayerResultsSerializer, PlayerLoginSerializer
 from ..swagger import Errors, manual_parameter_event_id
 from ..permissions import assign_permissions
 import pandas as pd
@@ -64,14 +64,14 @@ class PlayersView(BaseView):
     @swagger_auto_schema(
         security=[{'Bearer': []}],
         tags=['player'],
-        operation_description="""Adiciona um jogador ao evento através do email fornecido na inscrição.
+        operation_description="""Realiza o login de um jogador no    evento através do email fornecido na inscrição.
         Para um jogador entrar no evento, ele deve informar o email que foi utilizado na inscrição e o token de jogador fornecido pelo administrador do evento.
         """,
-        operation_summary='Adiciona um jogador ao evento.',
+        operation_summary='Realiza o login de um jogador no evento.',
         request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do jogador'), 'join_token': openapi.Schema(
             type=openapi.TYPE_STRING, description='Token do evento')}, required=['email', 'join_token']),
         responses={200: openapi.Response(
-            200), **Errors([400]).retrieve_erros()}
+            200, PlayerLoginSerializer), **Errors([400]).retrieve_erros()}
     )
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         """ Adiciona um jogador ao evento através do email fornecido na inscirção."""
@@ -88,16 +88,18 @@ class PlayersView(BaseView):
             registration_email=email, event=event).first()
         if not player:
             return handle_400_error('Jogador não encontrado!')
-        if player.user is not None and player.user != request.user:
+        if player.user is None:
+            player.user = request.user
+        elif player.user != request.user:
             return handle_400_error("""Jogador já está associado a outro usuário!
                                     Se isso é um erro, entre em contato com o administrador do evento.""")
-        player.user = request.user
         group = Group.objects.get(name='player')
         assign_permissions(request.user, group, event)
         player.save()
         request.user.events.add(event)
         request.user.save()
-        return response.Response(status=status.HTTP_200_OK, data='Jogador adicionado com sucesso!')
+        data = PlayerLoginSerializer(player).data
+        return response.Response(status=status.HTTP_200_OK, data=data)
 
     def get_object(self) -> Event:
         if 'event_id' not in self.request.query_params:  # type: ignore

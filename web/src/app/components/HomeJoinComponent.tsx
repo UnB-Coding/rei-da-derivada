@@ -22,7 +22,7 @@ const HomeJoinComponent = () => {
         type="bla" 
         description="Insira abaixo o e-mail utilizado na inscrição do evento e o token." 
         placeholder="Ex: RRDD-TOKEN-1234" 
-        title="Entrar como monitor" 
+        title="Entrar como staff" 
         useEmail={true}
         />
         </div>

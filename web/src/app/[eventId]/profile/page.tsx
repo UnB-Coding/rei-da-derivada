@@ -16,9 +16,13 @@ export default function Profile() {
     }
   }, [user]);
 
-  return loading ? <LoadingComponent/>:
+  return loading ? <LoadingComponent/> :
     <>
       <HeaderComponent/>
+      <div className="grid justify-center items-center py-32 px-2 text-center">
+        <p className="text-primary font-semibold text-xl">N SEI OQ COLOCAR</p>
+        <p className="text-slate-700">Você não está inscrito em nenhuma chave no momento.</p>
+      </div>
       <EventNavBarComponent/>
     </>
     

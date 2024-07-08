@@ -154,3 +154,19 @@ class SumulaForPlayerSerializer(serializers.Serializer):
 
 class UploadFileSerializer(serializers.Serializer):
     file = serializers.FileField()
+
+
+class StaffLoginSerializer(ModelSerializer):
+    event = EventSerializer()
+
+    class Meta:
+        model = Staff
+        fields = ['id', 'full_name', 'is_manager', 'event']
+
+
+class PlayerLoginSerializer(ModelSerializer):
+    event = EventSerializer()
+
+    class Meta:
+        model = Player
+        fields = ['id', 'full_name', 'social_name', 'is_imortal', 'event']
