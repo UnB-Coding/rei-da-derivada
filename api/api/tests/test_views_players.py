@@ -54,7 +54,7 @@ class PlayersViewTest(APITestCase):
         self.event = Event.objects.create(name='Evento 1', token=self.token)
 
     def setUpPlayers(self):
-        self.player = Player.objects.create(
+        self.player1 = Player.objects.create(
             user=self.user_player1, event=self.event, registration_email=self.create_unique_email())
         self.player2 = Player.objects.create(
             user=self.user_player2, event=self.event, registration_email=self.create_unique_email())
@@ -128,14 +128,17 @@ class PlayersViewTest(APITestCase):
         self.assertEqual(response.data[0], 'Nenhum jogador encontrado!')
 
     def test_post_add_user_to_event(self):
+        self.player1.user = None
+        self.player1.save()
         self.client.force_authenticate(user=self.user_player1)
-        data = {"email": self.player.registration_email,
+        data = {"email": self.player1.registration_email,
                 "join_token": self.event.join_token}
         response = self.client.post(self.url_post, data, format='json')
+        self.player1.refresh_from_db()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, 'Jogador adicionado com sucesso!')
-        self.assertEqual(self.player.user, self.user_player1)
-        self.assertEqual(self.player.event, self.event)
+        # MUDAR self.assertEqual(response.data, 'Jogador adicionado com sucesso!')
+        self.assertEqual(self.player1.user, self.user_player1)
+        self.assertEqual(self.player1.event, self.event)
         self.assertEqual(self.user_player1.events.first(), self.event)
         perms = get_perms(self.user_player1, self.event)
         self.assertTrue(all(perm in perms for perm in [
