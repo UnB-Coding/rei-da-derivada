@@ -9,7 +9,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import Permission
 from ..utils import get_permissions, get_content_type
 from guardian.shortcuts import assign_perm, remove_perm
-from ..serializers import EventSerializer
+from ..serializers import UserEventsSerializer
 
 
 # class TokenViewTest(APITestCase):
@@ -59,7 +59,8 @@ from ..serializers import EventSerializer
 class EventViewTest(APITestCase):
 
     def setUpData(self):
-        self.expected_data = EventSerializer([self.event], many=True).data
+        self.expected_data = UserEventsSerializer(
+            [{'event': self.event, 'role': 'admin'}], many=True).data
 
     def setUpUser(self):
         self.user = User.objects.create(
@@ -92,6 +93,8 @@ class EventViewTest(APITestCase):
         self.event = Event.objects.create(token=self.token2)
         self.setUpAssignPermissions()
         self.setUpData()
+        self.event.admin_email = self.user.email
+        self.event.save()
 
     def test_create_event(self):
         """Test creating a new event with a valid token."""

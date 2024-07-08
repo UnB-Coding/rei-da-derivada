@@ -16,10 +16,9 @@ class TokenAdmin(GuardedModelAdmin):
 
 @admin.register(Event)
 class EventAdmin(GuardedModelAdmin):
-    list_display = ['id', 'token', 'join_token',
-                    'join_token', 'name', 'active']
-    search_fields = ['token', 'name', 'active']
-    fields = ['token', 'name', 'active']
+    list_display = ['id', 'token', 'join_token', 'name', 'active']
+    search_fields = ['token', 'name', 'active', 'join_token']
+    fields = ['token', 'name', 'active', 'admin_email']
 
 
 class SumulaAdmin(GuardedModelAdmin):
