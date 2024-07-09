@@ -30,7 +30,7 @@ class BaseView(APIView):
 class BaseSumulaView(BaseView):
     """Classe base para as views de sumula. Contém métodos comuns a todas as views de sumula."""
 
-    def validate_request_data(self, data):
+    def validate_request_data_dict(self, data):
         """Valida se os dados fornecidos na requisição estão no formato correto."""
         return data and isinstance(data, dict)
 
