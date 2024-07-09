@@ -93,7 +93,7 @@ class SumulaClassificatoriaView(BaseSumulaView):
 
         Permissões necessárias: IsAuthenticated, HasSumulaPermission
         """
-        if not self.validate_request_data(request.data) or 'name' not in request.data or not self.validate_players(request.data) or not self.validate_referees(request.data):
+        if not self.validate_request_data_dict(request.data) or 'name' not in request.data or not self.validate_players(request.data) or not self.validate_referees(request.data):
             return handle_400_error("Dados inválidos!")
         try:
             event = self.get_object()
@@ -126,10 +126,10 @@ class SumulaClassificatoriaView(BaseSumulaView):
         responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
     def put(self, request: request.Request, *args, **kwargs):
         """Atualiza uma sumula de Classificatoria"""
-        if not request.data or not isinstance(request.data, list) or 'id' not in request.data or 'name' not in request.data or 'description' not in request.data:
+        if not self.validate_request_data_dict(request.data) or 'id' not in request.data or 'name' not in request.data or 'description' not in request.data:
             return handle_400_error("Dados inválidos!")
         if not self.validate_players_score(request.data):
-            return handle_400_error("Dados inválidos!")
+            return handle_400_error("Dados Invalidos!")
         sumula_id = request.data['id']
         if not sumula_id:
             return handle_400_error(SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE)
@@ -193,7 +193,7 @@ class SumulaImortalView(BaseSumulaView):
 
         Permissões necessárias: IsAuthenticated, HasSumulaPermission
         """
-        if not self.validate_request_data(request.data) or 'name' not in request.data or not self.validate_players(request.data) or not self.validate_referees(request.data):
+        if not self.validate_request_data_dict(request.data) or 'name' not in request.data or not self.validate_players(request.data) or not self.validate_referees(request.data):
             return handle_400_error("Dados inválidos!")
         try:
             event = self.get_object()
@@ -231,9 +231,9 @@ class SumulaImortalView(BaseSumulaView):
         Obtém uma lista da pontuação dos jogadores e atualiza as pontuações associados a sumula.
         Marca a sumula como encerrada.
         """
-        if not request.data or not isinstance(request.data, list) or 'id' not in request.data[0] or 'name' not in request.data[0] or 'description' not in request.data[0]:
+        if not self.validate_request_data_dict(request.data) or 'id' not in request.data or 'name' not in request.data or 'description' not in request.data:
             return handle_400_error("Dados inválidos!")
-        sumula_id = request.data[0]['id']
+        sumula_id = request.data['id']
         if not sumula_id:
             return handle_400_error(SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE)
         sumula = SumulaImortal.objects.filter(id=sumula_id).first()
@@ -380,7 +380,7 @@ class AddRefereeToSumulaView(BaseSumulaView):
         manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
     def put(self, request: request.Request, *args, **kwargs):
-        if not self.validate_request_data(request.data) or 'sumula_id' not in request.data or 'is_imortal' not in request.data:
+        if not self.validate_request_data_dict(request.data) or 'sumula_id' not in request.data or 'is_imortal' not in request.data:
             return handle_400_error("Dados inválidos!")
         sumula_id = request.data.get('sumula_id')
         if not sumula_id:
