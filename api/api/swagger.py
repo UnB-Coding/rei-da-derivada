@@ -7,102 +7,92 @@ sumula_imortal_api_put_schema = openapi.Schema(
     title='Sumula',
     type=openapi.TYPE_OBJECT,
     properties={
-        'sumula': openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID da sumula', example=1),
-                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome da sumula', example='Imortais 01'),
-                'description': openapi.Schema(type=openapi.TYPE_STRING, description='Descrição da sumula', example='Sala S4'),
-                'referee': openapi.Schema(
-                    type=openapi.TYPE_ARRAY,
-                    items=openapi.Schema(
+        'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID da sumula', example=1),
+        'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome da sumula', example='Imortais 01'),
+        'description': openapi.Schema(type=openapi.TYPE_STRING, description='Descrição da sumula', example='Sala S4'),
+        'referee': openapi.Schema(
+            type=openapi.TYPE_ARRAY,
+            items=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                title='Staff',
+                properties={
+                    'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do staff', example=1),
+                    'first_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do staff', example='João'),
+                    'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='Sobrenome do staff', example='Silva'),
+                },
+                required=['id']
+            )
+        ),
+        'players_score': openapi.Schema(
+            type=openapi.TYPE_ARRAY,
+            items=openapi.Schema(
+                title='PlayerScore',
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do objeto de pontuacao do jogador', example=1),
+                    'points': openapi.Schema(type=openapi.TYPE_INTEGER, description='Pontos do jogador', example=10),
+                    'player': openapi.Schema(
                         type=openapi.TYPE_OBJECT,
-                        title='Staff',
+                        title='Player',
                         properties={
-                            'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do staff', example=1),
-                            'first_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do staff', example='João'),
-                            'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='Sobrenome do staff', example='Silva'),
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador', example=1),
+                            'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João Silva Jacinto '),
+                            'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='João Silva'),
                         },
                         required=['id']
-                    )
-                ),
-                'players_score': openapi.Schema(
-                    type=openapi.TYPE_ARRAY,
-                    items=openapi.Schema(
-                        title='PlayerScore',
-                        type=openapi.TYPE_OBJECT,
-                        properties={
-                            'points': openapi.Schema(type=openapi.TYPE_INTEGER, description='Pontos do jogador', example=10),
-                            'player': openapi.Schema(
-                                type=openapi.TYPE_OBJECT,
-                                title='Player',
-                                properties={
-                                    'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador', example=1),
-                                    'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João Silva Jacinto '),
-                                    'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='João Silva'),
-                                },
-                                required=['id']
-                            ),
-                        },
-                        required=['points', 'player']
-                    )
-                ),
-            },
-            required=['id', 'name', 'referee', 'players_score']
-        )
-    },
-    required=['sumula']
+                    ),
+                },
+                required=['points', 'player']
+            )
+        ),
+    },  
+    required=['id', 'name', 'referee', 'players_score']
 )
 
 sumula_classicatoria_api_put_schema = openapi.Schema(
     title='Sumula',
     type=openapi.TYPE_OBJECT,
     properties={
-        'sumula': openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID da sumula', example=1),
-                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome da sumula', example='Chave A'),
-                'description': openapi.Schema(type=openapi.TYPE_STRING, description='Descrição da sumula', example='Sala S4'),
-                'referee': openapi.Schema(
-                    type=openapi.TYPE_ARRAY,
-                    items=openapi.Schema(
+        'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID da sumula', example=1),
+        'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome da sumula', example='Chave A'),
+        'description': openapi.Schema(type=openapi.TYPE_STRING, description='Descrição da sumula', example='Sala S4'),
+        'referee': openapi.Schema(
+            type=openapi.TYPE_ARRAY,
+            items=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                title='Staff',
+                properties={
+                    'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do staff', example=1),
+                    'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do staff', example='João'),
+                },
+                required=['id']
+            )
+        ),
+        'players_score': openapi.Schema(
+            type=openapi.TYPE_ARRAY,
+            items=openapi.Schema(
+                title='PlayerScore',
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do objeto de pontuacao do jogador', example=1),
+                    'points': openapi.Schema(type=openapi.TYPE_INTEGER, description='Pontos do jogador', example=10),
+                    'player': openapi.Schema(
                         type=openapi.TYPE_OBJECT,
-                        title='Staff',
+                        title='Player',
                         properties={
-                            'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do staff', example=1),
-                            'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do staff', example='João'),
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador', example=1),
+                            'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João Silva Jacinto '),
+                            'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='João Silva'),
+                            'is_imortal': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Se o jogador é imortal', example=True),
                         },
                         required=['id']
-                    )
-                ),
-                'players_score': openapi.Schema(
-                    type=openapi.TYPE_ARRAY,
-                    items=openapi.Schema(
-                        title='PlayerScore',
-                        type=openapi.TYPE_OBJECT,
-                        properties={
-                            'points': openapi.Schema(type=openapi.TYPE_INTEGER, description='Pontos do jogador', example=10),
-                            'player': openapi.Schema(
-                                type=openapi.TYPE_OBJECT,
-                                title='Player',
-                                properties={
-                                    'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador', example=1),
-                                    'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João Silva Jacinto '),
-                                    'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='João Silva'),
-                                    'is_imortal': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Se o jogador é imortal', example=True),
-                                },
-                                required=['id']
-                            ),
-                        },
-                        required=['points', 'player']
-                    )
-                ),
-            },
-            required=['id', 'name', 'referee', 'players_score']
-        )
+                    ),
+                },
+                required=['points', 'player']
+            )
+        ),
     },
-    required=['sumula']
+    required=['id', 'name', 'referee', 'players_score']
 )
 
 sumulas_response_schema = openapi.Schema(

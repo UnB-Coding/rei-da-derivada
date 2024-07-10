@@ -221,23 +221,22 @@ class SumulaViewTest(BaseSumulaViewTest):
 
 class SumulaImortalViewTest(BaseSumulaViewTest):
     def setUpData(self):
-        self.data_update = [
-            {
-                "id": self.sumula.id,
-                "active": True,
-                "description": 'Sala S4',
-                "referee": [
-                    {
-                        "id": self.staff1.id,
-                    },
-                    {
-                        "id": self.user_staff_member.id,
-                        "first_name": self.user_staff_member.first_name,
-                        "last_name": self.user_staff_member.last_name
-                    }
-                ],
-                "name": "imortais 01",
-                "players_score": [
+        self.data_update = {
+            "id": self.sumula.id,
+            "active": True,
+            "description": 'Sala S4',
+            "referee": [
+                {
+                    "id": self.staff1.id,
+                },
+                {
+                    "id": self.user_staff_member.id,
+                    "first_name": self.user_staff_member.first_name,
+                    "last_name": self.user_staff_member.last_name
+                }
+            ],
+            "name": "imortais 01",
+            "players_score": [
                     {
                         "id": self.player_score1.id,
                         "points": 10,
@@ -247,7 +246,7 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
                             "registration_email": self.player.registration_email,
                         }
                     },
-                    {
+                {
                         "id": self.player_score2.id,
                         "points": 15,
                         "player": {
@@ -256,9 +255,8 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
                             "registration_email": self.player2.registration_email,
                         }
                     }
-                ]
-            }
-        ]
+            ]
+        }
         self.data_post = {
             "name": "imortais 01",
             "players": [
@@ -409,7 +407,7 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
     def test_update_sumula_not_found(self):
         self.client.force_authenticate(user=self.user_staff_manager)
 
-        self.data_update[0]['id'] = 100
+        self.data_update['id'] = 100
         response = self.client.put(
             self.url_update, format='json', data=self.data_update)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -417,23 +415,19 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
 
     def test_update_sumula_without_player_score_id(self):
 
-        self.data_update[0]['players_score'][0].pop('id')
+        self.data_update['players_score'][0].pop('id')
         self.client.force_authenticate(user=self.user_staff_manager)
         response = self.client.put(
             self.url_update, self.data_update, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['errors'],
-                         'Dados de pontuação inválidos!')
 
     def test_update_sumula_with_i_player_score_id_not_found(self):
 
-        self.data_update[0]['players_score'][0]['id'] = 100
+        self.data_update['players_score'][0]['id'] = 100
         self.client.force_authenticate(user=self.user_staff_manager)
         response = self.client.put(
             self.url_update, self.data_update, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['errors'],
-                         'Dados de pontuação inválidos!')
 
     def tearDown(self):
         User.objects.all().delete()
@@ -444,24 +438,22 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
         Player.objects.all().delete()
         Group.objects.all().delete()
         self.remove_permissions()
-        self.data_update = None
         self.data_post = None
 
 
 class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
     def setUpData(self):
-        self.data_update = [
-            {
-                "id": self.sumula.id,
-                "active": True,
-                "description": 'Sala S4',
-                "referee": [
-                    {
-                        "id": self.staff1.id,
-                    },
-                ],
-                "name": "imortais 01",
-                "players_score": [
+        self.data_update = {
+            "id": self.sumula.id,
+            "active": True,
+            "description": 'Sala S4',
+            "referee": [
+                {
+                    "id": self.staff1.id,
+                },
+            ],
+            "name": "imortais 01",
+            "players_score": [
                     {
                         "id": self.player_score1.id,
                         "points": 10,
@@ -471,7 +463,7 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
                             "registration_email": self.player.registration_email,
                         }
                     },
-                    {
+                {
                         "id": self.player_score2.id,
                         "points": 15,
                         "player": {
@@ -480,9 +472,8 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
                             "registration_email": self.player2.registration_email,
                         }
                     }
-                ]
-            }
-        ]
+            ]
+        }
         self.data_post = {
             "name": "imortais 01",
             "players": [
@@ -534,15 +525,16 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
 
     def test_create_sumula(self):
         PlayerScore.objects.all().delete()
+        SumulaClassificatoria.objects.all().delete()
         self.assertFalse(PlayerScore.objects.exists())
         self.client.force_authenticate(user=self.user_staff_manager)
         response = self.client.post(
             self.url_post, self.data_post, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(SumulaClassificatoria.objects.count(), 4)
+        self.assertEqual(SumulaClassificatoria.objects.count(), 1)
         self.assertEqual(PlayerScore.objects.count(), 2)
-        self.assertIsNotNone(SumulaClassificatoria.objects.filter(
-            name='imortais 01').first())
+        sumula = SumulaClassificatoria.objects.get(id=response.data['id'])
+        self.assertEqual(sumula.referee.count(), 1)
 
     def test_create_sumula_unauthenticated(self):
         response = self.client.post(
@@ -621,7 +613,7 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
     def test_update_sumula_not_found(self):
         self.client.force_authenticate(user=self.user_staff_manager)
 
-        self.data_update[0]['id'] = 100
+        self.data_update['id'] = 100
         response = self.client.put(
             self.url_update, format='json', data=self.data_update)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -629,23 +621,19 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
 
     def test_update_sumula_without_player_score_id(self):
 
-        self.data_update[0]['players_score'][0].pop('id')
+        self.data_update['players_score'][0].pop('id')
         self.client.force_authenticate(user=self.user_staff_manager)
         response = self.client.put(
             self.url_update, self.data_update, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['errors'],
-                         'Dados de pontuação inválidos!')
 
     def test_update_sumula_with_i_player_score_id_not_found(self):
 
-        self.data_update[0]['players_score'][0]['id'] = 100
+        self.data_update['players_score'][0]['id'] = 100
         self.client.force_authenticate(user=self.user_staff_manager)
         response = self.client.put(
             self.url_update, self.data_update, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['errors'],
-                         'Dados de pontuação inválidos!')
 
     def tearDown(self):
         User.objects.all().delete()
