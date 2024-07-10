@@ -287,7 +287,7 @@ class AddSingleStaff(BaseView):
         operation_description="""Adiciona um monitor manualmente ao evento.
             Devem ser enviados os dados do monitor a ser adicionado.
                 Obrigatório: Nome Completo, E-mail e se é Gerente de Equipe ou não.""",
-        operation_summary='Adiciona um monitor ao evento.',
+        operation_summary='Adiciona um monitor manualmente ao evento.',
         manual_parameters=manual_parameter_event_id,
         request_body=openapi.Schema(
             title='Dados do Monitor', type=openapi.TYPE_OBJECT,
