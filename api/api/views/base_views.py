@@ -68,10 +68,6 @@ class BaseSumulaView(BaseView):
                 return False
         return True
 
-    def check_sumula_referee(self, sumula: SumulaImortal | SumulaClassificatoria, staff: Staff) -> bool:
-        """Verifica se um árbitro está associado a uma sumula."""
-        return staff in sumula.referee.all()
-
     def get_sumulas(self, event: Event, active: bool = None) -> tuple[list[SumulaImortal], list[SumulaClassificatoria]]:
         """Retorna as sumulas de um evento de acordo com o parâmetro active."""
         if active is None:
@@ -129,23 +125,24 @@ class BaseSumulaView(BaseView):
 
     def update_sumula(self, sumula: SumulaImortal | SumulaClassificatoria, event: Event) -> None | ValidationError:
         """Atualiza uma sumula."""
+        players_score = self.request.data['players_score']
+
+        if not self.update_player_score(players_score):
+            raise ValidationError("Dados de pontuação inválidos!")
+        sumula.name = self.request.data['name']
+        sumula.description = self.request.data['description']
+        sumula.active = False
+        sumula.save()
+
+    def validate_if_staff_is_sumula_referee(self, sumula: SumulaClassificatoria | SumulaImortal, event: Event) -> Exception | Staff:
         staff = Staff.objects.filter(
             user=self.request.user, event=event).first()
         if not staff:
             raise ValidationError("Usuário não é um monitor do evento!")
 
-        if not self.check_sumula_referee(sumula, staff):
+        if not staff in sumula.referee.all():
             raise ValidationError("Usuário não é um árbitro da sumula!")
-
-        sumula.name = self.request.data['name']
-        sumula.description = self.request.data['description']
-        players_score = self.request.data['players_score']
-
-        if not self.update_player_score(players_score):
-            raise ValidationError("Dados de pontuação inválidos!")
-
-        sumula.active = False
-        sumula.save()
+        return staff
 
     def get_object(self) -> Event:
         """ Verifica se o evento existe.
