@@ -10,6 +10,8 @@ from ..swagger import Errors, sumula_imortal_api_put_schema, sumula_classicatori
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
+SUMULA_IS_CLOSED_ERROR_MESSAGE = "Súmula já encerrada só pode ser editada por um gerente ou adminstrador!"
+
 
 class HasSumulaPermission(BasePermission):
     def has_object_permission(self, request, view, obj) -> bool:
@@ -119,7 +121,8 @@ class SumulaClassificatoriaView(BaseSumulaView):
         operation_description="""Esta rota serve para salvar os dados da sumula e marcar a sumula como **encerrada**.
         As pontuações dos jogadores devem ser enviadas no corpo da requisição e serão atualizadas no banco de dados.
         Devem ser enviados os jogadores **não-classificados** como **IMORTAIS** (is_imortal = True). Já os jogadores **classificados** devem ser enviados como **is_imortal = False.**
-        A sumula **não** pode ser mais salva/editada por um monitor comum após encerrada.""",
+        A sumula **não** pode ser mais salva/editada por um monitor comum após encerrada.
+        Apenas um gerente ou administrador do evento pode editar uma sumula encerrada.""",
         security=[{'Bearer': []}],
         manual_parameters=manual_parameter_event_id,
         request_body=sumula_classicatoria_api_put_schema,
@@ -136,13 +139,20 @@ class SumulaClassificatoriaView(BaseSumulaView):
         sumula = SumulaClassificatoria.objects.filter(id=sumula_id).first()
         if not sumula:
             return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
-        if not sumula.active:
-            return handle_400_error("Súmula já encerrada!")
         try:
             event = self.get_object()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
+        try:
+            staff = self.validate_if_staff_is_sumula_referee(
+                sumula=sumula, event=event)
+        except Exception as e:
+            return handle_400_error(str(e))
+
+        is_admin = request.user.email == event.admin_email
+        if not sumula.active and not (staff.is_manager or is_admin):
+            return handle_400_error(SUMULA_IS_CLOSED_ERROR_MESSAGE)
         try:
             self.update_sumula(sumula=sumula, event=event)
         except Exception as e:
@@ -220,7 +230,9 @@ class SumulaImortalView(BaseSumulaView):
         operation_summary="Encerra uma sumula imortal.",
         operation_description="""Esta rota serve para salvar os dados da sumula e marcar a sumula como **encerrada**.
         As pontuações dos jogadores devem ser enviadas no corpo da requisição e serão atualizadas no banco de dados.
-        A sumula **não** pode ser mais salva/editada por um monitor comum após encerrada.""",
+        A sumula **não** pode ser mais salva/editada por um monitor comum após encerrada.
+        Apenas um gerente ou administrador do evento pode editar uma sumula encerrada.
+        """,
         security=[{'Bearer': []}],
         manual_parameters=manual_parameter_event_id,
         request_body=sumula_imortal_api_put_schema,
@@ -244,6 +256,14 @@ class SumulaImortalView(BaseSumulaView):
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
+        try:
+            staff = self.validate_if_staff_is_sumula_referee(
+                sumula=sumula, event=event)
+        except Exception as e:
+            return handle_400_error(str(e))
+        is_admin = request.user.email == event.admin_email
+        if not sumula.active and not (staff.is_manager or is_admin):
+            return handle_400_error(SUMULA_IS_CLOSED_ERROR_MESSAGE)
         try:
             self.update_sumula(sumula=sumula, event=event)
         except Exception as e:
