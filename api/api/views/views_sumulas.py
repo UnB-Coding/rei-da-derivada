@@ -128,8 +128,13 @@ class SumulaClassificatoriaView(BaseSumulaView):
         request_body=sumula_classicatoria_api_put_schema,
         responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
     def put(self, request: request.Request, *args, **kwargs):
-        """Atualiza uma sumula de Classificatoria"""
-        if not self.validate_request_data_dict(request.data) or 'id' not in request.data or 'name' not in request.data or 'description' not in request.data:
+        """Atualiza uma sumula de Classificatoria
+        Obtém o id da sumula a ser atualizada e atualiza os dados associados a ela.
+        Obtém uma lista da pontuação dos jogadores e atualiza as pontuações associados a sumula.
+        Marca a sumula como encerrada."""
+
+        required_fields = ['id', 'name', 'description']
+        if not self.validate_request_data_dict(request.data) or not all(field in request.data for field in required_fields):
             return handle_400_error("Dados inválidos!")
         if not self.validate_players_score(request.data):
             return handle_400_error("Dados Invalidos!")
@@ -144,15 +149,16 @@ class SumulaClassificatoriaView(BaseSumulaView):
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
-        try:
-            staff = self.validate_if_staff_is_sumula_referee(
-                sumula=sumula, event=event)
-        except Exception as e:
-            return handle_400_error(str(e))
-
         is_admin = request.user.email == event.admin_email
-        if not sumula.active and not (staff.is_manager or is_admin):
-            return handle_400_error(SUMULA_IS_CLOSED_ERROR_MESSAGE)
+        if not is_admin:
+            try:
+                staff = self.validate_if_staff_is_sumula_referee(
+                    sumula=sumula, event=event)
+            except Exception as e:
+                return handle_400_error(str(e))
+            if not sumula.active and not staff.is_manager:
+                return handle_400_error(SUMULA_IS_CLOSED_ERROR_MESSAGE)
+
         try:
             self.update_sumula(sumula=sumula, event=event)
         except Exception as e:
@@ -238,12 +244,13 @@ class SumulaImortalView(BaseSumulaView):
         request_body=sumula_imortal_api_put_schema,
         responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
     def put(self, request: request.Request, *args, **kwargs) -> response.Response:
-        """Atualiza uma sumula
+        """Atualiza uma sumula Imortal
         Obtém o id da sumula a ser atualizada e atualiza os dados associados a ela.
         Obtém uma lista da pontuação dos jogadores e atualiza as pontuações associados a sumula.
         Marca a sumula como encerrada.
         """
-        if not self.validate_request_data_dict(request.data) or 'id' not in request.data or 'name' not in request.data or 'description' not in request.data:
+        required_fields = ['id', 'name', 'description']
+        if not self.validate_request_data_dict(request.data) or not all(field in request.data for field in required_fields):
             return handle_400_error("Dados inválidos!")
         sumula_id = request.data['id']
         if not sumula_id:
@@ -256,14 +263,16 @@ class SumulaImortalView(BaseSumulaView):
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
-        try:
-            staff = self.validate_if_staff_is_sumula_referee(
-                sumula=sumula, event=event)
-        except Exception as e:
-            return handle_400_error(str(e))
         is_admin = request.user.email == event.admin_email
-        if not sumula.active and not (staff.is_manager or is_admin):
-            return handle_400_error(SUMULA_IS_CLOSED_ERROR_MESSAGE)
+        if not is_admin:
+            try:
+                staff = self.validate_if_staff_is_sumula_referee(
+                    sumula=sumula, event=event)
+            except Exception as e:
+                return handle_400_error(str(e))
+            if not sumula.active and not staff.is_manager:
+                return handle_400_error(SUMULA_IS_CLOSED_ERROR_MESSAGE)
+
         try:
             self.update_sumula(sumula=sumula, event=event)
         except Exception as e:
