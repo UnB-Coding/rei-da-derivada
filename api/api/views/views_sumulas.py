@@ -9,7 +9,7 @@ from ..utils import handle_400_error
 from ..swagger import Errors, sumula_imortal_api_put_schema, sumula_classicatoria_api_put_schema, sumulas_response_schema, manual_parameter_event_id
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-
+import random
 SUMULA_IS_CLOSED_ERROR_MESSAGE = "Súmula já encerrada só pode ser editada por um gerente ou adminstrador!"
 
 
@@ -433,3 +433,44 @@ class AddRefereeToSumulaView(BaseSumulaView):
             return handle_400_error("Súmula já possui um ou mais árbitros!")
         sumula.referee.add(staff)
         return response.Response(status=status.HTTP_200_OK)
+
+
+class GenerateSumulas(BaseSumulaView):
+    permission_classes = [IsAuthenticated, HasSumulaPermission]
+
+    def post(self, request: request.Request, *args, **kwargs) -> response.Response:
+        try:
+            event = self.get_object()
+        except Exception as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(self.request, event)
+        try:
+            sumulas = self.generate_sumulas(event=event)
+        except Exception as e:
+            return handle_400_error(str(e))
+        return response.Response(status=status.HTTP_200_OK)
+
+    def generate_sumulas(self, event) -> list[SumulaClassificatoria] | Exception:
+        """Gera sumulas classificatorias para iniciar um evento.
+        Uma sumula possui no maximo 8 e no mínimo 5 jogadores.
+        """
+        MIN_PLAYERS = 5
+        MAX_PLAYERS = 8
+        players = Player.objects.filter(event=event)
+        players = list(players)
+        random.shuffle(players)
+        N = len(players)
+        resto = N % MAX_PLAYERS
+        n_sumulas = N // MAX_PLAYERS
+        if resto == 0 or resto >= MIN_PLAYERS:
+            n_sumulas += 1
+            for i in range(n_sumulas):
+                sumula = SumulaClassificatoria.objects.create(
+                    event=event, name=f"Sumula {i+1}")
+                players_to_add = players[i*MAX_PLAYERS:(i+1)*MAX_PLAYERS]
+                for j in range(len(players_to_add)):
+                    player = players_to_add[j]
+                    PlayerScore.objects.create(
+                        player=player, sumula_classificatoria=sumula)
+        else:
+            """Caso o número de jogadores não seja suficiente para criar uma sumula, redistribui os jogadores entre as sumulas.""" 
