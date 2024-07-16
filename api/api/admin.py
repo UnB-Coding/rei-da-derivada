@@ -93,8 +93,6 @@ class PlayerScoreForm(forms.ModelForm):
             raise ValidationError(
                 "O evento de uma Sumula deve ser o mesmo Evento do objeto de PlayerScore!")
 
-# Atualize a classe PlayerScoreAdmin para usar o ModelForm personalizado
-
 
 @admin.register(PlayerScore)
 class PlayerScoreAdmin(GuardedModelAdmin):
@@ -104,8 +102,8 @@ class PlayerScoreAdmin(GuardedModelAdmin):
         return obj.player.__str__()
     get_player_name.short_description = 'Player Name'
 
-    list_display = ['get_player_name', 'event', 'sumula_classificatoria',
-                    'sumula_imortal', 'points', 'id']
+    list_display = ['id', 'get_player_name', 'event', 'sumula_classificatoria',
+                    'sumula_imortal', 'points']
     search_fields = ['event', 'sumula_classificatoria',
                      'sumula_imortal', 'points', 'player']
     fields = ['event', 'sumula_classificatoria',
@@ -115,10 +113,10 @@ class PlayerScoreAdmin(GuardedModelAdmin):
 @admin.register(Player)
 class PlayerAdmin(GuardedModelAdmin):
     list_display = ['id', 'user', 'full_name', 'social_name',
-                    'event', 'total_score', 'registration_email', 'is_imortal']
+                    'event', 'total_score', 'registration_email', 'is_imortal', 'is_present']
     search_fields = ['user', 'total_score', 'event', 'registration_email']
     fields = ['user', 'total_score', 'event',
-              'registration_email', 'full_name', 'social_name', 'is_imortal']
+              'registration_email', 'full_name', 'social_name', 'is_imortal', 'is_present']
 
     def username(self, obj):
         return obj.username
