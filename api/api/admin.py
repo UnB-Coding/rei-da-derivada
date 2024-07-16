@@ -39,7 +39,7 @@ class SumulaAdmin(GuardedModelAdmin):
     list_display = ['name', 'event', 'referees',
                     'id', 'player_scores', 'active']
     search_fields = ['referee__username', 'event__name', 'name']
-    fields = ['referee', 'event', 'name', 'active']
+    fields = ['referee', 'event', 'name', 'active', 'description']
     filter_horizontal = ['referee']
 
 
