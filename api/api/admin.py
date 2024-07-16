@@ -34,11 +34,16 @@ class SumulaAdmin(GuardedModelAdmin):
         for score in obj.scores.all():
             scores.append(score.__str__())
         return ', '.join(scores)
+
+    def player_scores_count(self, obj):
+        return obj.scores.count()
+
     player_scores.short_description = 'Player Scores'
     referees.short_description = 'Referees'
     list_display = ['name', 'event', 'referees',
-                    'id', 'player_scores', 'active']
-    search_fields = ['referee__username', 'event__name', 'name']
+                    'id', 'player_scores', 'player_scores_count', 'active',]
+    search_fields = ['referee__username',
+                     'event__name', 'name', 'player_scores_count']
     fields = ['referee', 'event', 'name', 'active', 'description']
     filter_horizontal = ['referee']
 
@@ -98,11 +103,7 @@ class PlayerScoreForm(forms.ModelForm):
 class PlayerScoreAdmin(GuardedModelAdmin):
     form = PlayerScoreForm
 
-    def get_player_name(self, obj):
-        return obj.player.__str__()
-    get_player_name.short_description = 'Player Name'
-
-    list_display = ['id', 'get_player_name', 'event', 'sumula_classificatoria',
+    list_display = ['id', 'player', 'event', 'sumula_classificatoria',
                     'sumula_imortal', 'points']
     search_fields = ['event', 'sumula_classificatoria',
                      'sumula_imortal', 'points', 'player']
