@@ -10,6 +10,7 @@ from ..swagger import Errors, sumula_imortal_api_put_schema, sumula_classicatori
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import random
+import string
 SUMULA_IS_CLOSED_ERROR_MESSAGE = "Súmula já encerrada só pode ser editada por um gerente ou adminstrador!"
 
 
@@ -122,7 +123,14 @@ class SumulaClassificatoriaView(BaseSumulaView):
         As pontuações dos jogadores devem ser enviadas no corpo da requisição e serão atualizadas no banco de dados.
         Devem ser enviados os jogadores **não-classificados** como **IMORTAIS** (is_imortal = True). Já os jogadores **classificados** devem ser enviados como **is_imortal = False.**
         A sumula **não** pode ser mais salva/editada por um monitor comum após encerrada.
-        Apenas um gerente ou administrador do evento pode editar uma sumula encerrada.""",
+        Apenas um gerente ou administrador do evento pode editar uma sumula encerrada.
+
+        Os campos a serem atualizados são:
+        - name
+        - description
+        - pontuação dos players
+        - define a sumula como encerrada
+        """,
         security=[{'Bearer': []}],
         manual_parameters=manual_parameter_event_id,
         request_body=sumula_classicatoria_api_put_schema,
@@ -131,7 +139,14 @@ class SumulaClassificatoriaView(BaseSumulaView):
         """Atualiza uma sumula de Classificatoria
         Obtém o id da sumula a ser atualizada e atualiza os dados associados a ela.
         Obtém uma lista da pontuação dos jogadores e atualiza as pontuações associados a sumula.
-        Marca a sumula como encerrada."""
+        Marca a sumula como encerrada.
+
+        Os campos a serem atualizados são:
+        - name
+        - description
+        - pontuação dos players
+        - define a sumula como encerrada
+        """
 
         required_fields = ['id', 'name', 'description']
         if not self.validate_request_data_dict(request.data) or not all(field in request.data for field in required_fields):
@@ -238,6 +253,11 @@ class SumulaImortalView(BaseSumulaView):
         As pontuações dos jogadores devem ser enviadas no corpo da requisição e serão atualizadas no banco de dados.
         A sumula **não** pode ser mais salva/editada por um monitor comum após encerrada.
         Apenas um gerente ou administrador do evento pode editar uma sumula encerrada.
+        Os campos a serem atualizados são:
+        - name
+        - description
+        - pontuação dos players
+        - define a sumula como encerrada
         """,
         security=[{'Bearer': []}],
         manual_parameters=manual_parameter_event_id,
@@ -438,39 +458,141 @@ class AddRefereeToSumulaView(BaseSumulaView):
 class GenerateSumulas(BaseSumulaView):
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
+    @swagger_auto_schema(
+        tags=['sumula'],
+        operation_summary="Gera sumulas classificatorias para iniciar um evento.",
+        operation_description="""Gera sumulas classificatorias para iniciar um evento.
+        Uma sumula possui no maximo 8 e no mínimo 6 jogadores.
+        Apenas um gerente ou administrador do evento pode gerar sumulas.
+        """,
+        security=[{'Bearer': []}],
+        manual_parameters=manual_parameter_event_id,
+        responses={200: openapi.Response('OK', SumulaClassificatoriaSerializer), **Errors([400]).retrieve_erros()})
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         try:
             event = self.get_object()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
-        try:
-            sumulas = self.generate_sumulas(event=event)
-        except Exception as e:
-            return handle_400_error(str(e))
-        return response.Response(status=status.HTTP_200_OK)
+        print(event)
+
+        sumulas = self.generate_sumulas(event=event)
+        players = Player.objects.filter(event=event, is_present=True)
+        for player in players:
+            psc = PlayerScore.objects.filter(player=player, event=event)
+            if not psc:
+                print('deu ruim')
+        data = SumulaClassificatoriaSerializer(sumulas, many=True).data
+        return response.Response(status=status.HTTP_200_OK, data=data)
 
     def generate_sumulas(self, event) -> list[SumulaClassificatoria] | Exception:
         """Gera sumulas classificatorias para iniciar um evento.
         Uma sumula possui no maximo 8 e no mínimo 5 jogadores.
         """
-        MIN_PLAYERS = 5
+        MIN_PLAYERS = 6
         MAX_PLAYERS = 8
-        players = Player.objects.filter(event=event)
+        letters = string.ascii_uppercase
+        letters_count = 0
+        sumulas_count = 0
+
+        print(letters)
+        players = Player.objects.filter(
+            event=event, is_present=True, is_imortal=False)
+        if players.count() < MIN_PLAYERS:
+            raise Exception(
+                f"O evento precisa de pelo menos {MIN_PLAYERS} jogadores para iniciar.")
         players = list(players)
         random.shuffle(players)
         N = len(players)
         resto = N % MAX_PLAYERS
         n_sumulas = N // MAX_PLAYERS
-        if resto == 0 or resto >= MIN_PLAYERS:
+        sumulas: list[SumulaClassificatoria] = []
+        if resto > 0:
             n_sumulas += 1
-            for i in range(n_sumulas):
+        for i in range(n_sumulas):
+            if letters_count % 26 == 0:
+                letters_count = 0
+            if i < 26:
                 sumula = SumulaClassificatoria.objects.create(
-                    event=event, name=f"Sumula {i+1}")
-                players_to_add = players[i*MAX_PLAYERS:(i+1)*MAX_PLAYERS]
-                for j in range(len(players_to_add)):
-                    player = players_to_add[j]
-                    PlayerScore.objects.create(
-                        player=player, sumula_classificatoria=sumula)
-        else:
-            """Caso o número de jogadores não seja suficiente para criar uma sumula, redistribui os jogadores entre as sumulas.""" 
+                    event=event, name=f"Chave {letters[letters_count]}")
+            else:
+                name = f"{letters[letters_count]}" * \
+                    (i//26+1)
+                sumula = SumulaClassificatoria.objects.create(
+                    event=event, name=f"Chave {name}")
+            letters_count += 1
+            print(letters_count)
+            sumulas.append(sumula)
+            # print('sumula:', sumulas[i])
+            players_to_add = players[i*MAX_PLAYERS:(i+1)*MAX_PLAYERS]
+            for j in range(len(players_to_add)):
+                player = players_to_add[j]
+                # print('player:', player)
+                ps = PlayerScore.objects.create(event=event,
+                                                player=player, sumula_classificatoria=sumulas[i])
+                # print('ps:', ps)
+        if resto > 0 and resto < MIN_PLAYERS:
+            # print('total de sumulas:', n_sumulas)
+            index_of_complete_sumulas = n_sumulas-2
+            qt_needed = MIN_PLAYERS - resto
+            last_sumula = sumulas[n_sumulas-1]
+            print('last_sumula scores count:', last_sumula.scores.count())
+            while (last_sumula.scores.count() < MIN_PLAYERS):
+                # print(index_of_complete_sumulas)
+                scores = sumulas[index_of_complete_sumulas].scores.all()
+                for i in range(2):
+                    player = scores[i].player
+                    scores[i].delete()
+                    PlayerScore.objects.create(event=event, player=player,
+                                               sumula_classificatoria=last_sumula)
+                    last_sumula.refresh_from_db(fields=['scores'])
+                    if last_sumula.scores.count() == MIN_PLAYERS:
+                        break
+                index_of_complete_sumulas -= 1
+        return sumulas
+
+
+class RemovePlayersFromSumula(BaseSumulaView):
+    permission_classes = [IsAuthenticated, HasSumulaPermission]
+
+    @ swagger_auto_schema(
+        tags=['sumula'],
+        operation_summary="Remove jogadores de uma súmula.",
+        operation_description="""Esta rota serve para salvar os dados da sumula e marcar a sumula como **encerrada**..
+        Apenas um gerente ou administrador do evento pode remover jogadores de uma sumula.
+        """,
+        security=[{'Bearer': []}],
+        manual_parameters=manual_parameter_event_id,
+        request_body=openapi.Schema(
+            title='Sumula',
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID da sumula', example=1),
+                'players_to_delete': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        title='PlayerScore',
+                        type=openapi.TYPE_OBJECT,
+                        description='Objetos de pontuacao dos jogadores que devem ser removidos da sumula',
+                        properties={
+                            'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do objeto de pontuacao do jogador', example=1),
+                            'player': openapi.Schema(
+                                type=openapi.TYPE_OBJECT,
+                                title='Player',
+                                properties={
+                                    'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador', example=1),
+                                    'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João Silva Jacinto '),
+                                    'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='João Silva'),
+                                },
+                                required=['id']
+                            ),
+                        },
+                        required=['id', 'player']
+                    )
+                ),
+            },
+            required=['id', 'name', 'referee', 'players_score']
+        ),
+        responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
+    def put(self, request: request.Request, *args, **kwargs):
+        """Remove jogadores de uma sumula."""

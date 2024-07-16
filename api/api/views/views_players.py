@@ -322,6 +322,7 @@ class AddSinglePlayer(BaseView):
         operation_description="""Adiciona um jogador manualmente ao evento.
         Deve ser fornecido o nome completo do jogador como _request body_ e o ID do evento como _manual parameter_. Nome social e email são opcionais.
 
+        Retorno: Retorna o objeto do jogador criado no evento para a utilização imediata no front-end.
         """,
         operation_summary='Adiciona um jogador manualmente ao evento.',
         request_body=openapi.Schema(
