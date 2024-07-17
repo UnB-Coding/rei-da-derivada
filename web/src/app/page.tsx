@@ -20,7 +20,6 @@ export default function Home() {
   const router = useRouter();
   useEffect(() => {
     let token = new URLSearchParams(window.location.hash).get("access_token");
-    console.log(token);
     if (token){
       const myHeaders = new Headers();
       myHeaders.append("Content-Type", "application/json");

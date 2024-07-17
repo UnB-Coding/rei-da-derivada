@@ -9,13 +9,14 @@ import { useRouter } from "next/navigation";
 
 export default function AllContests() {
   const router = useRouter();
-  const { user, loading } = useContext(UserContext);
+  const { user, loading, setLoading } = useContext(UserContext);
 
   useEffect(() => {
     if (!user.access && !loading) {
       router.push("/");
     }
   }, [user]);
+  
   return loading ? <LoadingComponent/> :
     <>
         <HeaderComponent/>
