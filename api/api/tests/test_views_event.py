@@ -99,11 +99,13 @@ class EventViewTest(APITestCase):
     def test_create_event(self):
         """Test creating a new event with a valid token."""
         url = reverse('api:event')
-        data = {'token_code': self.token.token_code}
+        data = {'token_code': self.token.token_code,
+                'name': 'New Event',
+                }
         self.client.force_authenticate(user=self.user)
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['name'], '')
+        self.assertEqual(response.data['name'], 'New Event')
         self.assertEqual(self.user.events.count(), 1)
         self.assertEqual(self.user.groups.count(), 1)
         event_id = response.data['id']

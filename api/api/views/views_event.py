@@ -9,7 +9,7 @@ from ..views.base_views import BaseView
 from api.models import Token, Event, Staff, Player
 from ..serializers import EventSerializer, UserEventsSerializer
 from ..utils import handle_400_error
-from ..swagger import Errors
+from ..swagger import Errors, manual_parameter_event_id
 from ..permissions import assign_permissions
 
 from drf_yasg import openapi
@@ -57,6 +57,8 @@ class EventPermissions(BasePermission):
         # Verifica se o usuário tem a permissão 'delete_event' para o objeto específico
         if request.method == 'DELETE':
             return request.user.has_perm('api.delete_event', obj)
+        if request.method == 'PUT':
+            return request.user.has_perm('api.change_event', obj)
 
 
 class EventView(BaseView):
@@ -86,7 +88,7 @@ class EventView(BaseView):
         Permissões necessárias: IsAthenticated ,EventPermissions
         """
         try:
-            event = self.get_object()
+            event = self.get_object_token()
         except Exception as e:
             return handle_400_error(str(e))
 
@@ -150,16 +152,21 @@ class EventView(BaseView):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                'token_code': openapi.Schema(type=openapi.TYPE_STRING, description='Código do token para criar um evento.')
+                'token_code': openapi.Schema(type=openapi.TYPE_STRING, description='Código do token para criar um evento.'),
+                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do evento.')
             },
-            required=['token_code']
+            required=['token_code', 'name']
         ),
         responses={200: openapi.Response(
             'OK', EventSerializer), 201: openapi.Response(
             'OK', EventSerializer), **Errors([400, 403]).retrieve_erros()}
     )
     def post(self, request, *args, **kwargs) -> response.Response:
-        token_code = self.get_token_code(request)
+        token_code: str = self.get_token_code(request)
+        name: str = request.data.get('name')
+        if token_code is not None and name is not None:
+            token_code = token_code.strip()
+            name = name.strip()
         if not token_code:
             return handle_400_error(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
 
@@ -173,6 +180,8 @@ class EventView(BaseView):
         event, created = self.get_or_create_event(token)
         if not event:
             return handle_400_error(EVENT_DOES_NOT_EXIST_ERROR_MESSAGE)
+        if created:
+            event.name = name
 
         response_status, data = self.handle_event_permissions(
             request, event, created)
@@ -183,6 +192,37 @@ class EventView(BaseView):
 
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
+    @swagger_auto_schema(
+        tags=['event'],
+        operation_summary="Atualiza o nome do evento.",
+        operation_description="Atualiza o nome do evento associado. Retorna o evento atualizado.",
+        manual_parameters=manual_parameter_event_id,
+        security=[{'Bearer': []}],
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome do evento.')
+            },
+            required=['name']
+        ),
+        responses={200: openapi.Response(
+            'OK', EventSerializer), **Errors([400]).retrieve_erros()}
+    )
+    def put(self, request: request.Request, *args, **kwargs) -> response.Response:
+        if request.data is None or 'name' not in request.data:
+            return handle_400_error("Nome do evento não fornecido!")
+        try:
+            event = self.get_object()
+        except Exception as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+        name = request.data['name']
+        name = name.strip()
+        event.name = name
+        event.save()
+        data = EventSerializer(event).data
+        return response.Response(status=status.HTTP_200_OK, data=data)
+
     def get_token_code(self, request):
         return request.data.get('token_code')
 
@@ -192,6 +232,7 @@ class EventView(BaseView):
     def handle_event_permissions(self, request, event, created) -> tuple[int, dict]:
         data = EventSerializer(event).data
         if not created and request.user.email != event.admin_email:
+            data = {'errors': 'Você não é o administrador deste evento.'}
             return status.HTTP_403_FORBIDDEN, data
         elif not created and request.user.email == event.admin_email:
             return status.HTTP_200_OK, data
@@ -206,7 +247,7 @@ class EventView(BaseView):
         request.user.events.add(event)
         request.user.groups.add(group)
 
-    def get_object(self) -> Event | Exception:
+    def get_object_token(self) -> Event | Exception:
         token_code = self.request.data.get('token_code')
         if not token_code:
             raise Exception(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
