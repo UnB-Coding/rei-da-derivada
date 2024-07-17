@@ -475,13 +475,10 @@ class GenerateSumulas(BaseSumulaView):
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
         print(event)
-
-        sumulas = self.generate_sumulas(event=event)
-        players = Player.objects.filter(event=event, is_present=True)
-        for player in players:
-            psc = PlayerScore.objects.filter(player=player, event=event)
-            if not psc:
-                print('deu ruim')
+        try:
+            sumulas = self.generate_sumulas(event=event)
+        except Exception as e:
+            return handle_400_error(str(e))
         data = SumulaClassificatoriaSerializer(sumulas, many=True).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
@@ -493,9 +490,6 @@ class GenerateSumulas(BaseSumulaView):
         MAX_PLAYERS = 8
         letters = string.ascii_uppercase
         letters_count = 0
-        sumulas_count = 0
-
-        print(letters)
         players = Player.objects.filter(
             event=event, is_present=True, is_imortal=False)
         if players.count() < MIN_PLAYERS:
