@@ -2,6 +2,7 @@
 import { useContext, useEffect } from "react";
 import { UserContext } from "@/app/contexts/UserContext";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import HeaderComponent from "@/app/components/HeaderComponent";
 import NavBarComponent from "@/app/components/NavBarComponent";
 import LoadingComponent from "@/app/components/LoadingComponent";
