@@ -1,5 +1,5 @@
 'use client'
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useState } from "react";
 import { UserContext } from "@/app/contexts/UserContext";
 import HeaderComponent from "@/app/components/HeaderComponent";
 import NavBarComponent from "@/app/components/NavBarComponent";
@@ -9,20 +9,28 @@ import { useRouter } from "next/navigation";
 
 export default function AllContests() {
   const router = useRouter();
-  const { user, loading, setLoading } = useContext(UserContext);
+  const { user, loading } = useContext(UserContext);
 
   useEffect(() => {
-    if (!user.access && !loading) {
-      router.push("/");
+    const checkAccess = async () => {
+      if(!user.access && !loading){
+        router.push("/");
+      }
     }
-  }, [user]);
-  
-  return loading ? <LoadingComponent/> :
+    checkAccess();
+  },[user, loading, router])
+
+  if(!user.access || loading){
+    return <LoadingComponent/>;
+  }
+
+  return(
     <>
         <HeaderComponent/>
           <Contests/>
         <NavBarComponent/>
     </>
+  );
     
   
 }
