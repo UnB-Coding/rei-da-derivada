@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import  UserContextProvider  from "@/app/contexts/UserContext";
+import EventContextProvider from "./contexts/EventContext";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
@@ -21,7 +22,9 @@ export default function RootLayout({
       <body className={outfit.className}>
       <Toaster position="top-center" />
         <UserContextProvider>
-        {children}
+          <EventContextProvider>
+            {children}
+          </EventContextProvider>
         </UserContextProvider>
       </body>
     </html>
