@@ -1,6 +1,7 @@
 import toast from "react-hot-toast";
 import request from "../request";
 import { settingsWithAuth } from "../settingsWithAuth";
+import axios, { isAxiosError } from "axios";
 
 export default async function staffLogin(args: any) {
     const { access, token } = args;
@@ -14,8 +15,11 @@ export default async function staffLogin(args: any) {
             console.log(data);
             toast.success("Autenticado com sucesso!")
         }
-    } catch (error) {
-        console.log(error)
-        toast.error("Token inválido.")
+    } catch (error: unknown) {
+        if(isAxiosError(error)) {
+            const { data } = error.response || {};
+            const errorMessage = data.errors || "Erro desconhecido."
+            toast.error(`${errorMessage}`)
+        }
     }
 }
