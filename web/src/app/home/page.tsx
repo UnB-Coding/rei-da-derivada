@@ -12,13 +12,10 @@ export default function JoinEvents() {
   const router = useRouter();
 
   useEffect(() => {
-    const checkAccess = async () => {
-      if(!user.access && !loading){
-        router.push("/");
-      }
+    if(!user.access && !loading){
+      router.push("/");
     }
-    checkAccess();
-  },[user, loading, router])
+  },[user])
 
   if(!user.access || loading){
     return <LoadingComponent/>;

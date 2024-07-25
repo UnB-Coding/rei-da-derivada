@@ -12,15 +12,12 @@ export default function AllContests() {
   const { user, loading } = useContext(UserContext);
 
   useEffect(() => {
-    const checkAccess = async () => {
-      if(!user.access && !loading){
-        router.push("/");
-      }
+    if(!user.access && !loading){
+      router.push("/");
     }
-    checkAccess();
-  },[user, loading, router])
+  },[user])
 
-  if(!user.access || loading){
+  if(!user.access || loading || !user.all_events){
     return <LoadingComponent/>;
   }
 
