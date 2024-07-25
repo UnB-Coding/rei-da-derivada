@@ -474,7 +474,6 @@ class GenerateSumulas(BaseSumulaView):
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
-        print(event)
         try:
             sumulas = self.generate_sumulas(event=event)
         except Exception as e:
@@ -494,7 +493,7 @@ class GenerateSumulas(BaseSumulaView):
             event=event, is_present=True, is_imortal=False)
         if players.count() < MIN_PLAYERS:
             raise Exception(
-                f"O evento precisa de pelo menos {MIN_PLAYERS} jogadores para iniciar.")
+                f"O evento precisa de pelo menos {MIN_PLAYERS} jogadores presentes para iniciar.")
         players = list(players)
         random.shuffle(players)
         N = len(players)
@@ -515,24 +514,17 @@ class GenerateSumulas(BaseSumulaView):
                 sumula = SumulaClassificatoria.objects.create(
                     event=event, name=f"Chave {name}")
             letters_count += 1
-            print(letters_count)
             sumulas.append(sumula)
-            # print('sumula:', sumulas[i])
             players_to_add = players[i*MAX_PLAYERS:(i+1)*MAX_PLAYERS]
             for j in range(len(players_to_add)):
                 player = players_to_add[j]
-                # print('player:', player)
-                ps = PlayerScore.objects.create(event=event,
-                                                player=player, sumula_classificatoria=sumulas[i])
-                # print('ps:', ps)
+                PlayerScore.objects.create(event=event,
+                                           player=player, sumula_classificatoria=sumulas[i])
         if resto > 0 and resto < MIN_PLAYERS:
-            # print('total de sumulas:', n_sumulas)
             index_of_complete_sumulas = n_sumulas-2
             qt_needed = MIN_PLAYERS - resto
             last_sumula = sumulas[n_sumulas-1]
-            print('last_sumula scores count:', last_sumula.scores.count())
             while (last_sumula.scores.count() < MIN_PLAYERS):
-                # print(index_of_complete_sumulas)
                 scores = sumulas[index_of_complete_sumulas].scores.all()
                 for i in range(2):
                     player = scores[i].player
@@ -590,3 +582,4 @@ class RemovePlayersFromSumula(BaseSumulaView):
         responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
     def put(self, request: request.Request, *args, **kwargs):
         """Remove jogadores de uma sumula."""
+        a = 1
