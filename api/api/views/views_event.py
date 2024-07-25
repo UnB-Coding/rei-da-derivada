@@ -102,7 +102,11 @@ class EventView(BaseView):
         tags=['event'],
         operation_summary="Retorna todos os eventos associados ao usuário logado e seu cargo no evento.",
         operation_description="""Retorna todos os eventos associados ao usuário logado. Retorna o cargo que o usuário possui no evento.
-        Caso não haja eventos, retorna uma lista vazia.""",
+        Caso não haja eventos, retorna uma lista vazia.
+        Os cargos que um usuário pode ter em um evento são: 'admin', 'manager', 'staff' e 'player'.
+        Sempre o maior cargo do usuário é retornado. Ou seja, se o usuário é um _staff manager_ em um evento, o cargo retornado será apenas 'manager'.
+        Se o usuário é um _staff_ em um evento, o cargo retornado será 'staff'.
+        """,
         security=[{'Bearer': []}],
         responses={200: openapi.Response(
             'OK', UserEventsSerializer), **Errors([400]).retrieve_erros()}
