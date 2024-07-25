@@ -80,10 +80,9 @@ class StaffView(BaseView):
                 group = Group.objects.get(name='staff_manager')
             else:
                 group = Group.objects.get(name='staff_member')
-            request.user.groups.add(group)
-            request.user.events.add(event)
             assign_permissions(user=request.user, group=group, event=event)
-            staff.save()
+        request.user.events.add(event)
+        staff.save()
         data = StaffLoginSerializer(staff).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
