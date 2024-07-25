@@ -64,7 +64,7 @@ class PlayersView(BaseView):
     @swagger_auto_schema(
         security=[{'Bearer': []}],
         tags=['player'],
-        operation_description="""Realiza o login de um jogador no    evento através do email fornecido na inscrição.
+        operation_description="""Realiza o login de um jogador no evento através do email fornecido na inscrição.
         Para um jogador entrar no evento, ele deve informar o email que foi utilizado na inscrição e o token de jogador fornecido pelo administrador do evento.
         """,
         operation_summary='Realiza o login de um jogador no evento.',
@@ -95,6 +95,7 @@ class PlayersView(BaseView):
                                     Se isso é um erro, entre em contato com o administrador do evento.""")
         group = Group.objects.get(name='player')
         assign_permissions(request.user, group, event)
+        player.is_present = True
         player.save()
         request.user.events.add(event)
         request.user.save()
