@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.forms import ValidationError
 from .models import Token, Event, SumulaImortal, SumulaClassificatoria, PlayerScore, Player, Staff
 from guardian.admin import GuardedModelAdmin
+from django.db.models import Count
 
 
 @admin.register(Token)
@@ -35,17 +36,24 @@ class SumulaAdmin(GuardedModelAdmin):
             scores.append(score.__str__())
         return ', '.join(scores)
 
-    def player_scores_count(self, obj):
-        return obj.scores.count()
+    @admin.display(description='Players Count')
+    def players_count(self, obj):
+        # Ordena pelo count de scores dentro do método
+        return obj.scores.order_by('id').count()
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(scores_count=Count('scores'))
 
     player_scores.short_description = 'Player Scores'
     referees.short_description = 'Referees'
     list_display = ['name', 'event', 'referees',
-                    'id', 'player_scores', 'player_scores_count', 'active',]
+                    'id', 'player_scores', 'players_count', 'active',]
     search_fields = ['referee__username',
                      'event__name', 'name', 'player_scores_count']
     fields = ['referee', 'event', 'name', 'active', 'description']
     filter_horizontal = ['referee']
+    ordering = ['event', 'name']
 
 
 @admin.register(SumulaImortal)
