@@ -1,6 +1,7 @@
 import request from "../request";
 import { settingsWithAuth } from "../settingsWithAuth";
 import { toast } from "react-hot-toast";
+import axios, { isAxiosError } from 'axios';
 
 
 export default async function eventLogin(args: any){
@@ -17,8 +18,11 @@ export default async function eventLogin(args: any){
             console.log(event);
             toast.success("Evento adicionado com sucesso!");
         }   
-    } catch (error) {
-        console.error(error);
-        toast.error("Dados inválidos.");
+    } catch (error: unknown) {
+        if(axios.isAxiosError(error)) {
+            const { data } = error.response || {};
+            const errorMessage = data.errors || "Erro desconhecido."
+            toast.error(`${errorMessage}`)
+        }
     }
 }

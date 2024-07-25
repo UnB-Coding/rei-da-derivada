@@ -1,6 +1,7 @@
 import request from "../request";
 import { settingsWithAuth } from "../settingsWithAuth";
 import toast from "react-hot-toast";
+import { isAxiosError } from 'axios';
 
 export default async function createEvent(args: any){
     const {access, token, name} = args;
@@ -14,8 +15,14 @@ export default async function createEvent(args: any){
         else if(response.status === 201){
             toast.success("Evento criado com sucesso!");
         }
-    } catch(error){
-        console.log(error)
-        toast.error("Token inválido.")
+    } catch(error: unknown){
+        if(isAxiosError(error)) {
+            const { data } = error.response || {};
+            const errorMessage = data.errors || "Erro desconhecido."
+            toast.error(`${errorMessage}`);
+        } else {
+            toast.error("Erro desconhecido.")
+        }
+        
     }
 }
