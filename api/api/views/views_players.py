@@ -79,6 +79,7 @@ class PlayersView(BaseView):
             return handle_400_error('Email e token são obrigatórios!')
         email = request.data['email']
         join_token = request.data['join_token']
+        join_token = join_token.strip()
         if not email or not join_token:
             return handle_400_error('Email e token são obrigatórios!')
         event = Event.objects.filter(join_token=join_token).first()
