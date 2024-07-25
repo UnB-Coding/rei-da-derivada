@@ -18,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={outfit.className}>
+    <html lang="en" suppressHydrationWarning={true}>
+      <body className={outfit.className} suppressHydrationWarning={true}>
       <Toaster position="top-center" />
         <UserContextProvider>
           <EventContextProvider>
