@@ -19,7 +19,7 @@ const JoinBoxComponent = (props: JoinBoxComponentProps) => {
 
     const adminpaths = ["admin", "sumula", "results"];
     const staffpaths = ["sumula", "results"];
-    const playerpaths = ["profile", "sumula"];
+    const playerpaths = ["profile", "results"];
 
     async function handleClick() {
         setLoading(true);
@@ -49,7 +49,7 @@ const JoinBoxComponent = (props: JoinBoxComponentProps) => {
 
     return (
         <div className="bg-neutral-100 border-2 w-[316px] h-[55px] rounded-md flex justify-between px-2 items-center z-0">
-            <p className="text-primary font-semibold text-xl">{props.name?.toUpperCase()}</p>
+            <p className="text-primary font-semibold text-lg">{props.name?.toUpperCase()}</p>
             {props.active && (
                 <span className="flex h-3 w-3 absolute ml-56">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
