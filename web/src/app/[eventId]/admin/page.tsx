@@ -2,12 +2,12 @@
 import { useContext, useEffect, useState } from "react";
 import { UserContext } from "@/app/contexts/UserContext";
 import { useRouter, usePathname } from "next/navigation";
-import { toast } from "react-hot-toast";
 import HeaderComponent from "@/app/components/HeaderComponent";
 import LoadingComponent from "@/app/components/LoadingComponent";
 import EventNavBarComponent from "@/app/components/EventNavBarComponent";
 import validatePath from "@/app/utils/validadePath";
 import getBasePath from "@/app/utils/getBasePath";
+import SubmitFileComponent from "@/app/components/eventComponentes/SubmitFileComponent";
 
 export default function Admin() {
   const { user, loading } = useContext(UserContext);
@@ -37,8 +37,9 @@ export default function Admin() {
 
   return(
     <>
-        <HeaderComponent/>
-        <EventNavBarComponent/>
+      <HeaderComponent/>
+      <SubmitFileComponent/>
+      <EventNavBarComponent/>
     </>
   );   
 }

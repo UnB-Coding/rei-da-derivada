@@ -1,9 +1,12 @@
-import React from "react";
+import React, { use, useContext } from "react";
 import { useState } from "react";
 import DisplayComponent from "./DisplayPlayerComponent";
 import NoResults from "./NoResults";
+import { UserContext } from "../contexts/UserContext";
+import getResults from "../utils/api/getResults";
 
 export default function ResultsComponent() {
+    const { user } = useContext(UserContext);
     const [ isPlayer, setIsPlayer ] = useState<boolean>(false);
     const [ result, setResult ] = useState<boolean>(false);
 
