@@ -18,6 +18,9 @@ install:
 
 ## Docker ##
 
+start-s:
+	sudo docker compose up
+
 start:
 	sudo docker compose up -d
 
