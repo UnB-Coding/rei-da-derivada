@@ -64,7 +64,7 @@ class PlayersView(BaseView):
     @swagger_auto_schema(
         security=[{'Bearer': []}],
         tags=['player'],
-        operation_description="""Realiza o login de um jogador no    evento através do email fornecido na inscrição.
+        operation_description="""Realiza o login de um jogador no evento através do email fornecido na inscrição.
         Para um jogador entrar no evento, ele deve informar o email que foi utilizado na inscrição e o token de jogador fornecido pelo administrador do evento.
         """,
         operation_summary='Realiza o login de um jogador no evento.',
@@ -79,6 +79,7 @@ class PlayersView(BaseView):
             return handle_400_error('Email e token são obrigatórios!')
         email = request.data['email']
         join_token = request.data['join_token']
+        join_token = join_token.strip()
         if not email or not join_token:
             return handle_400_error('Email e token são obrigatórios!')
         event = Event.objects.filter(join_token=join_token).first()
@@ -95,6 +96,7 @@ class PlayersView(BaseView):
                                     Se isso é um erro, entre em contato com o administrador do evento.""")
         group = Group.objects.get(name='player')
         assign_permissions(request.user, group, event)
+        player.is_present = True
         player.save()
         request.user.events.add(event)
         request.user.save()
@@ -322,6 +324,7 @@ class AddSinglePlayer(BaseView):
         operation_description="""Adiciona um jogador manualmente ao evento.
         Deve ser fornecido o nome completo do jogador como _request body_ e o ID do evento como _manual parameter_. Nome social e email são opcionais.
 
+        Retorno: Retorna o objeto do jogador criado no evento para a utilização imediata no front-end.
         """,
         operation_summary='Adiciona um jogador manualmente ao evento.',
         request_body=openapi.Schema(
@@ -329,7 +332,8 @@ class AddSinglePlayer(BaseView):
             properties={
                 'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João da Silva'),
                 'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='Joana Silva'),
-                'registration_email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do jogador', example='joao@gmail.com')},
+                'registration_email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do jogador', example='joao@gmail.com'),
+                'is_imortal': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Jogador é imortal', example=False)},
         ),
         required=['full_name'],
         manual_parameters=manual_parameter_event_id,
@@ -338,7 +342,9 @@ class AddSinglePlayer(BaseView):
     )
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Adiciona um jogador manualmente ao evento."""
-        if request.data is None or 'full_name' not in request.data or 'registration_email' not in request.data or 'social_name' not in request.data:
+        required_fields = ['full_name',
+                           'registration_email', 'social_name', 'is_imortal']
+        if request.data is None or not all(field in request.data for field in required_fields):
             return handle_400_error('Dados Inválidos!')
         try:
             event = self.get_object()
@@ -348,9 +354,10 @@ class AddSinglePlayer(BaseView):
         full_name = request.data['full_name']
         social_name = request.data['social_name']
         email = request.data['registration_email']
+        is_imortal = request.data['is_imortal']
         if not full_name:
             return handle_400_error('Nome completo é obrigatório para criar um jogador!')
         player = Player.objects.create(
-            full_name=full_name, social_name=social_name, registration_email=email, event=event)
+            full_name=full_name, social_name=social_name, registration_email=email, event=event, is_imortal=is_imortal, is_present=True)
         data = PlayerSerializer(player).data
         return response.Response(status=status.HTTP_201_CREATED, data=data)

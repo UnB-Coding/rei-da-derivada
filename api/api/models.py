@@ -224,6 +224,7 @@ class Player(models.Model):
     registration_email = models.EmailField(
         blank=True, unique=False, null=True)
     is_imortal = models.BooleanField(default=False)
+    is_present = models.BooleanField(default=False)
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='player', null=True, blank=True, default=None)
     event = models.ForeignKey(

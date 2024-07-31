@@ -637,7 +637,8 @@ class AddSinglePlayerViewTest(APITestCase):
         self.data = {
             "full_name": "João da Silva",
             "social_name": "Joana Silva",
-            "registration_email": "joao@gmail.com"
+            "registration_email": "joao@gmail.com",
+            "is_imortal": False
         }
         self.client = APIClient()
 
