@@ -249,7 +249,6 @@ class EventView(BaseView):
         group = Group.objects.get(name='event_admin')
         assign_permissions(user=request.user, group=group, event=event)
         request.user.events.add(event)
-        request.user.groups.add(group)
 
     def get_object_token(self) -> Event | Exception:
         token_code = self.request.data.get('token_code')

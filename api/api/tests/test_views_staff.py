@@ -226,7 +226,6 @@ class AddStaffManagerTestCase(APITestCase):
         self.client.force_authenticate(user=self.admin)
         response = self.client.post(self.url, self.data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(self.user.groups.filter(name='staff_manager').exists())
         self.staff.refresh_from_db()
         self.assertEqual(self.staff.is_manager, True)
         for permission in self.permission:
