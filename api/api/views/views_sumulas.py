@@ -449,9 +449,10 @@ class AddRefereeToSumulaView(BaseSumulaView):
             sumula = SumulaClassificatoria.objects.filter(id=sumula_id).first()
         if not sumula:
             return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
-        if sumula.referee.all().count() > 0:
+        if sumula.referee.all().count() > 0 and staff not in sumula.referee.all():
             return handle_400_error("Súmula já possui um ou mais árbitros!")
-        sumula.referee.add(staff)
+        elif sumula.referee.all().count() == 0:
+            sumula.referee.add(staff)
         return response.Response(status=status.HTTP_200_OK)
 
 
