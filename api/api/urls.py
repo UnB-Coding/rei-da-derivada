@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, re_path
 from .views.views_event import EventView
 from .views.views_staff import StaffView, AddStaffManager, AddStaffMembers, AddSingleStaff, EditStaffData
-from .views.views_players import PlayersView, GetPlayerResults, AddPlayersExcel, PublishPlayersResults, Top3Players, AddSinglePlayer
+from .views.views_players import PlayersView, GetPlayerResults, AddPlayersExcel, PublishPlayersResults, Top3ImortalPlayers, AddSinglePlayer
 from .views.views_sumulas import GetSumulasView, ActiveSumulaView, FinishedSumulaView, GetSumulaForPlayer, SumulaImortalView, SumulaClassificatoriaView, AddRefereeToSumulaView, GenerateSumulas
 
 app_name = 'api'
@@ -29,7 +29,7 @@ urlpatterns = [
     path('players/', PlayersView.as_view(), name='players'),
     path('player/', GetPlayerResults.as_view(), name='player'),
     path('upload-player/', AddPlayersExcel.as_view(), name='upload-player'),
-    path('top4/', Top3Players.as_view(), name='top4'),
+    path('top4/', Top3ImortalPlayers.as_view(), name='top4'),
     path('publish-results/', PublishPlayersResults.as_view(), name='publish-results'),
     path('player/add/', AddSinglePlayer.as_view(), name='add-player'),
 

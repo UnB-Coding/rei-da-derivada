@@ -132,7 +132,7 @@ class GetPlayerResults(BaseView):
             event = self.get_object()
         except ValidationError as e:
             return handle_400_error(str(e))
-        if not event.is_results_published():
+        if not event.is_results_published:
             return response.Response(status=status.HTTP_403_FORBIDDEN, data='Resultados não publicados!')
         self.check_object_permissions(request, event)
         player = Player.objects.filter(event=event, user=request.user).first()
@@ -181,7 +181,7 @@ class PublishPlayersResults(BaseView):
         except ValidationError as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
-        event.results_published = True
+        event.is_results_published = True
         event.save()
         return response.Response(status=status.HTTP_200_OK, data='Resultados publicados com sucesso!')
 
@@ -198,7 +198,7 @@ class PublishPlayersResults(BaseView):
         return event
 
 
-class Top3Players(BaseView):
+class Top3ImortalPlayers(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
 
     @swagger_auto_schema(
@@ -214,6 +214,8 @@ class Top3Players(BaseView):
         except ValidationError as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
+        if not event.is_results_published:
+            return response.Response(status=status.HTTP_403_FORBIDDEN, data='Resultados não publicados!')
         players = Player.objects.filter(
             event=event).order_by('-total_score')[:3]
         data = PlayerResultsSerializer(players, many=True).data

@@ -73,7 +73,7 @@ class Event (models.Model):
     name = models.CharField(default='', max_length=64, blank=True, null=True)
     active = models.BooleanField(default=True)
     admin_email = models.EmailField(default='', blank=True, null=True)
-    results_published = models.BooleanField(default=False)
+    is_results_published = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = ("Evento")
@@ -98,9 +98,6 @@ class Event (models.Model):
 
     def __token__(self):
         return self.token.token_code
-
-    def is_results_published(self) -> bool:
-        return self.results_published
 
     def generate_token(self) -> str:
         """Gera um token aleatório de TOKEN_LENGTH caracteres."""
@@ -324,3 +321,14 @@ class PlayerScore(models.Model):
     #         player.update_total_score(event)
     #     else:
     #         super(PlayerScore, self).delete(*args, **kwargs)
+
+
+class Results(models.Model):
+    """ Modelo para salvar resultados de um evento."""
+
+    imortals = models.ManyToManyField(
+        Player, related_name='results_imortal', blank=True)
+    top4 = models.ManyToManyField(
+        Player, related_name='results_top4', blank=True)
+    paladin = models.OneToOneField(Player, on_delete=models.CASCADE,
+                                   related_name='results_paladin', null=True, blank=True, default=None)
