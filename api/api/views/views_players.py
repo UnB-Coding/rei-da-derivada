@@ -350,7 +350,10 @@ class AddSinglePlayer(BaseView):
         email = request.data['registration_email']
         if not full_name:
             return handle_400_error('Nome completo é obrigatório para criar um jogador!')
-        player = Player.objects.create(
+        player = Player.objects.filter(event=event,registration_email=email).first()
+        if player:
+            return handle_400_error('O jogardor já existe.')
+        player = Player.objects.get_or_create(
             full_name=full_name, social_name=social_name, registration_email=email, event=event)
         data = PlayerSerializer(player).data
         return response.Response(status=status.HTTP_201_CREATED, data=data)
