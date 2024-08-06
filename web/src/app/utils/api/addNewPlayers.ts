@@ -10,6 +10,11 @@ export default async function addNewPlayers(fullName: string, socialName: string
         toast.error("Email de inscrição é obrigatório.");
         return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(registrationEmail)) {
+        toast.error("Email de inscrição inválido.");
+        return;
+    }
     const body = {
         "full_name": fullName,
         "social_name": socialName,
@@ -22,6 +27,7 @@ export default async function addNewPlayers(fullName: string, socialName: string
         }
     } catch (error: unknown){
         if(isAxiosError(error)){
+            console.log(error.status);
             const { data } = error.response || {};
             console.log(data);
             const errorMessage = data.errors || "Erro desconhecido.";
