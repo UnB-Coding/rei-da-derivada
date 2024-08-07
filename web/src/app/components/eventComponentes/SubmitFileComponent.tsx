@@ -1,11 +1,10 @@
 import React, { useContext, useState } from "react";
-import { isAxiosError } from "axios";
 import { UserContext } from "../../contexts/UserContext";
 import { usePathname } from "next/navigation";
 import request from "@/app/utils/request";
-import { settingsWithAuth } from "@/app/utils/settingsWithAuth";
 import toast from "react-hot-toast";
 import { formDataSettings } from "@/app/utils/formDataSettings";
+import AddPlayerComponent from "./AddPlayerComponent";
 
 export default function SubmitFileComponent() {
     const [playerFile, setPlayerFile] = useState<File | null>(null);

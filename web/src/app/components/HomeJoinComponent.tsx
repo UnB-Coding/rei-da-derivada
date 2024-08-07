@@ -5,9 +5,6 @@ import staffLogin from "../utils/api/staffLogin";
 import createEvent from "../utils/api/createEvent";
 
 const HomeJoinComponent = () => {
-  function seila(){
-    console.log("oi")
-  }
     return (
         <div className="grid justify-center items-center pb-28 pt-32">
         <EventsComponent

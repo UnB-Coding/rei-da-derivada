@@ -8,6 +8,8 @@ import EventNavBarComponent from "@/app/components/EventNavBarComponent";
 import validatePath from "@/app/utils/validadePath";
 import getBasePath from "@/app/utils/getBasePath";
 import SubmitFileComponent from "@/app/components/eventComponentes/SubmitFileComponent";
+import AddPlayerComponent from "@/app/components/eventComponentes/AddPlayerComponent";
+import AddStaffComponent from "@/app/components/eventComponentes/AddStaffComponent";
 
 export default function Admin() {
   const { user, loading } = useContext(UserContext);
@@ -39,6 +41,8 @@ export default function Admin() {
     <>
       <HeaderComponent/>
       <SubmitFileComponent/>
+      <AddPlayerComponent/>
+      <AddStaffComponent/>
       <EventNavBarComponent/>
     </>
   );   
