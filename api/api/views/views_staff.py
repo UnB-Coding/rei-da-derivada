@@ -80,10 +80,9 @@ class StaffView(BaseView):
                 group = Group.objects.get(name='staff_manager')
             else:
                 group = Group.objects.get(name='staff_member')
-            request.user.groups.add(group)
-            request.user.events.add(event)
             assign_permissions(user=request.user, group=group, event=event)
-            staff.save()
+        request.user.events.add(event)
+        staff.save()
         data = StaffLoginSerializer(staff).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
@@ -154,7 +153,7 @@ class AddStaffManager(BaseView):
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
         try:
-            staff_user = self.get_request_user()
+            staff_user = self.get_staff_user()
         except Exception as e:
             return handle_400_error(str(e))
         staff_object = Staff.objects.filter(
@@ -164,7 +163,6 @@ class AddStaffManager(BaseView):
         staff_object.is_manager = True
         staff_object.save()
         group = Group.objects.get(name='staff_manager')
-        staff_user.groups.add(group)
         staff_user.events.add(event)
         assign_permissions(user=staff_user, group=group, event=event)
         return response.Response(status=status.HTTP_200_OK, data='Gerente de equipe adicionado com sucesso!')
@@ -180,7 +178,7 @@ class AddStaffManager(BaseView):
             raise ValidationError('Evento não encontrado!')
         return event
 
-    def get_request_user(self):
+    def get_staff_user(self):
         if 'email' not in self.request.data:
             raise ValidationError('Email do Usuário não fornecido!')
         email = self.request.data['email']

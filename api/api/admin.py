@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.forms import ValidationError
 from .models import Token, Event, SumulaImortal, SumulaClassificatoria, PlayerScore, Player, Staff
 from guardian.admin import GuardedModelAdmin
+from django.db.models import Count
 
 
 @admin.register(Token)
@@ -34,13 +35,25 @@ class SumulaAdmin(GuardedModelAdmin):
         for score in obj.scores.all():
             scores.append(score.__str__())
         return ', '.join(scores)
+
+    @admin.display(description='Players Count')
+    def players_count(self, obj):
+        # Ordena pelo count de scores dentro do método
+        return obj.scores.order_by('id').count()
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(scores_count=Count('scores'))
+
     player_scores.short_description = 'Player Scores'
     referees.short_description = 'Referees'
     list_display = ['name', 'event', 'referees',
-                    'id', 'player_scores', 'active']
-    search_fields = ['referee__username', 'event__name', 'name']
-    fields = ['referee', 'event', 'name', 'active']
+                    'id', 'player_scores', 'players_count', 'active',]
+    search_fields = ['referee__username',
+                     'event__name', 'name', 'player_scores_count']
+    fields = ['referee', 'event', 'name', 'active', 'description']
     filter_horizontal = ['referee']
+    ordering = ['event', 'name']
 
 
 @admin.register(SumulaImortal)
@@ -93,19 +106,13 @@ class PlayerScoreForm(forms.ModelForm):
             raise ValidationError(
                 "O evento de uma Sumula deve ser o mesmo Evento do objeto de PlayerScore!")
 
-# Atualize a classe PlayerScoreAdmin para usar o ModelForm personalizado
-
 
 @admin.register(PlayerScore)
 class PlayerScoreAdmin(GuardedModelAdmin):
     form = PlayerScoreForm
 
-    def get_player_name(self, obj):
-        return obj.player.__str__()
-    get_player_name.short_description = 'Player Name'
-
-    list_display = ['get_player_name', 'event', 'sumula_classificatoria',
-                    'sumula_imortal', 'points', 'id']
+    list_display = ['id', 'player', 'event', 'sumula_classificatoria',
+                    'sumula_imortal', 'points']
     search_fields = ['event', 'sumula_classificatoria',
                      'sumula_imortal', 'points', 'player']
     fields = ['event', 'sumula_classificatoria',
@@ -115,10 +122,10 @@ class PlayerScoreAdmin(GuardedModelAdmin):
 @admin.register(Player)
 class PlayerAdmin(GuardedModelAdmin):
     list_display = ['id', 'user', 'full_name', 'social_name',
-                    'event', 'total_score', 'registration_email', 'is_imortal']
+                    'event', 'total_score', 'registration_email', 'is_imortal', 'is_present']
     search_fields = ['user', 'total_score', 'event', 'registration_email']
     fields = ['user', 'total_score', 'event',
-              'registration_email', 'full_name', 'social_name', 'is_imortal']
+              'registration_email', 'full_name', 'social_name', 'is_imortal', 'is_present']
 
     def username(self, obj):
         return obj.username

@@ -3,7 +3,7 @@ from django.urls import path, re_path
 from .views.views_event import EventView
 from .views.views_staff import StaffView, AddStaffManager, AddStaffMembers, AddSingleStaff, EditStaffData
 from .views.views_players import PlayersView, GetPlayerResults, AddPlayersExcel, PublishPlayersResults, Top3Players, AddSinglePlayer
-from .views.views_sumulas import GetSumulasView, ActiveSumulaView, FinishedSumulaView, GetSumulaForPlayer, SumulaImortalView, SumulaClassificatoriaView, AddRefereeToSumulaView
+from .views.views_sumulas import GetSumulasView, ActiveSumulaView, FinishedSumulaView, GetSumulaForPlayer, SumulaImortalView, SumulaClassificatoriaView, AddRefereeToSumulaView, GenerateSumulas
 
 app_name = 'api'
 
@@ -24,7 +24,7 @@ urlpatterns = [
     path('sumula/player/', GetSumulaForPlayer.as_view(), name='sumula-player'),
     path('sumula/add-referee/', AddRefereeToSumulaView.as_view(),
          name='sumula-add-referee'),
-
+    path('sumula/generate/', GenerateSumulas.as_view(), name='sumula-generate'),
     # Rotas de jogadores
     path('players/', PlayersView.as_view(), name='players'),
     path('player/', GetPlayerResults.as_view(), name='player'),

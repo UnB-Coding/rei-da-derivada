@@ -107,7 +107,6 @@ class EventViewTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['name'], 'New Event')
         self.assertEqual(self.user.events.count(), 1)
-        self.assertEqual(self.user.groups.count(), 1)
         event_id = response.data['id']
         self.assertIsNotNone(event_id)
         event = Event.objects.filter(id=event_id).first()
