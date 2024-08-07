@@ -311,10 +311,12 @@ class AddSingleStaff(BaseView):
         registration_email = request.data['registration_email']
         is_manager = request.data['is_manager']
         staff, created = Staff.objects.get_or_create(
-            full_name=full_name, registration_email=registration_email, event=event, is_manager=is_manager)
+            registration_email=registration_email, event=event)
         if not created:
-            return handle_400_error('Monitor já cadastrado para este evento!')
-
+            return handle_400_error('Monitor já cadastrado com este e-mail para este evento!')
+        staff.full_name = full_name
+        staff.is_manager = is_manager
+        staff.save()
         return response.Response(status=status.HTTP_201_CREATED, data='Monitor adicionado com sucesso!')
 
 
