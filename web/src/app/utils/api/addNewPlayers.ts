@@ -3,7 +3,7 @@ import { settingsWithAuth } from "../settingsWithAuth";
 import toast from "react-hot-toast";
 import { isAxiosError } from "axios";
 
-export default async function addNewPlayers(fullName: string, socialName: string, registrationEmail: string, event_id: string, access_token?: string){
+export default async function addNewPlayers(fullName: string, socialName: string, registrationEmail: string, event_id: string, isImortal: boolean, access_token?: string){
     if(fullName.length === 0 || registrationEmail.length === 0){
         fullName.length === 0 ? 
         toast.error("Nome completo é obrigatório.") : 
@@ -18,7 +18,8 @@ export default async function addNewPlayers(fullName: string, socialName: string
     const body = {
         "full_name": fullName,
         "social_name": socialName,
-        "registration_email": registrationEmail
+        "registration_email": registrationEmail,
+        "is_imortal": isImortal
     }
     try {
         const response = await request.post(`/api/player/add/?event_id=${event_id}`,body,settingsWithAuth(access_token));
