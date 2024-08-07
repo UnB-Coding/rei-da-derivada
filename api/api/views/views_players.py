@@ -357,10 +357,13 @@ class AddSinglePlayer(BaseView):
         is_imortal = request.data['is_imortal']
         if not full_name:
             return handle_400_error('Nome completo é obrigatório para criar um jogador!')
-        player = Player.objects.filter(event=event,registration_email=email).first()
-        if player:
-            return handle_400_error('O jogardor já existe.')
-        player = Player.objects.get_or_create(
-            full_name=full_name, social_name=social_name, registration_email=email, event=event, is_imortal=is_imortal, is_present=True)
+        player, created = Player.objects.get_or_create(
+            event=event, registration_email=email)
+        if not created:
+            return handle_400_error('Já existe um jogador cadastrado com esse email!')
+        player.full_name = full_name
+        player.social_name = social_name
+        player.is_imortal = is_imortal
+        player.save()
         data = PlayerSerializer(player).data
         return response.Response(status=status.HTTP_201_CREATED, data=data)
