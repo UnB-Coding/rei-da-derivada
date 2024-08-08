@@ -4,11 +4,13 @@ import Image from "next/image";
 import CloseIcon from "@/app/assets/close_icon.png"
 import addNewPlayers from "@/app/utils/api/addNewPlayers";
 import { UserContext } from "@/app/contexts/UserContext";
+import { Checkbox } from "@nextui-org/checkbox";
 
 export default function AddPlayerComponent() {
     const { user } = useContext(UserContext);
     const [visible, setVisible] = useState<boolean>(false);
     const [fullName, setFullName] = useState<string>("");
+    const [isImortal, setIsImortal] = useState<boolean>(false);
     const [socialName, setSocialName] = useState<string>("");
     const [registrationEmail, setRegistrationEmail] = useState<string>("");
     const eventId = usePathname().split("/")[1];
@@ -30,8 +32,11 @@ export default function AddPlayerComponent() {
                             <input onChange={e => setSocialName(e.target.value)} className="w-[300px] h-[40px] border-[1.5px] border-primary bg-neutral-100 rounded-lg pl-4" type="text" placeholder="Nome social" />
                             <p>Email de inscrição</p>
                             <input onChange={e => setRegistrationEmail(e.target.value)} className="w-[300px] h-[40px] bg-neutral-100 border-[1.5px] border-primary rounded-lg pl-4" type="email" placeholder="Ex: exemplo@email.com" />
+                            <Checkbox className="mt-2"  defaultSelected size="lg" radius="sm" isSelected={isImortal} onValueChange={setIsImortal}>
+                                O novo jogador é imortal?
+                            </Checkbox>
                         </div>
-                        <button onClick={() => { addNewPlayers(fullName, socialName, registrationEmail, eventId, user.access) }} className="w-[300px] h-[50px] bg-primary text-white font-semibold rounded-lg ">Adicionar</button>
+                        <button onClick={() => { addNewPlayers(fullName, socialName, registrationEmail, eventId, isImortal, user.access) }} className="w-[300px] h-[50px] bg-primary text-white font-semibold rounded-lg ">Adicionar</button>
                     </div>
                 </div>
             )}
