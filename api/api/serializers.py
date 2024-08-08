@@ -62,7 +62,7 @@ class PlayerScoreSerializer(ModelSerializer):
 
     class Meta:
         model = PlayerScore
-        fields = ['id', 'points', 'player']
+        fields = ['id', 'points', 'rounds_number', 'player']
 
 
 class StaffSerializer(ModelSerializer):
@@ -86,7 +86,7 @@ class SumulaClassificatoriaSerializer(ModelSerializer):
     class Meta:
         model = SumulaClassificatoria
         fields = ['id', 'active', 'name',
-                  'description', 'referee',  'players_score']
+                  'description', 'referee',  'players_score', 'rounds']
 
 
 class SumulaImortalSerializer(ModelSerializer):
@@ -100,7 +100,7 @@ class SumulaImortalSerializer(ModelSerializer):
     class Meta:
         model = SumulaImortal
         fields = ['id', 'active', 'name',
-                  'description', 'referee',  'players_score']
+                  'description', 'referee',  'players_score', 'rounds']
 
 
 class SumulaSerializer(serializers.Serializer):
@@ -137,7 +137,8 @@ class SumulaClassificatoriaForPlayerSerializer(ModelSerializer):
 
     class Meta:
         model = SumulaClassificatoria
-        fields = ['id', 'active', 'name', 'description', 'referee', 'players']
+        fields = ['id', 'active', 'name', 'description',
+                  'referee', 'players', 'rounds']
 
 
 class SumulaImortalForPlayerSerializer(ModelSerializer):
@@ -149,7 +150,8 @@ class SumulaImortalForPlayerSerializer(ModelSerializer):
 
     class Meta:
         model = SumulaImortal
-        fields = ['id', 'active', 'name', 'description', 'referee', 'players']
+        fields = ['id', 'active', 'name', 'description',
+                  'referee', 'players', 'rounds']
 
 
 class SumulaForPlayerSerializer(serializers.Serializer):
