@@ -32,9 +32,10 @@ class BaseView(APIView):
 class BaseSumulaView(BaseView):
     """Classe base para as views de sumula. Contém métodos comuns a todas as views de sumula."""
 
-    def round_robin_tournament(self, n: int, players_score: list[PlayerScore]) -> list[list[tuple[PlayerScore, int]]]:
+    def round_robin_tournament(self, n: int, players_score: list[PlayerScore]) -> list[list[dict[dict]]]:
         """Gera os pares de jogadores para um torneio com n-1 rodadas.
         Todos os jogadores jogam com todos os outros jogadores em formato de duplas"""
+
         if len(players_score) != n:
             raise Exception(
                 "Número de jogadores não corresponde ao número fornecido!")
@@ -49,27 +50,12 @@ class BaseSumulaView(BaseView):
                 [(1, 3), (2, 4)],
                 [(1, 4), (2, 3)]
             ],
-            5: [
-                [(1, 2), (3, 4)],
-                [(1, 3), (2, 5)],
-                [(1, 4), (2, 3)],
-                [(1, 5), (2, 4)],
-                [(1, 3), (4, 5)]
-            ],
             6: [
                 [(1, 2), (3, 4), (5, 6)],
                 [(1, 3), (2, 5), (4, 6)],
                 [(1, 4), (2, 3), (5, 6)],
                 [(1, 5), (2, 4), (3, 6)],
                 [(1, 6), (2, 5), (3, 4)]
-            ],
-            7: [
-                [(1, 2), (3, 4), (5, 6)],
-                [(1, 3), (2, 5), (4, 7)],
-                [(1, 4), (2, 3), (5, 7)],
-                [(1, 5), (2, 4), (3, 6)],
-                [(1, 6), (2, 5), (3, 7)],
-                [(1, 7), (2, 6), (3, 4)]
             ],
             8: [
                 [(1, 2), (3, 4), (5, 6), (7, 8)],
@@ -91,36 +77,57 @@ class BaseSumulaView(BaseView):
 
         # Gerar os pares de jogadores conforme a ordem predefinida
         numbered_rounds = []
+        # print('length players_score', len(players_score))
         for round_pairs in ordem[n]:
             numbered_round = []
             for p1, p2 in round_pairs:
                 player1 = player_map[p1]
                 player2 = player_map[p2] if p2 <= len(players_score) else None
-                if player1 is not None:
+                # print(f"p1: {p1} p2: {p2}")
+                # print(f"player1: {player1} player2: {player2}")
+                if player1 is not None and player1.rounds_number == 0:
                     player1.rounds_number = p1
-                if player2 is not None:
+                    player1.save()
+                if player2 is not None and player2.rounds_number == 0:
                     player2.rounds_number = p2
+                    player2.save()
                 numbered_round.append((player1, player2))
             numbered_rounds.append(numbered_round)
 
         # Caso o número de jogadores seja ímpar (5 ou 7), garantir que um jogador jogue sozinho a cada rodada
-        if len(players_score) % 2 != 0:
-            for i, round in enumerate(numbered_rounds):
-                for j, pair in enumerate(round):
-                    if pair[1] is None:
-                        player1 = pair[0]
-                        player1.rounds_number = ordem[n][i][j][0]
-                        numbered_rounds[i][j] = (player1, None)
-        for s, round in enumerate(numbered_rounds):
-            print('ROUND:', s+1)
-            for pair in round:
-                if pair[1] is not None:
-                    print(
-                        pair[0].rounds_number, pair[1].rounds_number)
-                else:
-                    print(pair[0].rounds_number, "joga sozinho")
+        # if n % 2 != 0:
+        #     print("Jogador sozinho NUMERO IMPAR")
+        #     for i, round in enumerate(numbered_rounds):
+        #         for j, pair in enumerate(round):
+        #             if pair[1] is None:
+        #                 player1 = pair[0]
+        #                 player1.rounds_number = ordem[n][i][j][0]
+        #                 numbered_rounds[i][j] = (player1, None)
 
-        return numbered_rounds
+        # Serializar os dados corretamente
+        serialized_rounds = []
+        for round in numbered_rounds:
+            serialized_round = []
+            for pair in round:
+                serialized_pair = {
+                    'player1': PlayerScoreSerializer(pair[0]).data if pair[0] else None,
+                    'player2': PlayerScoreSerializer(pair[1]).data if pair[1] else None
+                }
+                serialized_round.append(serialized_pair)
+            serialized_rounds.append(serialized_round)
+        # k = 1
+        # for round in serialized_rounds:
+        #     print(f"Rodada {k}")
+        #     for pair in round:
+        #         if pair['player2'] is None:
+        #             print(
+        #                 f"{pair['player1']['player']['full_name']} {pair['player1']['rounds_number']} E {pair['player2']} ")
+        #         else:
+        #             print(
+        #                 f"{pair['player1']['player']['full_name']} {pair['player1']['rounds_number']} E {pair['player2']['rounds_number']} {pair['player2']['player']['full_name']}")
+        #     k += 1
+
+        return serialized_rounds
 
     def validate_request_data_dict(self, data):
         """Valida se os dados fornecidos na requisição estão no formato correto."""
