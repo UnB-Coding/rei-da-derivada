@@ -107,17 +107,17 @@ class SumulaSerializer(serializers.Serializer):
     """ Serializer for the Sumula model.
     fields: id, active, description, referee, name, players_score
     """
-    sumula_classificatoria = serializers.SerializerMethodField()
-    sumula_imortal = serializers.SerializerMethodField()
+    sumulas_classificatoria = serializers.SerializerMethodField()
+    sumulas_imortal = serializers.SerializerMethodField()
 
-    def get_sumula_classificatoria(self, obj):
-        return SumulaClassificatoriaSerializer(obj['sumula_classificatoria'], many=True).data
+    def get_sumulas_classificatoria(self, obj):
+        return SumulaClassificatoriaSerializer(obj['sumulas_classificatoria'], many=True).data
 
-    def get_sumula_imortal(self, obj):
-        return SumulaImortalSerializer(obj['sumula_imortal'], many=True).data
+    def get_sumulas_imortal(self, obj):
+        return SumulaImortalSerializer(obj['sumulas_imortal'], many=True).data
 
     class Meta:
-        fields = ['sumula_classificatoria', 'sumula_imortal']
+        fields = ['sumulas_classificatoria', 'sumulas_imortal']
 
 
 class PlayerScoreForPlayerSerializer(ModelSerializer):
@@ -156,6 +156,17 @@ class SumulaForPlayerSerializer(serializers.Serializer):
     """ Serializer for the Sumula model.
     fields: id, active, description, referee, name, players_score
     """
+    sumulas_classificatoria = serializers.SerializerMethodField()
+    sumulas_imortal = serializers.SerializerMethodField()
+
+    def get_sumulas_classificatoria(self, obj):
+        return SumulaClassificatoriaForPlayerSerializer(obj['sumulas_classificatoria'], many=True).data
+
+    def get_sumulas_imortal(self, obj):
+        return SumulaImortalForPlayerSerializer(obj['sumulas_imortal'], many=True).data
+
+    class Meta:
+        fields = ['sumulas_classificatoria', 'sumulas_imortal']
 
 
 class UploadFileSerializer(serializers.Serializer):

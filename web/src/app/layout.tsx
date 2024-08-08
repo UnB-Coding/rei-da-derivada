@@ -3,6 +3,7 @@ import { Outfit } from "next/font/google";
 import  UserContextProvider  from "@/app/contexts/UserContext";
 import EventContextProvider from "./contexts/EventContext";
 import { Toaster } from "react-hot-toast";
+import { NextUIProvider } from "@nextui-org/react";
 import "./globals.css";
 
 const outfit = Outfit({ subsets: ["latin"] });
@@ -21,11 +22,13 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning={true}>
       <body className={outfit.className} suppressHydrationWarning={true}>
       <Toaster position="top-center" />
+        <NextUIProvider>
         <UserContextProvider>
           <EventContextProvider>
             {children}
           </EventContextProvider>
         </UserContextProvider>
+        </NextUIProvider>
       </body>
     </html>
   );
