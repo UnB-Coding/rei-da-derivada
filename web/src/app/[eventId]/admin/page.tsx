@@ -10,6 +10,7 @@ import getBasePath from "@/app/utils/getBasePath";
 import SubmitFileComponent from "@/app/components/eventComponentes/SubmitFileComponent";
 import AddPlayerComponent from "@/app/components/eventComponentes/AddPlayerComponent";
 import AddStaffComponent from "@/app/components/eventComponentes/AddStaffComponent";
+import AddManager from "@/app/components/eventComponentes/AddManager";
 
 export default function Admin() {
   const { user, loading } = useContext(UserContext);
@@ -43,6 +44,7 @@ export default function Admin() {
       <SubmitFileComponent/>
       <AddPlayerComponent/>
       <AddStaffComponent/>
+      <AddManager/>
       <EventNavBarComponent/>
     </>
   );   
