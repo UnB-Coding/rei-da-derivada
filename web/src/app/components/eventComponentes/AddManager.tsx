@@ -41,7 +41,7 @@ export default function AddManager() {
                         <div className="grid gap-2 pb-8">
                             <Autocomplete
                                 variant="bordered"
-                                defaultItems={staffs}
+                                defaultItems={staffs.filter(elem => elem.is_manager === false)}
                                 placeholder="Buscar por monitor"
                                 className="max-w-xs mb-52"
                                 onInputChange={(item) => {setCurrentStaff(staffs.find(elem => elem.full_name === item))}}
