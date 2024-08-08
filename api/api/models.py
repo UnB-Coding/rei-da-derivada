@@ -2,8 +2,8 @@ import random
 from django.db import IntegrityError, models
 from django.forms import ValidationError
 from django.dispatch import receiver
-from django.db.models.signals import post_save, post_delete, pre_delete
-from django.db.models import Sum, F
+from django.db.models.signals import post_save, pre_delete
+from django.db.models import Sum
 from users.models import User
 import string
 import secrets
@@ -167,6 +167,7 @@ class Sumula (models.Model):
     active = models.BooleanField(default=True)
     description = models.TextField(
         default='', blank=True, null=True, max_length=256)
+    rounds = models.JSONField(default=dict, blank=True, null=True)
 
     class Meta:
         abstract = True
@@ -175,6 +176,8 @@ class Sumula (models.Model):
 
     def __str__(self):
         return self.name
+    [[[{"id": 2471}, {"id": 2478}], [{"id": 2472}, {"id": 2477}], [{"id": 2473}, {"id": 2476}], [{"id": 2474}, {"id": 2475}]], [[{"id": 2471}, {"id": 2477}], [{"id": 2478}, {"id": 2476}], [{"id": 2472}, {"id": 2475}], [{"id": 2473}, {"id": 2474}]], [[{"id": 2471}, {"id": 2476}], [{"id": 2477}, {"id": 2475}], [{"id": 2478}, {"id": 2474}], [{"id": 2472}, {"id": 2473}]], [[{"id": 2471}, {"id": 2475}], [{"id": 2476}, {"id": 2474}], [
+        {"id": 2477}, {"id": 2473}], [{"id": 2478}, {"id": 2472}]], [[{"id": 2471}, {"id": 2474}], [{"id": 2475}, {"id": 2473}], [{"id": 2476}, {"id": 2472}], [{"id": 2477}, {"id": 2478}]], [[{"id": 2471}, {"id": 2473}], [{"id": 2474}, {"id": 2472}], [{"id": 2475}, {"id": 2478}], [{"id": 2476}, {"id": 2477}]], [[{"id": 2471}, {"id": 2472}], [{"id": 2473}, {"id": 2478}], [{"id": 2474}, {"id": 2477}], [{"id": 2475}, {"id": 2476}]]]
 
 
 class SumulaImortal(Sumula):
@@ -274,6 +277,8 @@ class PlayerScore(models.Model):
         SumulaImortal, on_delete=models.CASCADE, related_name='scores', null=True, blank=True, default=None)
     points = models.PositiveSmallIntegerField(
         default=0, blank=False, null=False)
+    rounds_number = models.PositiveSmallIntegerField(
+        default=0, blank=True, null=True)
 
     class Meta:
         verbose_name = ("PlayerScore")
