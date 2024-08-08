@@ -135,7 +135,8 @@ class PlayerAdmin(GuardedModelAdmin):
 
 @admin.register(Staff)
 class StaffAdmin(GuardedModelAdmin):
-    list_display = ['full_name', 'user', 'event', 'registration_email', 'id']
+    list_display = ['id', 'full_name', 'user', 'event',
+                    'registration_email', 'is_manager']
     search_fields = ['full_name', 'user', 'event', 'registration_email']
     fields = ['full_name', 'user', 'event', 'registration_email', 'is_manager']
 
