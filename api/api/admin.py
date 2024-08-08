@@ -45,23 +45,33 @@ class SumulaAdmin(GuardedModelAdmin):
         qs = super().get_queryset(request)
         return qs.annotate(scores_count=Count('scores'))
 
+    def rounds_count(self, obj):
+        return len(obj.rounds)
+
+    # def pairs_count(self, obj):
+    #     pairs = []
+    #     for round in obj.rounds:
+    #         pairs.append(str(len(round)))
+    #     return ", ".join(pairs)
+
     player_scores.short_description = 'Player Scores'
     referees.short_description = 'Referees'
     list_display = ['name', 'event', 'referees',
-                    'id', 'player_scores', 'players_count', 'active',]
+                    'id', 'player_scores', 'players_count', 'active', 'rounds_count', 'rounds']
     search_fields = ['referee__username',
                      'event__name', 'name', 'player_scores_count']
-    fields = ['referee', 'event', 'name', 'active', 'description']
+    fields = ['referee', 'event', 'name',
+              'active', 'description', 'rounds']
     filter_horizontal = ['referee']
     ordering = ['event', 'name']
 
 
-@admin.register(SumulaImortal)
+@ admin.register(SumulaImortal)
 class SumulaImortalAdmin(SumulaAdmin):
     pass
 
 
-@admin.register(SumulaClassificatoria)
+@ admin.register(SumulaClassificatoria)
 class SumulaClassificatoriaAdmin(SumulaAdmin):
     pass
 
@@ -107,19 +117,19 @@ class PlayerScoreForm(forms.ModelForm):
                 "O evento de uma Sumula deve ser o mesmo Evento do objeto de PlayerScore!")
 
 
-@admin.register(PlayerScore)
+@ admin.register(PlayerScore)
 class PlayerScoreAdmin(GuardedModelAdmin):
     form = PlayerScoreForm
 
     list_display = ['id', 'player', 'event', 'sumula_classificatoria',
-                    'sumula_imortal', 'points']
+                    'sumula_imortal', 'points', 'rounds_number']
     search_fields = ['event', 'sumula_classificatoria',
                      'sumula_imortal', 'points', 'player']
     fields = ['event', 'sumula_classificatoria',
               'sumula_imortal', 'points', 'player']
 
 
-@admin.register(Player)
+@ admin.register(Player)
 class PlayerAdmin(GuardedModelAdmin):
     list_display = ['id', 'user', 'full_name', 'social_name',
                     'event', 'total_score', 'registration_email', 'is_imortal', 'is_present']
@@ -133,7 +143,7 @@ class PlayerAdmin(GuardedModelAdmin):
     username.short_description = 'username'
 
 
-@admin.register(Staff)
+@ admin.register(Staff)
 class StaffAdmin(GuardedModelAdmin):
     list_display = ['full_name', 'user', 'event', 'registration_email', 'id']
     search_fields = ['full_name', 'user', 'event', 'registration_email']
