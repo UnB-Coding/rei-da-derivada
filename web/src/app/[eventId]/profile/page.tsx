@@ -8,9 +8,11 @@ import LoadingComponent from "@/app/components/LoadingComponent";
 import EventNavBarComponent from "@/app/components/EventNavBarComponent";
 import validatePath from "@/app/utils/validadePath";
 import getBasePath from "@/app/utils/getBasePath";
+import getPlayerInfo from "@/app/utils/api/getPlayerInfo";
 
 export default function Profile() {
   const { user, loading } = useContext(UserContext);
+  const [ playerInfo, setPlayerInfo ] = useState<any>(null);
   const [ canSee, setCanSee ] = useState<boolean>(false);
   const router = useRouter();
   const params = usePathname().split("/");
@@ -31,6 +33,7 @@ export default function Profile() {
     }
   }, [user]);
 
+  console.log(playerInfo);
   if(!canSee || loading){
     return <LoadingComponent/>;
   }
