@@ -147,24 +147,28 @@ class AddStaffManager(BaseView):
     def post(self, request: request.Request, *args, **kwargs):
         """Promove um usuário a staff_manager no evento associado.
         """
+        if 'email' not in self.request.data:
+            raise ValidationError('Email do Usuário não fornecido!')
+        email = self.request.data['email']
+        if not email:
+            return handle_400_error('Email do Usuário não fornecido!')
         try:
             event = self.get_object()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
-        try:
-            staff_user = self.get_staff_user()
-        except Exception as e:
-            return handle_400_error(str(e))
+
         staff_object = Staff.objects.filter(
-            user=staff_user, event=event).first()
+            registration_email=email, event=event).first()
         if not staff_object:
             return handle_400_error('O usuário não é monitor deste evento!')
+        user = staff_object.user
+        if staff_object.user:
+            user.events.add(event)
+            group = Group.objects.get(name='staff_manager')
+            assign_permissions(user=user, group=group, event=event)
         staff_object.is_manager = True
         staff_object.save()
-        group = Group.objects.get(name='staff_manager')
-        staff_user.events.add(event)
-        assign_permissions(user=staff_user, group=group, event=event)
         return response.Response(status=status.HTTP_200_OK, data='Gerente de equipe adicionado com sucesso!')
 
     def get_object(self):
@@ -177,18 +181,6 @@ class AddStaffManager(BaseView):
         if not event:
             raise ValidationError('Evento não encontrado!')
         return event
-
-    def get_staff_user(self):
-        if 'email' not in self.request.data:
-            raise ValidationError('Email do Usuário não fornecido!')
-        email = self.request.data['email']
-        if not email:
-            raise ValidationError('Email do Usuário não fornecido!')
-        user = User.objects.filter(email=email).first()
-        if not user:
-            raise ValidationError('Usuário não encontrado!')
-        else:
-            return user
 
 
 class AddStaffPermissions(BasePermission):

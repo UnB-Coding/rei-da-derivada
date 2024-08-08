@@ -6,7 +6,7 @@ from api.models import Staff, SumulaClassificatoria, SumulaImortal, PlayerScore,
 from ..serializers import SumulaSerializer, SumulaForPlayerSerializer, SumulaImortalSerializer, SumulaClassificatoriaSerializer, SumulaClassificatoriaForPlayerSerializer, SumulaImortalForPlayerSerializer
 from rest_framework.permissions import BasePermission
 from ..utils import handle_400_error
-from ..swagger import Errors, sumula_imortal_api_put_schema, sumula_classicatoria_api_put_schema, sumulas_response_schema, manual_parameter_event_id
+from ..swagger import Errors, sumula_imortal_api_put_schema, sumula_classicatoria_api_put_schema, sumulas_response_schema, manual_parameter_event_id, sumulas_response_for_player_schema
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import random
@@ -49,7 +49,7 @@ class GetSumulasView(BaseSumulaView):
         sumulas_imortal, sumulas_classificatoria = self.get_sumulas(
             event=event)
         data = SumulaSerializer(
-            {'sumula_classificatoria': sumulas_classificatoria, 'sumula_imortal': sumulas_imortal}).data
+            {'sumulas_classificatoria': sumulas_classificatoria, 'sumulas_imortal': sumulas_imortal}).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
 
@@ -321,7 +321,7 @@ class ActiveSumulaView(BaseSumulaView):
         sumula_imortal, sumula_classificatoria = self.get_sumulas(
             event=event, active=True)
         data = SumulaSerializer(
-            {'sumula_classificatoria': sumula_classificatoria, 'sumula_imortal': sumula_imortal}).data
+            {'sumulas_classificatoria': sumula_classificatoria, 'sumulas_imortal': sumula_imortal}).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
 
@@ -346,7 +346,7 @@ class FinishedSumulaView(BaseSumulaView):
         sumula_imortal, sumula_classificatoria = self.get_sumulas(
             event=event, active=False)
         data = SumulaSerializer(
-            {'sumula_classificatoria': sumula_classificatoria, 'sumula_imortal': sumula_imortal}).data
+            {'sumulas_classificatoria': sumula_classificatoria, 'sumulas_imortal': sumula_imortal}).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
 
@@ -367,7 +367,7 @@ class GetSumulaForPlayer(BaseSumulaView):
         Retorna todas as sumulas ativas para o jogador. São omitidos pontuações da sumula.""",
         manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(
-            'OK', SumulaForPlayerSerializer), **Errors([400]).retrieve_erros()}
+            'OK', sumulas_response_for_player_schema), **Errors([400]).retrieve_erros()}
     )
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Retorna todas as sumulas ativas associadas a um jogador."""
