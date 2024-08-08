@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import BasePermission
 from .base_views import BaseSumulaView, SUMULA_NOT_FOUND_ERROR_MESSAGE, SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE
 from api.models import Staff, SumulaClassificatoria, SumulaImortal, PlayerScore, Player
-from ..serializers import SumulaSerializer, SumulaForPlayerSerializer, SumulaImortalSerializer, SumulaClassificatoriaSerializer, SumulaClassificatoriaForPlayerSerializer, SumulaImortalForPlayerSerializer
+from ..serializers import PlayerScoreSerializer, SumulaSerializer, SumulaForPlayerSerializer, SumulaImortalSerializer, SumulaClassificatoriaSerializer, SumulaClassificatoriaForPlayerSerializer, SumulaImortalForPlayerSerializer
 from rest_framework.permissions import BasePermission
 from ..utils import handle_400_error
 from ..swagger import Errors, sumula_imortal_api_put_schema, sumula_classicatoria_api_put_schema, sumulas_response_schema, manual_parameter_event_id, sumulas_response_for_player_schema
@@ -107,12 +107,14 @@ class SumulaClassificatoriaView(BaseSumulaView):
         players = request.data['players']
         sumula = SumulaClassificatoria.objects.create(event=event, name=name)
         try:
-            self.create_players_score(
+            players_score = self.create_players_score(
                 players=players, sumula=sumula, event=event)
         except Exception as e:
             return handle_400_error(str(e))
         referees = request.data['referees']
         self.add_referees(sumula=sumula, event=event, referees=referees)
+        sumula.rounds = self.round_robin_tournament(
+            len(players_score), players_score)  # PRECISA SER IMPLEMENTADO
         data = SumulaClassificatoriaSerializer(sumula).data
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
@@ -468,25 +470,26 @@ class GenerateSumulas(BaseSumulaView):
         """,
         security=[{'Bearer': []}],
         manual_parameters=manual_parameter_event_id,
-        responses={200: openapi.Response('OK', SumulaClassificatoriaSerializer), **Errors([400]).retrieve_erros()})
+        responses={201: openapi.Response(
+            'Created', SumulaClassificatoriaSerializer), **Errors([400]).retrieve_erros()})
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         try:
             event = self.get_object()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
-        try:
-            sumulas = self.generate_sumulas(event=event)
-        except Exception as e:
-            return handle_400_error(str(e))
+        # try:
+        sumulas = self.generate_sumulas(event=event)  # PRECISA VOLTAR O TRY
+       # except Exception as e:
+        #  return handle_400_error(str(e))
         data = SumulaClassificatoriaSerializer(sumulas, many=True).data
-        return response.Response(status=status.HTTP_200_OK, data=data)
+        return response.Response(status=status.HTTP_201_CREATED, data=data)
 
     def generate_sumulas(self, event) -> list[SumulaClassificatoria] | Exception:
         """Gera sumulas classificatorias para iniciar um evento.
         Uma sumula possui no maximo 8 e no mínimo 5 jogadores.
         """
-        MIN_PLAYERS = 6
+        MIN_PLAYERS = 4 #A DECIDIR
         MAX_PLAYERS = 8
         letters = string.ascii_uppercase
         letters_count = 0
@@ -523,7 +526,6 @@ class GenerateSumulas(BaseSumulaView):
                                            player=player, sumula_classificatoria=sumulas[i])
         if resto > 0 and resto < MIN_PLAYERS:
             index_of_complete_sumulas = n_sumulas-2
-            qt_needed = MIN_PLAYERS - resto
             last_sumula = sumulas[n_sumulas-1]
             while (last_sumula.scores.count() < MIN_PLAYERS):
                 scores = sumulas[index_of_complete_sumulas].scores.all()
@@ -536,6 +538,12 @@ class GenerateSumulas(BaseSumulaView):
                     if last_sumula.scores.count() == MIN_PLAYERS:
                         break
                 index_of_complete_sumulas -= 1
+        for sumula in sumulas:
+            players_list = [player for player in sumula.scores.all()]
+            sumula.rounds = self.round_robin_tournament(
+                n=len(players_list), players_score=players_list)
+            sumula.save()
+            # print(sumula.rounds)
         return sumulas
 
 
