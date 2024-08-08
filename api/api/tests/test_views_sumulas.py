@@ -170,11 +170,11 @@ class SumulaViewTest(BaseSumulaViewTest):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
         self.assertEqual(
-            response.data['sumula_classificatoria'][0]['id'], self.sumula2.id)
+            response.data['sumulas_classificatoria'][0]['id'], self.sumula2.id)
         self.assertEqual(
-            response.data['sumula_imortal'][0]['id'], self.sumula.id)
+            response.data['sumulas_imortal'][0]['id'], self.sumula.id)
         self.assertEqual(
-            response.data['sumula_imortal'][0]['referee'][0]['id'], self.staff1.id)
+            response.data['sumulas_imortal'][0]['referee'][0]['id'], self.staff1.id)
         # self.assertEqual(response.data[0]['sumula'])
 
     def test_get_active_sumulas(self):
@@ -184,11 +184,11 @@ class SumulaViewTest(BaseSumulaViewTest):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
         self.assertEqual(
-            response.data['sumula_classificatoria'][0]['id'], self.sumula2.id)
+            response.data['sumulas_classificatoria'][0]['id'], self.sumula2.id)
         self.assertEqual(
-            response.data['sumula_imortal'][0]['id'], self.sumula.id)
+            response.data['sumulas_imortal'][0]['id'], self.sumula.id)
         self.assertEqual(
-            response.data['sumula_imortal'][0]['referee'][0]['id'], self.staff1.id)
+            response.data['sumulas_imortal'][0]['referee'][0]['id'], self.staff1.id)
 
     def test_get_finished_sumulas(self):
         self.sumula.active = False
@@ -201,11 +201,11 @@ class SumulaViewTest(BaseSumulaViewTest):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
         self.assertEqual(
-            response.data['sumula_classificatoria'][0]['id'], self.sumula2.id)
+            response.data['sumulas_classificatoria'][0]['id'], self.sumula2.id)
         self.assertEqual(
-            response.data['sumula_imortal'][0]['id'], self.sumula.id)
+            response.data['sumulas_imortal'][0]['id'], self.sumula.id)
         self.assertEqual(
-            response.data['sumula_imortal'][0]['referee'][0]['id'], self.staff1.id)
+            response.data['sumulas_imortal'][0]['referee'][0]['id'], self.staff1.id)
 
     def test_get_sumulas_unauthenticated(self):
         response = self.client.get(self.url_get)
