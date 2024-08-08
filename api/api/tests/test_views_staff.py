@@ -187,7 +187,7 @@ class AddStaffManagerTestCase(APITestCase):
 
     def setUpUser(self):
         self.user = User.objects.create(username='staff_member', email=self.create_unique_email(
-        ), first_name='Staff', last_name='Member')
+        ), first_name='USer Staff', last_name='Member do teste')
         self.admin = User.objects.create(username='event_admin', email=self.create_unique_email(
         ), first_name='Event', last_name='Admin')
 
@@ -218,7 +218,7 @@ class AddStaffManagerTestCase(APITestCase):
         self.setUpGroup()
         self.setUpPermissions()
         self.setUpStaffMember()
-        self.data = {'id': self.user.id, 'email': self.user.email}
+        self.data = {'email': self.staff.registration_email}
         self.url = f'{reverse("api:staff-manager")}?event_id={self.event.id}'
 
     def test_add_staff_manager(self):
