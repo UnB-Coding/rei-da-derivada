@@ -332,3 +332,5 @@ class Results(models.Model):
         Player, related_name='results_top4', blank=True)
     paladin = models.OneToOneField(Player, on_delete=models.CASCADE,
                                    related_name='results_paladin', null=True, blank=True, default=None)
+    ambassor = models.OneToOneField(Player, on_delete=models.CASCADE,
+                                    related_name='results_ambassor', null=True, blank=True, default=None)
