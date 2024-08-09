@@ -7,7 +7,7 @@ from rest_framework.permissions import BasePermission
 
 from ..views.base_views import BaseView
 from api.models import Token, Event, Staff, Player
-from ..serializers import EventSerializer, UserEventsSerializer
+from ..serializers import EventSerializer, UserEventsSerializer, ResultsSerializer
 from ..utils import handle_400_error
 from ..swagger import Errors, manual_parameter_event_id
 from ..permissions import assign_permissions
@@ -277,3 +277,41 @@ class EventView(BaseView):
         if len(token_code) == 0 or token_code.isspace():
             return False
         return True
+
+
+class ResultsView(BaseView):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="""Atribui os resultados finais do evento manualmente.
+        Deve ser enviado **top4** jogadores,**paladino** e **embaixador**. 
+        Os jogadores devem ser enviados como uma lista de dicionários com os campos *player* e *total_score*.
+        Os top3 imortais serão calculados automaticamente, não é necessário enviar.
+        """,
+        tags=['event'],
+        operation_summary="Atribui os resultados finais do evento manualmente.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'top4': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+                    'player': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador'),
+                    'total_score': openapi.Schema(type=openapi.TYPE_INTEGER, description='Pontuação total do jogador')
+                })),
+                'paladin': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador que foi o paladino'),
+                'ambassor': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador que foi o embaixador')
+            },
+            required=['top4',
+                      'paladin', 'ambassor']
+        ),
+        responses={200: openapi.Response(
+            'OK', ResultsSerializer), **Errors([400]).retrieve_erros()}
+    )
+    def post(self, request: request.Request, *args, **kwargs):
+        try:
+            event = self.get_object()
+        except Exception as e:
+            return handle_400_error(str(e))
+        if event not in request.user.events.all():
+            return response.Response(status=status.HTTP_403_FORBIDDEN, data={'errors': 'Você não tem permissão para acessar este evento.'})
+
+        return response.Response(status=status.HTTP_200_OK)
