@@ -170,7 +170,8 @@ class PublishPlayersResults(BaseView):
         tags=['player'],
         security=[{'Bearer': []}],
         operation_description='Publica os resultados dos jogadores do evento.',
-        operation_summary="""Publica os resultados dos jogadores do evento. Os jogadores poderão ver suas pontuações e os 4 primeiros colocados.""",
+        operation_summary="""Publica os resultados dos jogadores do evento. Apenas o admin pode realizar a publicacao.
+        Os jogadores poderão ver suas pontuações e os 4 primeiros colocados.""",
         manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(
             200), **Errors([400]).retrieve_erros()}
