@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path, re_path
-from .views.views_event import EventView
+from .views.views_event import EventView, ResultsView
 from .views.views_staff import StaffView, AddStaffManager, AddStaffMembers, AddSingleStaff, EditStaffData
 from .views.views_players import PlayersView, GetPlayerResults, AddPlayersExcel, PublishPlayersResults, Top3ImortalPlayers, AddSinglePlayer
 from .views.views_sumulas import GetSumulasView, ActiveSumulaView, FinishedSumulaView, GetSumulaForPlayer, SumulaImortalView, SumulaClassificatoriaView, AddRefereeToSumulaView, GenerateSumulas
@@ -12,6 +12,7 @@ urlpatterns = [
     # Rotas de evento e token
     #     path('token/', TokenView.as_view(), name='token'),
     path('event/', EventView.as_view(), name='event'),
+    path('results/', ResultsView.as_view(), name='results'),
 
     # Rotas de sumula
     path('sumula/', GetSumulasView.as_view(), name='sumula'),
