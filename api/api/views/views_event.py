@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import BasePermission
 
 from ..views.base_views import BaseView
-from api.models import Token, Event, Staff, Player
+from api.models import Token, Event, Staff, Player, Results
 from ..serializers import EventSerializer, UserEventsSerializer, ResultsSerializer
 from ..utils import handle_400_error
 from ..swagger import Errors, manual_parameter_event_id
@@ -193,7 +193,7 @@ class EventView(BaseView):
             return response.Response(status=response_status, data=data)
 
         self.assign_event_admin_permissions(request, event)
-
+        Results.objects.create(event=event)
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
     @swagger_auto_schema(
@@ -284,21 +284,26 @@ class ResultsView(BaseView):
 
     @swagger_auto_schema(
         operation_description="""Atribui os resultados finais do evento manualmente.
-        Deve ser enviado **top4** jogadores,**paladino** e **embaixador**. 
+        Deve ser enviado **top4** jogadores,**paladino** e **embaixador**.
         Os jogadores devem ser enviados como uma lista de dicionários com os campos *player* e *total_score*.
         Os top3 imortais serão calculados automaticamente, não é necessário enviar.
         """,
         tags=['event'],
         operation_summary="Atribui os resultados finais do evento manualmente.",
+        manual_parameters=manual_parameter_event_id,
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                'top4': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
-                    'player': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador'),
-                    'total_score': openapi.Schema(type=openapi.TYPE_INTEGER, description='Pontuação total do jogador')
+                'top4': openapi.Schema(type=openapi.TYPE_ARRAY, description='Lista dos top4 jogadores do RRDD', items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+                    'player_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador'),
                 })),
-                'paladin': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador que foi o paladino'),
-                'ambassor': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador que foi o embaixador')
+                'paladin': openapi.Schema(
+                    type=openapi.TYPE_OBJECT, description='Jogador que foi o paladino',
+                    properties={'player_id': openapi.Schema(
+                        type=openapi.TYPE_INTEGER, description='ID do jogador')}),
+                'ambassor': openapi.Schema(
+                    type=openapi.TYPE_OBJECT, description='Jogador que foi o embaixador',
+                    properties={'player_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador')})
             },
             required=['top4',
                       'paladin', 'ambassor']
@@ -307,6 +312,16 @@ class ResultsView(BaseView):
             'OK', ResultsSerializer), **Errors([400]).retrieve_erros()}
     )
     def post(self, request: request.Request, *args, **kwargs):
+        required_fields = ['top4', 'paladin', 'ambassor']
+        if not all(field in request.data for field in required_fields):
+            return handle_400_error(
+                'Campos obrigatórios não fornecidos: top4, paladin, ambassor.')
+        if not isinstance(request.data['top4'], list):
+            return handle_400_error('top4 deve ser uma lista.')
+        if not all('player_id' in player for player in request.data['top4']):
+            return handle_400_error('ID do jogador não fornecido em top4.')
+        if not all('player_id' in request.data[field] for field in ['paladin', 'ambassor']):
+            return handle_400_error('ID do jogador não fornecido em paladin ou ambassor.')
         try:
             event = self.get_object()
         except Exception as e:
@@ -314,4 +329,22 @@ class ResultsView(BaseView):
         if event not in request.user.events.all():
             return response.Response(status=status.HTTP_403_FORBIDDEN, data={'errors': 'Você não tem permissão para acessar este evento.'})
 
-        return response.Response(status=status.HTTP_200_OK)
+        top4 = request.data['top4']
+        paladin = request.data['paladin']
+        ambassor = request.data['ambassor']
+        results = Results.objects.get(event=event)
+        for player in top4:
+            player = Player.objects.get(id=player['player_id'], event=event)
+            if not player:
+                return handle_400_error('Jogador fornecido não encontrado.')
+            results.top4.add(player)
+        paladin = Player.objects.get(id=paladin['player_id'], event=event)
+        if not paladin:
+            return handle_400_error('Jogador fornecido não encontrado.')
+        results.paladin = paladin
+        ambassor = Player.objects.get(id=ambassor['player_id'], event=event)
+        if not ambassor:
+            return handle_400_error('Jogador fornecido não encontrado.')
+        results.ambassor = ambassor
+        results.save()
+        return response.Response(status=status.HTTP_200_OK, data='Resultados atribuídos com sucesso.')

@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 from django.forms import ValidationError
-from .models import Token, Event, SumulaImortal, SumulaClassificatoria, PlayerScore, Player, Staff
+from .models import Token, Event, SumulaImortal, SumulaClassificatoria, PlayerScore, Player, Staff, Results
 from guardian.admin import GuardedModelAdmin
 from django.db.models import Count
 
@@ -144,3 +144,21 @@ class StaffAdmin(GuardedModelAdmin):
     #     return obj.username
     # # Optional, to set column header in admin interface.
     # username.short_description = 'username'
+
+
+@admin.register(Results)
+class ResultsAdmin(GuardedModelAdmin):
+    def display_top4(self, obj):
+        return ', '.join([player.__str__() for player in obj.top4.all()])
+    display_top4.short_description = 'Top 4'
+
+    def display_imortals(self, obj):
+        return ', '.join([player.__str__() for player in obj.imortals.all()])
+    display_imortals.short_description = 'Imortals'
+
+    list_display = ['id', 'event', 'display_top4',
+                    'display_imortals', 'ambassor', 'paladin']
+    search_fields = ['event', 'top4__name',
+                     'imortals__name', 'ambassor', 'paladin']
+    fields = ['event', 'top4', 'imortals', 'ambassor', 'paladin']
+    filter_horizontal = ['top4', 'imortals']

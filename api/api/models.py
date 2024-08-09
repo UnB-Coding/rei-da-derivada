@@ -326,6 +326,8 @@ class PlayerScore(models.Model):
 class Results(models.Model):
     """ Modelo para salvar resultados de um evento."""
 
+    event = models.OneToOneField(
+        Event, on_delete=models.CASCADE, related_name='results', null=False, blank=False, default=None)
     imortals = models.ManyToManyField(
         Player, related_name='results_imortal', blank=True)
     top4 = models.ManyToManyField(
@@ -334,3 +336,7 @@ class Results(models.Model):
                                    related_name='results_paladin', null=True, blank=True, default=None)
     ambassor = models.OneToOneField(Player, on_delete=models.CASCADE,
                                     related_name='results_ambassor', null=True, blank=True, default=None)
+
+    class Meta:
+        verbose_name = ("Results")
+        verbose_name_plural = ("Results")
