@@ -73,7 +73,8 @@ class Event (models.Model):
     name = models.CharField(default='', max_length=64, blank=True, null=True)
     active = models.BooleanField(default=True)
     admin_email = models.EmailField(default='', blank=True, null=True)
-    is_results_published = models.BooleanField(default=False)
+    is_final_results_published = models.BooleanField(default=False)
+    is_imortal_results_published = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = ("Evento")
@@ -324,7 +325,15 @@ class PlayerScore(models.Model):
 
 
 class Results(models.Model):
-    """ Modelo para salvar resultados de um evento."""
+    """ Modelo para salvar resultados de um evento.
+    fields:
+    - event: ForeignKey para Event
+    - imortals: ManyToManyField para Player
+    - top4: ManyToManyField para Player
+    - paladin: ForeignKey para Player
+    - ambassor: ForeignKey para Player
+
+    """
 
     event = models.OneToOneField(
         Event, on_delete=models.CASCADE, related_name='results', null=False, blank=False, default=None)
@@ -340,3 +349,12 @@ class Results(models.Model):
     class Meta:
         verbose_name = ("Results")
         verbose_name_plural = ("Results")
+
+    def calculate_imortals(self):
+        """Calcula os imortais do evento."""
+        self.imortals.clear()
+        players = Player.objects.filter(
+            event=self.event).order_by('-total_score')[:3]
+        for player in players:
+            self.imortals.add(player)
+        self.save()

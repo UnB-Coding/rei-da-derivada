@@ -190,7 +190,11 @@ class PlayerLoginSerializer(ModelSerializer):
 
 
 class ResultsSerializer(ModelSerializer):
+    top4 = PlayerResultsSerializer(many=True)
+    imortals = PlayerResultsSerializer(many=True)
+    ambassor = PlayerResultsSerializer()
+    paladin = PlayerResultsSerializer()
 
     class Meta:
         model = Results
-        fields = '__all__'
+        fields = ['id', 'top4', 'imortals', 'ambassor', 'paladin']
