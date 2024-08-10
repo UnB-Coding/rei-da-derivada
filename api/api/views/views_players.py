@@ -132,8 +132,8 @@ class GetPlayerResults(BaseView):
             event = self.get_object()
         except ValidationError as e:
             return handle_400_error(str(e))
-        if not event.is_results_published:
-            return response.Response(status=status.HTTP_403_FORBIDDEN, data='Resultados não publicados!')
+        if not event.is_imortal_results_published:
+            return response.Response(status=status.HTTP_403_FORBIDDEN, data='Resultados de pontuação não publicados!')
         self.check_object_permissions(request, event)
         player = Player.objects.filter(event=event, user=request.user).first()
         if not player:
@@ -148,49 +148,6 @@ class GetPlayerResults(BaseView):
             raise ValidationError('Dados inválidos!')
 
         event_id = self.request.query_params.get('event_id')  # type: ignore
-        if not event_id:
-            raise ValidationError('event_id é obrigatório!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
-
-
-class PublishPlayersPermissions(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        if request.method == 'PUT':
-            return request.user.has_perm('api.change_event', obj)
-        return True
-
-
-class PublishPlayersResults(BaseView):
-    permission_classes = [IsAuthenticated, PublishPlayersPermissions]
-
-    @swagger_auto_schema(
-        tags=['player'],
-        security=[{'Bearer': []}],
-        operation_description='Publica os resultados dos jogadores do evento.',
-        operation_summary="""Publica os resultados dos jogadores do evento. Apenas o admin pode realizar a publicacao.
-        Os jogadores poderão ver suas pontuações e os 4 primeiros colocados.""",
-        manual_parameters=manual_parameter_event_id,
-        responses={200: openapi.Response(
-            200), **Errors([400]).retrieve_erros()}
-    )
-    def put(self, request: request.Request, *args, **kwargs) -> response.Response:
-        try:
-            event = self.get_object()
-        except ValidationError as e:
-            return handle_400_error(str(e))
-        self.check_object_permissions(request, event)
-        event.is_results_published = True
-        event.save()
-        return response.Response(status=status.HTTP_200_OK, data='Resultados publicados com sucesso!')
-
-    def get_object(self):
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError('Dados inválidos!')
-
-        event_id = self.request.query_params.get('event_id')
         if not event_id:
             raise ValidationError('event_id é obrigatório!')
         event = Event.objects.filter(id=event_id).first()
@@ -215,7 +172,7 @@ class Top3ImortalPlayers(BaseView):
         except ValidationError as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
-        if not event.is_results_published:
+        if not event.is_final_results_published:
             return response.Response(status=status.HTTP_403_FORBIDDEN, data='Resultados não publicados!')
         players = Player.objects.filter(
             event=event).order_by('-total_score')[:3]

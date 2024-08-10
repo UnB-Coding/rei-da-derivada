@@ -292,7 +292,7 @@ class GetPlayerResultsViewTest(APITestCase):
         self.assertEqual(response.data,  {'errors': 'Jogador não encontrado!'})
 
     def test_get_player_is_results_published_false(self):
-        self.event.is_results_published = False
+        self.event.is_final_results_published = False
         self.event.save()
         self.client.force_authenticate(user=self.user)
         response = self.client.get(self.url)
@@ -472,7 +472,7 @@ class PublishPlayersResultsViewTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, 'Resultados publicados com sucesso!')
         self.event.refresh_from_db()
-        self.assertEqual(self.event.is_results_published, True)
+        self.assertEqual(self.event.is_final_results_published, True)
 
     def test_publish_results_unauthenticated(self):
         response = self.client.put(self.url)
@@ -484,7 +484,7 @@ class PublishPlayersResultsViewTestCase(APITestCase):
         response = self.client.put(self.url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.event.refresh_from_db()
-        self.assertEqual(self.event.is_results_published, False)
+        self.assertEqual(self.event.is_final_results_published, False)
 
     def test_publish_results_without_event_id(self):
         self.client.force_authenticate(user=self.admin)
@@ -494,7 +494,7 @@ class PublishPlayersResultsViewTestCase(APITestCase):
         self.assertEqual(
             response.data, {'errors': "['Dados inválidos!']"})
         self.event.refresh_from_db()
-        self.assertEqual(self.event.is_results_published, False)
+        self.assertEqual(self.event.is_final_results_published, False)
 
     def test_publish_results_with_invalid_event_id(self):
         self.client.force_authenticate(user=self.admin)
@@ -504,7 +504,7 @@ class PublishPlayersResultsViewTestCase(APITestCase):
         self.assertEqual(
             response.data, {'errors': "['Evento não encontrado!']"})
         self.event.refresh_from_db()
-        self.assertEqual(self.event.is_results_published, False)
+        self.assertEqual(self.event.is_final_results_published, False)
 
     def tearDown(self):
         User.objects.all().delete()
