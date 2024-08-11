@@ -213,6 +213,8 @@ class Player(models.Model):
     - event: ForeignKey to Event
     - registration_email: EmailField
     - total_score: IntegerField
+    - is_imortal: BooleanField
+    - is_present: BooleanField
     """
     full_name = models.CharField(
         default='', max_length=128, blank=True, null=True)
@@ -354,7 +356,7 @@ class Results(models.Model):
         """Calcula os imortais do evento."""
         self.imortals.clear()
         players = Player.objects.filter(
-            event=self.event).order_by('-total_score')[:3]
+            event=self.event, is_imortal=True).order_by('-total_score')[:3]
         for player in players:
             self.imortals.add(player)
         self.save()
