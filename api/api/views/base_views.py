@@ -15,6 +15,8 @@ class BaseView(APIView):
     def get_object(self) -> Event:
         """ Verifica se o evento existe.
         Retorna o evento associado ao id fornecido ou uma exceção.
+        - ValidationError: Se o id do evento não foi fornecido.
+        - NotFound: Se o evento não foi encontrado.
         """
         if 'event_id' not in self.request.query_params:
             raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
@@ -23,7 +25,7 @@ class BaseView(APIView):
             raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
         event = Event.objects.filter(id=event_id).first()
         if not event:
-            raise NotFound(EVENT_NOT_FOUND_ERROR_MESSAGE)
+            raise ValidationError(EVENT_NOT_FOUND_ERROR_MESSAGE)
         return event
 
 

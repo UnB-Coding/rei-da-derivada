@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.urls import path, re_path
-from .views.views_event import EventView
+from .views.views_event import EventView, ResultsView, PublishFinalResults, PublishImortalsResults, Top3ImortalPlayers
 from .views.views_staff import StaffView, AddStaffManager, AddStaffMembers, AddSingleStaff, EditStaffData
-from .views.views_players import PlayersView, GetPlayerResults, AddPlayersExcel, PublishPlayersResults, Top3Players, AddSinglePlayer
+from .views.views_players import PlayersView, GetPlayerResults, AddPlayersExcel, AddSinglePlayer
 from .views.views_sumulas import GetSumulasView, ActiveSumulaView, FinishedSumulaView, GetSumulaForPlayer, SumulaImortalView, SumulaClassificatoriaView, AddRefereeToSumulaView, GenerateSumulas
 
 app_name = 'api'
@@ -12,6 +12,11 @@ urlpatterns = [
     # Rotas de evento e token
     #     path('token/', TokenView.as_view(), name='token'),
     path('event/', EventView.as_view(), name='event'),
+    path('results/', ResultsView.as_view(), name='results'),
+    path('publish/results/imortals/', PublishImortalsResults.as_view(),
+         name='publish-results-imortals'),
+    path('publish/results/final',
+         PublishFinalResults.as_view(), name='publish-results-final'),
 
     # Rotas de sumula
     path('sumula/', GetSumulasView.as_view(), name='sumula'),
@@ -25,12 +30,12 @@ urlpatterns = [
     path('sumula/add-referee/', AddRefereeToSumulaView.as_view(),
          name='sumula-add-referee'),
     path('sumula/generate/', GenerateSumulas.as_view(), name='sumula-generate'),
+
     # Rotas de jogadores
     path('players/', PlayersView.as_view(), name='players'),
     path('player/', GetPlayerResults.as_view(), name='player'),
     path('upload-player/', AddPlayersExcel.as_view(), name='upload-player'),
-    path('top4/', Top3Players.as_view(), name='top4'),
-    path('publish-results/', PublishPlayersResults.as_view(), name='publish-results'),
+    path('top3/', Top3ImortalPlayers.as_view(), name='top3'),
     path('player/add/', AddSinglePlayer.as_view(), name='add-player'),
 
     # Rotas de staff

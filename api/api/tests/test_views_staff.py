@@ -409,7 +409,7 @@ class AddSingleStaffTestCase(APITestCase):
         self.setUpPermissions()
         self.url = f'{reverse("api:add-staff")}?event_id={self.event.id}'
         self.data = {
-            "full_name": "João da Silva",
+            "full_name": "João Da Silva",
             "registration_email": "joao@email.com",
             "is_manager": False
         }
@@ -492,7 +492,7 @@ class EditStaffDataTestCase(APITestCase):
         self.setUpPermissions()
         self.url = f'{reverse("api:edit-staff")}?event_id={self.event.id}'
         self.data = {
-            "full_name": "João da Silva",
+            "full_name": "João Da Silva",
             "registration_email": self.admin.email,
             "is_manager": False,
             "new_email": "novo@email.com"
