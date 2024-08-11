@@ -17,9 +17,21 @@ class TokenAdmin(GuardedModelAdmin):
 
 @admin.register(Event)
 class EventAdmin(GuardedModelAdmin):
-    list_display = ['id', 'token', 'join_token', 'name', 'active']
+    def final_results_published(self, obj):
+        return obj.is_final_results_published
+    final_results_published.short_description = 'Final Results Published?'
+    final_results_published.boolean = True
+
+    def imortal_results_published(self, obj):
+        return obj.is_imortal_results_published
+    imortal_results_published.short_description = 'Imortal Results Published?'
+    imortal_results_published.boolean = True
+    list_display = ['id', 'token', 'join_token', 'name', 'active',
+                    'final_results_published', 'imortal_results_published']
     search_fields = ['token', 'name', 'active', 'join_token']
     fields = ['token', 'name', 'active', 'admin_email']
+    ordering = ['name', 'active', 'is_final_results_published',
+                'is_imortal_results_published', 'token', 'join_token']
 
 
 class SumulaAdmin(GuardedModelAdmin):
