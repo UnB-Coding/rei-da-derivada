@@ -208,7 +208,10 @@ class BaseSumulaView(BaseView):
         if referees == []:
             return
         for referee in referees:
-            staff = Staff.objects.filter(id=referee['id'], event=event).first()
+            id = referee.get('id')
+            if id is None:
+                continue
+            staff = Staff.objects.filter(id=id, event=event).first()
             if referee is not None:
                 sumula.referee.add(staff)
         sumula.save()
