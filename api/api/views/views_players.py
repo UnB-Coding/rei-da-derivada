@@ -284,8 +284,13 @@ class AddSinglePlayer(BaseView):
         is_imortal = request.data['is_imortal']
         if not full_name:
             return handle_400_error('Nome completo é obrigatório para criar um jogador!')
-        full_name = full_name.strip().capitalize()
-        social_name = social_name.strip().capitalize() if social_name else None
+        full_name = full_name.strip()
+        for word in full_name.split():
+            full_name = full_name.replace(word, word.capitalize())
+        if social_name:
+            social_name = social_name.strip()
+            for word in social_name.split():
+                social_name = social_name.replace(word, word.capitalize())
         email = email.strip() if email else None
         try:
             validate_email(email)
