@@ -340,7 +340,7 @@ class ResultsView(BaseView):
             return handle_400_error(str(e))
         if event not in request.user.events.all():
             return response.Response(status=status.HTTP_403_FORBIDDEN, data={'errors': 'Você não tem permissão para acessar este evento.'})
-
+        self.check_object_permissions(request, event)
         top4 = request.data['top4']
         paladin = request.data['paladin']
         ambassor = request.data['ambassor']
