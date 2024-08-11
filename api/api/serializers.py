@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 from rest_framework import serializers
-from api.models import SumulaClassificatoria, Token, Event, Sumula, PlayerScore, Player, Staff, SumulaImortal
+from api.models import SumulaClassificatoria, Token, Event, Sumula, PlayerScore, Player, Staff, SumulaImortal, Results
 from users.models import User
 
 
@@ -189,3 +189,14 @@ class PlayerLoginSerializer(ModelSerializer):
     class Meta:
         model = Player
         fields = ['id', 'full_name', 'social_name', 'is_imortal', 'event']
+
+
+class ResultsSerializer(ModelSerializer):
+    top4 = PlayerResultsSerializer(many=True)
+    imortals = PlayerResultsSerializer(many=True)
+    ambassor = PlayerResultsSerializer()
+    paladin = PlayerResultsSerializer()
+
+    class Meta:
+        model = Results
+        fields = ['id', 'top4', 'imortals', 'ambassor', 'paladin']

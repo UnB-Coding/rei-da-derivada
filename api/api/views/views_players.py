@@ -3,6 +3,7 @@ from typing import Optional
 from django.forms import ValidationError
 from django.contrib.auth.models import Group
 from django.core.files.uploadedfile import UploadedFile
+from django.core.validators import validate_email
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -11,7 +12,7 @@ from rest_framework.permissions import BasePermission
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from ..views.base_views import BaseView
-from api.models import Event, Player
+from api.models import Event, Player, Results
 from ..utils import handle_400_error
 from ..serializers import PlayerSerializer, UploadFileSerializer, PlayerResultsSerializer, PlayerLoginSerializer
 from ..swagger import Errors, manual_parameter_event_id
@@ -132,8 +133,8 @@ class GetPlayerResults(BaseView):
             event = self.get_object()
         except ValidationError as e:
             return handle_400_error(str(e))
-        if not event.is_results_published():
-            return response.Response(status=status.HTTP_403_FORBIDDEN, data='Resultados não publicados!')
+        if not event.is_imortal_results_published:
+            return response.Response(status=status.HTTP_403_FORBIDDEN, data='Resultados de pontuação não publicados!')
         self.check_object_permissions(request, event)
         player = Player.objects.filter(event=event, user=request.user).first()
         if not player:
@@ -148,82 +149,6 @@ class GetPlayerResults(BaseView):
             raise ValidationError('Dados inválidos!')
 
         event_id = self.request.query_params.get('event_id')  # type: ignore
-        if not event_id:
-            raise ValidationError('event_id é obrigatório!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
-
-
-class PublishPlayersPermissions(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        if request.method == 'PUT':
-            return request.user.has_perm('api.change_event', obj)
-        return True
-
-
-class PublishPlayersResults(BaseView):
-    permission_classes = [IsAuthenticated, PublishPlayersPermissions]
-
-    @swagger_auto_schema(
-        tags=['player'],
-        security=[{'Bearer': []}],
-        operation_description='Publica os resultados dos jogadores do evento.',
-        operation_summary="""Publica os resultados dos jogadores do evento. Os jogadores poderão ver suas pontuações e os 4 primeiros colocados.""",
-        manual_parameters=manual_parameter_event_id,
-        responses={200: openapi.Response(
-            200), **Errors([400]).retrieve_erros()}
-    )
-    def put(self, request: request.Request, *args, **kwargs) -> response.Response:
-        try:
-            event = self.get_object()
-        except ValidationError as e:
-            return handle_400_error(str(e))
-        self.check_object_permissions(request, event)
-        event.results_published = True
-        event.save()
-        return response.Response(status=status.HTTP_200_OK, data='Resultados publicados com sucesso!')
-
-    def get_object(self):
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError('Dados inválidos!')
-
-        event_id = self.request.query_params.get('event_id')
-        if not event_id:
-            raise ValidationError('event_id é obrigatório!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
-
-
-class Top3Players(BaseView):
-    permission_classes = [IsAuthenticated, PlayersPermission]
-
-    @swagger_auto_schema(
-        tags=['player'],
-        security=[{'Bearer': []}],
-        operation_description='Retorna os 3 jogadores com mais pontos do evento.',
-        operation_summary='Retorna os 3 primeiros jogadores do evento.',
-        manual_parameters=manual_parameter_event_id,
-        responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
-    def get(self, request: request.Request, *args, **kwargs) -> response.Response:
-        try:
-            event = self.get_object()
-        except ValidationError as e:
-            return handle_400_error(str(e))
-        self.check_object_permissions(request, event)
-        players = Player.objects.filter(
-            event=event).order_by('-total_score')[:3]
-        data = PlayerResultsSerializer(players, many=True).data
-        return response.Response(status=status.HTTP_200_OK, data=data)
-
-    def get_object(self):
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError('Dados inválidos!')
-
-        event_id = self.request.query_params.get('event_id')
         if not event_id:
             raise ValidationError('event_id é obrigatório!')
         event = Event.objects.filter(id=event_id).first()
@@ -272,6 +197,8 @@ class AddPlayersExcel(BaseView):
         for i, line in df_needed.iterrows():
             name = line['Nome Completo']
             email = line['E-mail']
+            name = name.strip()
+            email = email.strip()
             player, created = Player.objects.get_or_create(
                 full_name=name, registration_email=email, event=event)
             if not created:
@@ -357,6 +284,18 @@ class AddSinglePlayer(BaseView):
         is_imortal = request.data['is_imortal']
         if not full_name:
             return handle_400_error('Nome completo é obrigatório para criar um jogador!')
+        full_name = full_name.strip()
+        for word in full_name.split():
+            full_name = full_name.replace(word, word.capitalize())
+        if social_name:
+            social_name = social_name.strip()
+            for word in social_name.split():
+                social_name = social_name.replace(word, word.capitalize())
+        email = email.strip() if email else None
+        try:
+            validate_email(email)
+        except Exception:
+            return handle_400_error('Email inválido!')
         player, created = Player.objects.get_or_create(
             event=event, registration_email=email)
         if not created:

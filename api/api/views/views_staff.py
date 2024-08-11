@@ -3,7 +3,8 @@ import pandas as pd
 from typing import Optional
 from django.forms import ValidationError
 from django.contrib.auth.models import Group
-
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -228,6 +229,10 @@ class AddStaffMembers(BaseView):
         for i, line in df_needed.iterrows():
             name = line['Nome Completo']
             email = line['E-mail']
+            name = name.strip()
+            for word in name.split():
+                name = name.replace(word, word.capitalize())
+            email = email.strip()
             staff, created = Staff.objects.get_or_create(
                 full_name=name, registration_email=email, event=event)
             if not created:
@@ -255,18 +260,6 @@ class AddStaffMembers(BaseView):
         if not excel_file.name:
             raise ValidationError('Arquivo inválido!')
         return excel_file
-
-    def get_object(self):
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError('Dados inválidos!')
-
-        event_id = self.request.query_params.get('event_id')
-        if not event_id:
-            raise ValidationError('event_id é obrigatório!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
 
 
 class AddSingleStaff(BaseView):
@@ -302,10 +295,22 @@ class AddSingleStaff(BaseView):
         full_name = request.data['full_name']
         registration_email = request.data['registration_email']
         is_manager = request.data['is_manager']
+        if not full_name or not registration_email:
+            return handle_400_error('Nome Completo e email são obrigaórios!')
+        if is_manager not in [True, False]:
+            return handle_400_error('is_manager deve ser um booleano!')
         staff, created = Staff.objects.get_or_create(
             registration_email=registration_email, event=event)
         if not created:
             return handle_400_error('Monitor já cadastrado com este e-mail para este evento!')
+        full_name = full_name.strip()
+        for word in full_name.split():
+            full_name = full_name.replace(word, word.capitalize())
+        registration_email = registration_email.strip()
+        try:
+            validate_email(registration_email)
+        except Exception:
+            return handle_400_error('Email inválido!')
         staff.full_name = full_name
         staff.is_manager = is_manager
         staff.save()

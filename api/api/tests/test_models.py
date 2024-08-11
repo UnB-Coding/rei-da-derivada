@@ -152,8 +152,10 @@ class SumulaImortalTest(TestCase):
         self.event = Event.objects.create(name='Evento 1', token=self.token)
         self.sumula = SumulaImortal.objects.create(
             name='Sumula 1', event=self.event)
-        self.staff1 = Staff.objects.create(user=self.user, event=self.event)
-        self.staff2 = Staff.objects.create(user=self.user_2, event=self.event)
+        self.staff1 = Staff.objects.create(
+            user=self.user, event=self.event, registration_email=self.create_unique_email())
+        self.staff2 = Staff.objects.create(
+            user=self.user_2, event=self.event, registration_email=self.create_unique_email())
 
     def test_create_sumula_without_referee(self):
         """Testa a criação de uma sumula"""
@@ -222,8 +224,10 @@ class SumulaClassificatoriaTest(TestCase):
         self.event = Event.objects.create(name='Evento 1', token=self.token)
         self.sumula = SumulaClassificatoria.objects.create(
             name='Sumula 1', event=self.event)
-        self.staff1 = Staff.objects.create(user=self.user, event=self.event)
-        self.staff2 = Staff.objects.create(user=self.user_2, event=self.event)
+        self.staff1 = Staff.objects.create(
+            user=self.user, event=self.event, registration_email=self.create_unique_email())
+        self.staff2 = Staff.objects.create(
+            user=self.user_2, event=self.event, registration_email=self.create_unique_email())
 
     def test_create_sumula_without_referee(self):
         """Testa a criação de uma sumula"""

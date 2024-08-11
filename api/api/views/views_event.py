@@ -1,13 +1,14 @@
 from typing import Optional
 from django.contrib.auth.models import Group
 
+from django.forms import ValidationError
 from rest_framework import status, request, response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import BasePermission
 
 from ..views.base_views import BaseView
-from api.models import Token, Event, Staff, Player
-from ..serializers import EventSerializer, UserEventsSerializer
+from api.models import Token, Event, Staff, Player, Results
+from ..serializers import EventSerializer, PlayerResultsSerializer, UserEventsSerializer, ResultsSerializer
 from ..utils import handle_400_error
 from ..swagger import Errors, manual_parameter_event_id
 from ..permissions import assign_permissions
@@ -78,7 +79,7 @@ class EventView(BaseView):
             required=['token_code']
         ),
         responses={200: openapi.Response(
-            'OK', EventSerializer), **Errors([400]).retrieve_erros()}
+            'OK'), **Errors([400]).retrieve_erros()}
     )
     def delete(self, request: request.Request, *args, **kwargs):
         """Deleta um evento associado a um token e retorna o evento deletado.
@@ -193,7 +194,7 @@ class EventView(BaseView):
             return response.Response(status=response_status, data=data)
 
         self.assign_event_admin_permissions(request, event)
-
+        Results.objects.create(event=event)
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
     @swagger_auto_schema(
@@ -277,3 +278,257 @@ class EventView(BaseView):
         if len(token_code) == 0 or token_code.isspace():
             return False
         return True
+
+
+class ResultsPermissions(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method == 'PUT':
+            return request.user.has_perm('api.change_event', obj)
+        if request.method == 'DELETE':
+            return request.user.has_perm('api.delete_event', obj)
+        if request.method == 'GET':
+            return request.user.has_perm('api.view_player_event', obj)
+        return True
+
+
+class ResultsView(BaseView):
+    permission_classes = [IsAuthenticated, ResultsPermissions]
+
+    @swagger_auto_schema(
+        operation_description="""Atribui os resultados finais do evento manualmente.
+        Deve ser enviado **top4** jogadores,**paladino** e **embaixador**.
+        Os jogadores devem ser enviados como uma lista de dicionários com os campos *player* e *total_score*.
+        Os top3 imortais serão calculados automaticamente, não é necessário enviar.
+        """,
+        tags=['event'],
+        operation_summary="Atribui os resultados finais do evento manualmente.",
+        manual_parameters=manual_parameter_event_id,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'top4': openapi.Schema(type=openapi.TYPE_ARRAY, description='Lista dos top4 jogadores do RRDD', items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+                    'player_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador'),
+                })),
+                'paladin': openapi.Schema(
+                    type=openapi.TYPE_OBJECT, description='Jogador que foi o paladino',
+                    properties={'player_id': openapi.Schema(
+                        type=openapi.TYPE_INTEGER, description='ID do jogador')}),
+                'ambassor': openapi.Schema(
+                    type=openapi.TYPE_OBJECT, description='Jogador que foi o embaixador',
+                    properties={'player_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador')})
+            },
+            required=['top4',
+                      'paladin', 'ambassor']
+        ),
+        responses={200: openapi.Response(
+            'OK', ResultsSerializer), **Errors([400]).retrieve_erros()}
+    )
+    def put(self, request: request.Request, *args, **kwargs):
+        required_fields = ['top4', 'paladin', 'ambassor']
+        if not all(field in request.data for field in required_fields):
+            return handle_400_error(
+                'Campos obrigatórios não fornecidos: top4, paladin, ambassor.')
+        if not isinstance(request.data['top4'], list):
+            return handle_400_error('top4 deve ser uma lista.')
+        if not all('player_id' in player for player in request.data['top4']):
+            return handle_400_error('ID do jogador não fornecido em top4.')
+        if not all('player_id' in request.data[field] for field in ['paladin', 'ambassor']):
+            return handle_400_error('ID do jogador não fornecido em paladin ou ambassor.')
+        try:
+            event = self.get_object()
+        except Exception as e:
+            return handle_400_error(str(e))
+        if event not in request.user.events.all():
+            return response.Response(status=status.HTTP_403_FORBIDDEN, data={'errors': 'Você não tem permissão para acessar este evento.'})
+        self.check_object_permissions(request, event)
+        top4 = request.data['top4']
+        paladin = request.data['paladin']
+        ambassor = request.data['ambassor']
+        results = Results.objects.get(event=event)
+        for player in top4:
+            player = Player.objects.get(id=player['player_id'], event=event)
+            if not player:
+                return handle_400_error('Jogador fornecido não encontrado.')
+            results.top4.add(player)
+        paladin = Player.objects.get(id=paladin['player_id'], event=event)
+        if not paladin:
+            return handle_400_error('Jogador fornecido não encontrado.')
+        results.paladin = paladin
+        ambassor = Player.objects.get(id=ambassor['player_id'], event=event)
+        if not ambassor:
+            return handle_400_error('Jogador fornecido não encontrado.')
+        results.ambassor = ambassor
+        results.save()
+        return response.Response(status=status.HTTP_200_OK, data='Resultados atribuídos com sucesso.')
+
+    @swagger_auto_schema(
+        operation_description="""Deleta os resultados de um evento.
+        Os campos top4, paladin e ambassor serão limpos, mas o cálculo dos imortais não será afetado.
+        """,
+        operation_summary="Deleta os resultados de um evento.",
+        tags=['event'],
+        manual_parameters=manual_parameter_event_id,
+        responses={200: openapi.Response(
+            'OK'), **Errors([400]).retrieve_erros()})
+    def delete(self, request: request.Request, *args, **kwargs):
+        """Deleta o resultado de um evento."""
+        try:
+            event = self.get_object()
+        except Exception as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+        if event not in request.user.events.all():
+            return response.Response(status=status.HTTP_403_FORBIDDEN, data={'errors': 'Você não tem permissão para acessar este evento.'})
+        results = Results.objects.get(event=event)
+        results.top4.clear()
+        results.paladin = None
+        results.ambassor = None
+        results.save()
+        return response.Response(status=status.HTTP_200_OK, data='Resultados deletados com sucesso.')
+
+    @swagger_auto_schema(
+        tags=['event'],
+        operation_summary="Retorna os resultados de um evento.",
+        operation_description="""Retorna os resultados de um evento.
+        Os resultados são compostos por top4, imortais, paladino e embaixador.
+        """,
+        manual_parameters=manual_parameter_event_id,
+        responses={200: openapi.Response(
+            'OK', openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do objeto results', example=5),
+                'top4': openapi.Schema(
+                    type=openapi.TYPE_ARRAY, description='Lista dos top4 jogadores do RRDD',
+                    items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+                        'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador', example=5),
+                        'total_score': openapi.Schema(type=openapi.TYPE_INTEGER, description='Pontuação total do jogador', example=98),
+                        'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João da Silva'),
+                        'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='João'),
+                    })),
+                'paladin': openapi.Schema(
+                    type=openapi.TYPE_OBJECT, description='Jogador que foi o paladino',
+                    properties={'id': openapi.Schema(
+                        type=openapi.TYPE_INTEGER, description='ID do jogador'),
+                        'total_score': openapi.Schema(type=openapi.TYPE_INTEGER, description='Pontuação total do jogador', example=98),
+                        'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João da Silva'),
+                        'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='João'), }),
+                'ambassor': openapi.Schema(
+                    type=openapi.TYPE_OBJECT, description='Jogador que foi o embaixador',
+                    properties={
+                        'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador'),
+                        'total_score': openapi.Schema(type=openapi.TYPE_INTEGER, description='Pontuação total do jogador', example=98),
+                        'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João da Silva'),
+                        'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='João'), })
+            }
+
+            ),
+        ), **Errors([400]).retrieve_erros()}
+    )
+    def get(self, request: request.Request, *args, **kwargs):
+        try:
+            event = self.get_object()
+        except Exception as e:
+            return handle_400_error(str(e))
+        if event not in request.user.events.all():
+            return response.Response(status=status.HTTP_403_FORBIDDEN, data={'errors': 'Você não tem permissão para acessar este evento.'})
+        if not event.is_final_results_published:
+            return handle_400_error('Resultados finais ainda não publicados.')
+        results = Results.objects.get(event=event)
+        results.calculate_imortals()
+        data = ResultsSerializer(results).data
+        return response.Response(status=status.HTTP_200_OK, data=data)
+
+
+class PublishFinalResults(BaseView):
+    permission_classes = [IsAuthenticated, ResultsPermissions]
+
+    @swagger_auto_schema(
+        tags=['event'],
+        security=[{'Bearer': []}],
+        operation_description="""Publica TODOS os resultados do evento. Apenas o admin pode realizar a publicacao.
+        Os jogadores poderão ver suas próprias pontuações, além de verem o paladino, o embaixador, os top4 finalistas e os imortais.""",
+        operation_summary="""Publica os resultados finais do evento.""",
+        manual_parameters=manual_parameter_event_id,
+        responses={200: openapi.Response(
+            200), **Errors([400]).retrieve_erros()}
+    )
+    def put(self, request: request.Request, *args, **kwargs) -> response.Response:
+        try:
+            event = self.get_object()
+        except ValidationError as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+        event.is_final_results_published = True
+        event.is_imortal_results_published = True
+        event.save()
+        return response.Response(status=status.HTTP_200_OK, data='Resultados publicados com sucesso!')
+
+    @swagger_auto_schema(
+        tags=['event'],
+        operation_summary="Revoga a publicação dos resultados do evento.",
+        operation_description="""Revoga a publicação dos resultados do evento. Apenas o admin pode realizar a revogação.
+        Os jogadores não poderão mais ver suas pontuações, o paladino, o embaixador, os top4 finalistas e os imortais.
+        """,
+        manual_parameters=manual_parameter_event_id,
+        responses={200: openapi.Response(
+            200), **Errors([400]).retrieve_erros()}
+    )
+    def delete(self, request: request.Request, *args, **kwargs) -> response.Response:
+        """ Revoga a publicação dos resultados do evento."""
+        try:
+            event = self.get_object()
+        except ValidationError as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+        event.is_final_results_published = False
+        event.is_imortal_results_published = False
+        event.save()
+        return response.Response(status=status.HTTP_200_OK, data='Publicação dos resultados revogada com sucesso!')
+
+
+class PublishImortalsResults(BaseView):
+    permission_classes = [IsAuthenticated, ResultsPermissions]
+
+    @swagger_auto_schema(
+        tags=['event'],
+        security=[{'Bearer': []}],
+        operation_description="""Publica os resultados **APENAS** dos **top3 imortais** do evento. Apenas o admin pode realizar a publicacao.
+        **Os jogadores poderão ver APENAS suas próprias pontuações e os imortais.**""",
+        operation_summary="""Publica os resultados dos top3 imortais do evento.""",
+        manual_parameters=manual_parameter_event_id,
+        responses={200: openapi.Response(
+            200), **Errors([400]).retrieve_erros()}
+    )
+    def put(self, request: request.Request, *args, **kwargs) -> response.Response:
+        try:
+            event = self.get_object()
+        except ValidationError as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+        event.is_imortal_results_published = True
+        event.save()
+        return response.Response(status=status.HTTP_200_OK, data='Resultados de imortais publicados com sucesso!')
+
+
+class Top3ImortalPlayers(BaseView):
+    permission_classes = [IsAuthenticated, ResultsPermissions]
+
+    @swagger_auto_schema(
+        tags=['player'],
+        security=[{'Bearer': []}],
+        operation_description='Retorna os 3 jogadores com mais pontos do evento.',
+        operation_summary='Retorna os 3 primeiros jogadores do evento.',
+        manual_parameters=manual_parameter_event_id,
+        responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
+    def get(self, request: request.Request, *args, **kwargs) -> response.Response:
+        try:
+            event = self.get_object()
+        except ValidationError as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+        if not event.is_imortal_results_published:
+            return response.Response(status=status.HTTP_403_FORBIDDEN, data='Resultados não publicados!')
+        results = Results.objects.get(event=event)
+        results.calculate_imortals()
+        players = [player for player in results.imortals.all()]
+        data = PlayerResultsSerializer(players, many=True).data
+        return response.Response(status=status.HTTP_200_OK, data=data)

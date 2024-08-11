@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 from django.forms import ValidationError
-from .models import Token, Event, SumulaImortal, SumulaClassificatoria, PlayerScore, Player, Staff
+from .models import Token, Event, SumulaImortal, SumulaClassificatoria, PlayerScore, Player, Staff, Results
 from guardian.admin import GuardedModelAdmin
 from django.db.models import Count
 
@@ -17,9 +17,21 @@ class TokenAdmin(GuardedModelAdmin):
 
 @admin.register(Event)
 class EventAdmin(GuardedModelAdmin):
-    list_display = ['id', 'token', 'join_token', 'name', 'active']
+    def final_results_published(self, obj):
+        return obj.is_final_results_published
+    final_results_published.short_description = 'Final Results Published?'
+    final_results_published.boolean = True
+
+    def imortal_results_published(self, obj):
+        return obj.is_imortal_results_published
+    imortal_results_published.short_description = 'Imortal Results Published?'
+    imortal_results_published.boolean = True
+    list_display = ['id', 'token', 'join_token', 'name', 'active',
+                    'final_results_published', 'imortal_results_published']
     search_fields = ['token', 'name', 'active', 'join_token']
     fields = ['token', 'name', 'active', 'admin_email']
+    ordering = ['name', 'active', 'is_final_results_published',
+                'is_imortal_results_published', 'token', 'join_token']
 
 
 class SumulaAdmin(GuardedModelAdmin):
@@ -145,7 +157,8 @@ class PlayerAdmin(GuardedModelAdmin):
 
 @ admin.register(Staff)
 class StaffAdmin(GuardedModelAdmin):
-    list_display = ['full_name', 'user', 'event', 'registration_email', 'id']
+    list_display = ['id', 'full_name', 'user', 'event',
+                    'registration_email', 'is_manager']
     search_fields = ['full_name', 'user', 'event', 'registration_email']
     fields = ['full_name', 'user', 'event', 'registration_email', 'is_manager']
 
@@ -153,3 +166,21 @@ class StaffAdmin(GuardedModelAdmin):
     #     return obj.username
     # # Optional, to set column header in admin interface.
     # username.short_description = 'username'
+
+
+@admin.register(Results)
+class ResultsAdmin(GuardedModelAdmin):
+    def display_top4(self, obj):
+        return ', '.join([player.__str__() for player in obj.top4.all()])
+    display_top4.short_description = 'Top 4'
+
+    def display_imortals(self, obj):
+        return ', '.join([player.__str__() for player in obj.imortals.all()])
+    display_imortals.short_description = 'Imortals'
+
+    list_display = ['id', 'event', 'display_top4',
+                    'display_imortals', 'ambassor', 'paladin']
+    search_fields = ['event', 'top4__name',
+                     'imortals__name', 'ambassor', 'paladin']
+    fields = ['event', 'top4', 'imortals', 'ambassor', 'paladin']
+    filter_horizontal = ['top4', 'imortals']
