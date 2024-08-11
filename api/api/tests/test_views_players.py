@@ -636,7 +636,7 @@ class AddSinglePlayerViewTest(APITestCase):
         self.setUpPermissions()
         self.url = f'{reverse("api:add-player")}?event_id={self.event.id}'
         self.data = {
-            "full_name": "João da Silva",
+            "full_name": "João Da Silva",
             "social_name": "Joana Silva",
             "registration_email": "joao@gmail.com",
             "is_imortal": False
