@@ -32,9 +32,12 @@ class BaseSumulaViewTest(APITestCase):
             username=self.create_unique_username(), email=self.create_unique_email(), first_name='Admin', last_name='App')
         self.user_player1 = User.objects.create(
             username=self.create_unique_username(), email=self.create_unique_email(), first_name='Player1', last_name='User')
-
         self.user_player2 = User.objects.create(
             username=self.create_unique_username(), email=self.create_unique_email(), first_name='Player2', last_name='User')
+        self.user_player3 = User.objects.create(
+            username=self.create_unique_username(), email=self.create_unique_email())
+        self.user_player4 = User.objects.create(
+            username='player4', email=self.create_unique_email())
 
     def setUpReferee(self, staff1: Staff, staff2: Staff, sumulas: list):
         for sumula in sumulas:
@@ -46,6 +49,10 @@ class BaseSumulaViewTest(APITestCase):
             user=self.user_player1, event=self.event, registration_email=self.create_unique_email())
         self.player2 = Player.objects.create(
             user=self.user_player2, event=self.event, registration_email=self.create_unique_email())
+        self.player3 = Player.objects.create(
+            user=self.user_player3, event=self.event, registration_email=self.create_unique_email())
+        self.player4 = Player.objects.create(
+            user=self.user_player4, event=self.event, registration_email=self.create_unique_email())
 
     def setUpGroup(self):
         self.group_app_admin = Group.objects.create(name='app_admin')
@@ -254,7 +261,7 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
                             "total_score": 0,
                             "registration_email": self.player2.registration_email,
                         }
-                        }
+                    }
             ]
         }
         self.data_post = {
@@ -266,7 +273,14 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
                 },
                 {
                     "id": self.player2.id,
-                    "total_score": self.player2.total_score, }
+                    "total_score": self.player2.total_score, },
+                {
+                    "id": self.player3.id,
+                    "total_score": self.player3.total_score, },
+                {
+                    "id": self.player4.id,
+                    "total_score": self.player4.total_score,
+                }
             ],
             "referees": [
                 {
@@ -286,6 +300,10 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
             player=self.player, sumula_imortal=self.sumula, event=self.event)
         self.player_score2 = PlayerScore.objects.create(
             player=self.player2, sumula_imortal=self.sumula, event=self.event)
+        self.player_score3 = PlayerScore.objects.create(
+            player=self.player3, sumula_imortal=self.sumula2, event=self.event)
+        self.player_score4 = PlayerScore.objects.create(
+            player=self.player4, sumula_imortal=self.sumula2, event=self.event)
 
     def setUp(self):
         self.client = APIClient()
@@ -314,7 +332,7 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
             self.url_post, self.data_post, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(SumulaImortal.objects.count(), 4)
-        self.assertEqual(PlayerScore.objects.count(), 2)
+        self.assertEqual(PlayerScore.objects.count(), 4)
         self.assertIsNotNone(SumulaImortal.objects.filter(
             name='imortais 01').first())
         sumula_id = response.data['id']
@@ -471,7 +489,7 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
                             "total_score": 0,
                             "registration_email": self.player2.registration_email,
                         }
-                        }
+                    }
             ]
         }
         self.data_post = {
@@ -483,7 +501,14 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
                 },
                 {
                     "id": self.player2.id,
-                    "total_score": self.player2.total_score, }
+                    "total_score": self.player2.total_score, },
+                {
+                    "id": self.player3.id,
+                    "total_score": self.player3.total_score, },
+                {
+                    "id": self.player4.id,
+                    "total_score": self.player4.total_score,
+                }
             ],
             "referees": [
                 {
@@ -503,6 +528,10 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
             player=self.player, sumula_classificatoria=self.sumula, event=self.event)
         self.player_score2 = PlayerScore.objects.create(
             player=self.player2, sumula_classificatoria=self.sumula, event=self.event)
+        self.player_score3 = PlayerScore.objects.create(
+            player=self.player3, sumula_classificatoria=self.sumula2, event=self.event)
+        self.player_score4 = PlayerScore.objects.create(
+            player=self.player4, sumula_classificatoria=self.sumula2, event=self.event)
 
     def setUp(self):
         self.client = APIClient()
@@ -532,7 +561,7 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
             self.url_post, self.data_post, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(SumulaClassificatoria.objects.count(), 1)
-        self.assertEqual(PlayerScore.objects.count(), 2)
+        self.assertEqual(PlayerScore.objects.count(), 4)
         sumula = SumulaClassificatoria.objects.get(id=response.data['id'])
         self.assertEqual(sumula.referee.count(), 1)
 
