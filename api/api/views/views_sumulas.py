@@ -113,8 +113,11 @@ class SumulaClassificatoriaView(BaseSumulaView):
             return handle_400_error(str(e))
         referees = request.data['referees']
         self.add_referees(sumula=sumula, event=event, referees=referees)
-        sumula.rounds = self.round_robin_tournament(
-            len(players_score), players_score)  # PRECISA SER IMPLEMENTADO
+        try:
+            sumula.rounds = self.round_robin_tournament(
+                len(players_score), players_score)
+        except Exception as e:
+            return handle_400_error(str(e))
         sumula.save()
         data = SumulaClassificatoriaSerializer(sumula).data
         return response.Response(status=status.HTTP_201_CREATED, data=data)
@@ -246,8 +249,11 @@ class SumulaImortalView(BaseSumulaView):
             return handle_400_error(str(e))
         referees = request.data['referees']
         self.add_referees(sumula=sumula, event=event, referees=referees)
-        sumula.rounds = self.round_robin_tournament(
-            len(players_score), players_score)
+        try:
+            sumula.rounds = self.round_robin_tournament(
+                len(players_score), players_score)
+        except Exception as e:
+            return handle_400_error(str(e))
         sumula.save()
         data = SumulaImortalSerializer(sumula).data
         return response.Response(status=status.HTTP_201_CREATED, data=data)
@@ -494,7 +500,7 @@ class GenerateSumulas(BaseSumulaView):
         """Gera sumulas classificatorias para iniciar um evento.
         Uma sumula possui no maximo 8 e no mínimo 5 jogadores.
         """
-        MIN_PLAYERS = 4  # A DECIDIR
+        MIN_PLAYERS = 6  # A DECIDIR
         MAX_PLAYERS = 8
         letters = string.ascii_uppercase
         letters_count = 0
