@@ -11,7 +11,7 @@ from rest_framework.permissions import BasePermission
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from ..views.base_views import BaseView
-from api.models import Event, Player
+from api.models import Event, Player, Results
 from ..utils import handle_400_error
 from ..serializers import PlayerSerializer, UploadFileSerializer, PlayerResultsSerializer, PlayerLoginSerializer
 from ..swagger import Errors, manual_parameter_event_id
@@ -154,43 +154,6 @@ class GetPlayerResults(BaseView):
         if not event:
             raise ValidationError('Evento não encontrado!')
         return event
-
-
-class Top3ImortalPlayers(BaseView):
-    permission_classes = [IsAuthenticated, PlayersPermission]
-
-    @swagger_auto_schema(
-        tags=['player'],
-        security=[{'Bearer': []}],
-        operation_description='Retorna os 3 jogadores com mais pontos do evento.',
-        operation_summary='Retorna os 3 primeiros jogadores do evento.',
-        manual_parameters=manual_parameter_event_id,
-        responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
-    def get(self, request: request.Request, *args, **kwargs) -> response.Response:
-        try:
-            event = self.get_object()
-        except ValidationError as e:
-            return handle_400_error(str(e))
-        self.check_object_permissions(request, event)
-        if not event.is_final_results_published:
-            return response.Response(status=status.HTTP_403_FORBIDDEN, data='Resultados não publicados!')
-        players = Player.objects.filter(
-            event=event).order_by('-total_score')[:3]
-        data = PlayerResultsSerializer(players, many=True).data
-        return response.Response(status=status.HTTP_200_OK, data=data)
-
-    def get_object(self):
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError('Dados inválidos!')
-
-        event_id = self.request.query_params.get('event_id')
-        if not event_id:
-            raise ValidationError('event_id é obrigatório!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
-
 
 class AddPlayersExcel(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
