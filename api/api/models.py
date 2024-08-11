@@ -1,4 +1,5 @@
 import random
+from django.db.models import UniqueConstraint
 from django.db import IntegrityError, models
 from django.forms import ValidationError
 from django.dispatch import receiver
@@ -146,7 +147,12 @@ class Staff(models.Model):
     class Meta:
         verbose_name = ("Staff")
         verbose_name_plural = ("Staffs")
-        unique_together = ['user', 'event']
+        constraints = [
+            UniqueConstraint(
+                fields=['registration_email', 'event'], name='unique_email_event'),
+            UniqueConstraint(fields=['user', 'event'],
+                             name='unique_user_event')
+        ]
 
     def __str__(self) -> str:
         return f'{self.full_name}'
@@ -233,7 +239,12 @@ class Player(models.Model):
     class Meta:
         verbose_name = ("Player")
         verbose_name_plural = ("Players")
-        unique_together = ['user', 'event']
+        constraints = [
+            UniqueConstraint(
+                fields=['registration_email', 'event'], name='unique_email_event_player'),
+            UniqueConstraint(fields=['user', 'event'],
+                             name='unique_user_event_player')
+        ]
 
     # Atualiza a pontuação total após salvar uma instância de PlayerScore
     @receiver(post_save, sender='api.PlayerScore')

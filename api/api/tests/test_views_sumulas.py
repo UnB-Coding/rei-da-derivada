@@ -73,9 +73,9 @@ class BaseSumulaViewTest(APITestCase):
 
     def SetUpStaff(self):
         self.staff1 = Staff.objects.create(
-            user=self.user_staff_manager, event=self.event)
+            user=self.user_staff_manager, event=self.event, registration_email=self.create_unique_email())
         self.staff2 = Staff.objects.create(
-            user=self.user_staff_member, event=self.event)
+            user=self.user_staff_member, event=self.event, registration_email=self.create_unique_email())
 
 
 class SumulaViewTest(BaseSumulaViewTest):
@@ -254,7 +254,7 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
                             "total_score": 0,
                             "registration_email": self.player2.registration_email,
                         }
-                    }
+                        }
             ]
         }
         self.data_post = {
@@ -471,7 +471,7 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
                             "total_score": 0,
                             "registration_email": self.player2.registration_email,
                         }
-                    }
+                        }
             ]
         }
         self.data_post = {
@@ -713,9 +713,9 @@ class GetSumulaForPlayerTest(APITestCase):
 
     def SetUpStaff(self):
         self.staff1 = Staff.objects.create(
-            user=self.user2, event=self.event)
+            user=self.user2, event=self.event, registration_email=self.create_unique_email())
         self.staff2 = Staff.objects.create(
-            user=self.user, event=self.event)
+            user=self.user, event=self.event, registration_email=self.create_unique_email())
 
     def setUp(self):
         self.setUpEvent()
