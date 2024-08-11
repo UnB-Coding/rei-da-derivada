@@ -96,7 +96,7 @@ class SumulaClassificatoriaView(BaseSumulaView):
 
         Permissões necessárias: IsAuthenticated, HasSumulaPermission
         """
-        if not self.validate_request_data_dict(request.data) or 'name' not in request.data or not self.validate_players(request.data) or not self.validate_referees(request.data):
+        if not self.validate_request_data_dict(request.data) or 'name' not in request.data or not self.validate_players(request.data):
             return handle_400_error("Dados inválidos!")
         try:
             event = self.get_object()
@@ -115,6 +115,7 @@ class SumulaClassificatoriaView(BaseSumulaView):
         self.add_referees(sumula=sumula, event=event, referees=referees)
         sumula.rounds = self.round_robin_tournament(
             len(players_score), players_score)  # PRECISA SER IMPLEMENTADO
+        sumula.save()
         data = SumulaClassificatoriaSerializer(sumula).data
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
@@ -226,7 +227,7 @@ class SumulaImortalView(BaseSumulaView):
 
         Permissões necessárias: IsAuthenticated, HasSumulaPermission
         """
-        if not self.validate_request_data_dict(request.data) or 'name' not in request.data or not self.validate_players(request.data) or not self.validate_referees(request.data):
+        if not self.validate_request_data_dict(request.data) or 'name' not in request.data or not self.validate_players(request.data):
             return handle_400_error("Dados inválidos!")
         try:
             event = self.get_object()
@@ -239,12 +240,15 @@ class SumulaImortalView(BaseSumulaView):
         sumula = SumulaImortal.objects.create(
             event=event, name=name)
         try:
-            self.create_players_score(
+            players_score = self.create_players_score(
                 players=players, sumula=sumula, event=event)
         except Exception as e:
             return handle_400_error(str(e))
         referees = request.data['referees']
         self.add_referees(sumula=sumula, event=event, referees=referees)
+        sumula.rounds = self.round_robin_tournament(
+            len(players_score), players_score)
+        sumula.save()
         data = SumulaImortalSerializer(sumula).data
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
@@ -478,10 +482,11 @@ class GenerateSumulas(BaseSumulaView):
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
-        # try:
-        sumulas = self.generate_sumulas(event=event)  # PRECISA VOLTAR O TRY
-       # except Exception as e:
-        #  return handle_400_error(str(e))
+        try:
+            sumulas = self.generate_sumulas(
+                event=event)
+        except Exception as e:
+            return handle_400_error(str(e))
         data = SumulaClassificatoriaSerializer(sumulas, many=True).data
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
@@ -543,7 +548,6 @@ class GenerateSumulas(BaseSumulaView):
             sumula.rounds = self.round_robin_tournament(
                 n=len(players_list), players_score=players_list)
             sumula.save()
-            # print(sumula.rounds)
         return sumulas
 
 
