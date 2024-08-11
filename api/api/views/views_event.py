@@ -8,7 +8,7 @@ from rest_framework.permissions import BasePermission
 
 from ..views.base_views import BaseView
 from api.models import Token, Event, Staff, Player, Results
-from ..serializers import EventSerializer, UserEventsSerializer, ResultsSerializer
+from ..serializers import EventSerializer, PlayerResultsSerializer, UserEventsSerializer, ResultsSerializer
 from ..utils import handle_400_error
 from ..swagger import Errors, manual_parameter_event_id
 from ..permissions import assign_permissions
@@ -79,7 +79,7 @@ class EventView(BaseView):
             required=['token_code']
         ),
         responses={200: openapi.Response(
-            'OK', EventSerializer), **Errors([400]).retrieve_erros()}
+            'OK'), **Errors([400]).retrieve_erros()}
     )
     def delete(self, request: request.Request, *args, **kwargs):
         """Deleta um evento associado a um token e retorna o evento deletado.
@@ -280,8 +280,19 @@ class EventView(BaseView):
         return True
 
 
+class ResultsPermissions(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if request.method == 'PUT':
+            return request.user.has_perm('api.change_event', obj)
+        if request.method == 'DELETE':
+            return request.user.has_perm('api.delete_event', obj)
+        if request.method == 'GET':
+            return request.user.has_perm('api.view_player_event', obj)
+        return True
+
+
 class ResultsView(BaseView):
-    permission_classes = [IsAuthenticated, EventPermissions]
+    permission_classes = [IsAuthenticated, ResultsPermissions]
 
     @swagger_auto_schema(
         operation_description="""Atribui os resultados finais do evento manualmente.
@@ -358,7 +369,7 @@ class ResultsView(BaseView):
         tags=['event'],
         manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(
-            'OK', ResultsSerializer), **Errors([400]).retrieve_erros()})
+            'OK'), **Errors([400]).retrieve_erros()})
     def delete(self, request: request.Request, *args, **kwargs):
         """Deleta o resultado de um evento."""
         try:
@@ -427,15 +438,8 @@ class ResultsView(BaseView):
         return response.Response(status=status.HTTP_200_OK, data=data)
 
 
-class PublishResultsPermissions(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        if request.method == 'PUT':
-            return request.user.has_perm('api.change_event', obj)
-        return True
-
-
 class PublishFinalResults(BaseView):
-    permission_classes = [IsAuthenticated, PublishResultsPermissions]
+    permission_classes = [IsAuthenticated, ResultsPermissions]
 
     @swagger_auto_schema(
         tags=['event'],
@@ -482,7 +486,7 @@ class PublishFinalResults(BaseView):
 
 
 class PublishImortalsResults(BaseView):
-    permission_classes = [IsAuthenticated, PublishResultsPermissions]
+    permission_classes = [IsAuthenticated, ResultsPermissions]
 
     @swagger_auto_schema(
         tags=['event'],
@@ -503,3 +507,28 @@ class PublishImortalsResults(BaseView):
         event.is_imortal_results_published = True
         event.save()
         return response.Response(status=status.HTTP_200_OK, data='Resultados de imortais publicados com sucesso!')
+
+
+class Top3ImortalPlayers(BaseView):
+    permission_classes = [IsAuthenticated, ResultsPermissions]
+
+    @swagger_auto_schema(
+        tags=['player'],
+        security=[{'Bearer': []}],
+        operation_description='Retorna os 3 jogadores com mais pontos do evento.',
+        operation_summary='Retorna os 3 primeiros jogadores do evento.',
+        manual_parameters=manual_parameter_event_id,
+        responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
+    def get(self, request: request.Request, *args, **kwargs) -> response.Response:
+        try:
+            event = self.get_object()
+        except ValidationError as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+        if not event.is_imortal_results_published:
+            return response.Response(status=status.HTTP_403_FORBIDDEN, data='Resultados não publicados!')
+        results = Results.objects.get(event=event)
+        results.calculate_imortals()
+        players = [player for player in results.imortals.all()]
+        data = PlayerResultsSerializer(players, many=True).data
+        return response.Response(status=status.HTTP_200_OK, data=data)

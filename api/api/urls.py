@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.urls import path, re_path
-from .views.views_event import EventView, ResultsView, PublishFinalResults, PublishImortalsResults
+from .views.views_event import EventView, ResultsView, PublishFinalResults, PublishImortalsResults, Top3ImortalPlayers
 from .views.views_staff import StaffView, AddStaffManager, AddStaffMembers, AddSingleStaff, EditStaffData
-from .views.views_players import PlayersView, GetPlayerResults, AddPlayersExcel, Top3ImortalPlayers, AddSinglePlayer
+from .views.views_players import PlayersView, GetPlayerResults, AddPlayersExcel, AddSinglePlayer
 from .views.views_sumulas import GetSumulasView, ActiveSumulaView, FinishedSumulaView, GetSumulaForPlayer, SumulaImortalView, SumulaClassificatoriaView, AddRefereeToSumulaView, GenerateSumulas
 
 app_name = 'api'
