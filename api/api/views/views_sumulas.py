@@ -6,7 +6,7 @@ from api.models import Staff, SumulaClassificatoria, SumulaImortal, PlayerScore,
 from ..serializers import PlayerScoreSerializer, SumulaSerializer, SumulaForPlayerSerializer, SumulaImortalSerializer, SumulaClassificatoriaSerializer, SumulaClassificatoriaForPlayerSerializer, SumulaImortalForPlayerSerializer
 from rest_framework.permissions import BasePermission
 from ..utils import handle_400_error
-from ..swagger import Errors, sumula_imortal_api_put_schema, sumula_classicatoria_api_put_schema, sumulas_response_schema, manual_parameter_event_id, sumulas_response_for_player_schema
+from ..swagger import Errors, sumula_imortal_api_put_schema, sumula_classicatoria_api_put_schema, sumulas_response_schema, manual_parameter_event_id, sumulas_response_for_player_schema, array_of_sumulas_response_schema
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import random
@@ -471,7 +471,7 @@ class GenerateSumulas(BaseSumulaView):
         security=[{'Bearer': []}],
         manual_parameters=manual_parameter_event_id,
         responses={201: openapi.Response(
-            'Created', SumulaClassificatoriaSerializer), **Errors([400]).retrieve_erros()})
+            'Created', array_of_sumulas_response_schema), **Errors([400]).retrieve_erros()})
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         try:
             event = self.get_object()
@@ -489,7 +489,7 @@ class GenerateSumulas(BaseSumulaView):
         """Gera sumulas classificatorias para iniciar um evento.
         Uma sumula possui no maximo 8 e no mínimo 5 jogadores.
         """
-        MIN_PLAYERS = 4 #A DECIDIR
+        MIN_PLAYERS = 4  # A DECIDIR
         MAX_PLAYERS = 8
         letters = string.ascii_uppercase
         letters_count = 0
