@@ -3,6 +3,7 @@ from typing import Optional
 from django.forms import ValidationError
 from django.contrib.auth.models import Group
 from django.core.files.uploadedfile import UploadedFile
+from django.core.validators import validate_email
 from rest_framework import status, request, response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -155,6 +156,7 @@ class GetPlayerResults(BaseView):
             raise ValidationError('Evento não encontrado!')
         return event
 
+
 class AddPlayersExcel(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
     parser_classes = [MultiPartParser]
@@ -195,6 +197,8 @@ class AddPlayersExcel(BaseView):
         for i, line in df_needed.iterrows():
             name = line['Nome Completo']
             email = line['E-mail']
+            name = name.strip()
+            email = email.strip()
             player, created = Player.objects.get_or_create(
                 full_name=name, registration_email=email, event=event)
             if not created:
@@ -280,6 +284,13 @@ class AddSinglePlayer(BaseView):
         is_imortal = request.data['is_imortal']
         if not full_name:
             return handle_400_error('Nome completo é obrigatório para criar um jogador!')
+        full_name = full_name.strip().capitalize()
+        social_name = social_name.strip().capitalize() if social_name else None
+        email = email.strip() if email else None
+        try:
+            validate_email(email)
+        except Exception:
+            return handle_400_error('Email inválido!')
         player, created = Player.objects.get_or_create(
             event=event, registration_email=email)
         if not created:
