@@ -29,7 +29,7 @@ export default function SubmitFileComponent() {
             formData.append("file", playerFile);
             try {
                 const response = await request.post(`/api/upload-player/?event_id=${currentId}`, formData, formDataSettings(user.access));
-                if(response.status === 201){
+                if (response.status === 201) {
                     toast.success(response.data);
                 }
             } catch (error) {
@@ -47,8 +47,13 @@ export default function SubmitFileComponent() {
             try {
                 const response = await request.post(`/api/upload-staff/?event_id=${currentId}`, formData, formDataSettings(user.access));
                 console.log(response.data);
-                if(response.status === 201){
-                    toast.success(response.data);
+                if (response.status === 201) {
+                    if (typeof response.data === 'object' && response.data !== null && 'message' in response.data && 'errors' in response.data) {
+                        toast.success(response.data.message, { duration: 6000 });
+                        response.data.errors.forEach((error: string) => toast.error(error, { duration: 6000 }));
+                    } else {
+                        toast.success(response.data);
+                    }
                 }
             } catch (error) {
                 toast.error("Dados inválidos!");
@@ -61,12 +66,12 @@ export default function SubmitFileComponent() {
         <div className="grid justify-center items-center gap-5 pt-32">
             <div className="grid gap-4 bg-neutral-100 rounded-2xl px-4 py-6 shadow-sm">
                 <p className="font-semibold text-primary pl-4">ADICIONAR JOGADORES</p>
-                <input className="pl-4" type="file" onChange={handlePlayerFileChange}/>
+                <input className="pl-4" type="file" onChange={handlePlayerFileChange} />
                 <button className="bg-primary font-medium text-white rounded-md mx-4 p-2" onClick={handlePlayerSubmit}>Enviar</button>
             </div>
             <div className="grid gap-4 bg-neutral-100 rounded-2xl px-4 py-6 shadow-sm">
                 <p className="font-semibold text-primary pl-4">ADICIONAR STAFF</p>
-                <input className="pl-4" type="file" onChange={handleStaffFileChange}/>
+                <input className="pl-4" type="file" onChange={handleStaffFileChange} />
                 <button className="bg-primary font-medium text-white rounded-md mx-4 py-2" onClick={handleStaffSubmit}>Enviar</button>
             </div>
         </div>

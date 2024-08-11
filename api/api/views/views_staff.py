@@ -219,13 +219,19 @@ class AddStaffMembers(BaseView):
         df = self.createData(extension=extension, file=excel_file)
         if df is None:
             return handle_400_error('Arquivo inválido!')
-        self.create_staff(df, event)
+        errors = []
+        errors = self.create_staff(df, event)
+        if errors:
+            return response.Response(status=status.HTTP_201_CREATED, data={
+                'message': 'Monitores adicionados com sucesso, mas alguns erros ocorreram.',
+                'errors': errors
+            })
         return response.Response(status=status.HTTP_201_CREATED, data='Monitores adicionados com sucesso!')
 
-    def create_staff(self, df: pd.DataFrame, event: Event) -> None:
+    def create_staff(self, df: pd.DataFrame, event: Event) -> list:
         process_data = ['Nome Completo', 'E-mail']
         df_needed = df[process_data]
-
+        errors = []
         for i, line in df_needed.iterrows():
             name = line['Nome Completo']
             email = line['E-mail']
@@ -233,12 +239,19 @@ class AddStaffMembers(BaseView):
             for word in name.split():
                 name = name.replace(word, word.capitalize())
             email = email.strip()
+            try:
+                validate_email(email)
+            except:
+                errors.append(
+                    f' Linha {i}: O Email do monitor {name} é inválido!({email}). O monitor não foi adicionado. Verifique o arquivo e tente novamente.')
+                continue
             staff, created = Staff.objects.get_or_create(
                 full_name=name, registration_email=email, event=event)
             if not created:
                 staff.full_name = name
                 staff.registration_email = email
                 staff.save()
+        return errors
 
     def createData(self, extension, file) -> Optional[pd.DataFrame]:
         data = None
