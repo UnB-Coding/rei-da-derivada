@@ -34,7 +34,7 @@ class BaseView(APIView):
 class BaseSumulaView(BaseView):
     """Classe base para as views de sumula. Contém métodos comuns a todas as views de sumula."""
 
-    def round_robin_tournament(self, n: int, players_score: list[PlayerScore]) -> list[list[dict[dict]]]:
+    def round_robin_tournament(self, n: int, players_score: list[PlayerScore]) -> list[list[dict[dict]]] | Exception:
         """Gera os pares de jogadores para um torneio com n-1 rodadas.
         Todos os jogadores jogam com todos os outros jogadores em formato de duplas"""
 
@@ -72,7 +72,7 @@ class BaseSumulaView(BaseView):
 
         if n not in ordem:
             raise Exception(
-                "Número de jogadores não suportado no dicionário de ordem!")
+                "Número de jogadores insuficiente para formar duplas!")
 
         # Mapear os jogadores para os seus respectivos números
         player_map = {i + 1: players_score[i] for i in range(n)}
