@@ -219,39 +219,49 @@ class AddStaffMembers(BaseView):
         df = self.createData(extension=extension, file=excel_file)
         if df is None:
             return handle_400_error('Arquivo inválido!')
-        errors = []
-        errors = self.create_staff(df, event)
-        if errors:
+
+        try:
+            errors_count, staff_count = self.create_staff(df, event)
+        except Exception as e:
+            return handle_400_error(str(e))
+        if errors_count > 0 and errors_count < staff_count:
             return response.Response(status=status.HTTP_201_CREATED, data={
-                'message': 'Monitores adicionados com sucesso, mas alguns erros ocorreram.',
-                'errors': errors
+                'message': 'Monitores adicionados com sucesso!',
+                'errors': f'{errors_count} monitores não foram adicionados devido a e-mail inválido. Verfique os e-mails dos monitores e tente novamente.'
             })
+        elif errors_count == staff_count:
+            return handle_400_error('Nenhum monitor foi adicionado! Verifique os dados de e-mail dos monitores e tente novamente')
+
         return response.Response(status=status.HTTP_201_CREATED, data='Monitores adicionados com sucesso!')
 
-    def create_staff(self, df: pd.DataFrame, event: Event) -> list:
-        process_data = ['Nome Completo', 'E-mail']
+    def create_staff(self, df: pd.DataFrame, event: Event) -> tuple:
+        process_data = ['nome completo', 'e-mail']
+        df.columns = df.columns.str.strip().str.lower()
+        # Verificar se as colunas necessárias estão presentes
+        missing_columns = [
+            col for col in process_data if col not in df.columns]
+        if missing_columns:
+            raise ValueError(
+                f"ERRO - Colunas ausentes no arquivo: {', '.join(missing_columns)}")
+
         df_needed = df[process_data]
-        errors = []
+        errors_count = 0
+        staff_count = 0
         for i, line in df_needed.iterrows():
-            name = line['Nome Completo']
-            email = line['E-mail']
-            name = name.strip()
-            for word in name.split():
-                name = name.replace(word, word.capitalize())
-            email = email.strip()
+            name = line['nome completo']
+            email = line['e-mail']
+            name, email = self.treat_name_and_email_excel(name, email)
+            staff_count += 1
             try:
                 validate_email(email)
             except:
-                errors.append(
-                    f' Linha {i}: O Email do monitor {name} é inválido!({email}). O monitor não foi adicionado. Verifique o arquivo e tente novamente.')
+                errors_count += 1
                 continue
             staff, created = Staff.objects.get_or_create(
-                full_name=name, registration_email=email, event=event)
-            if not created:
-                staff.full_name = name
-                staff.registration_email = email
-                staff.save()
-        return errors
+                registration_email=email, event=event)
+            staff.full_name = name
+            staff.save()
+        return errors_count, staff_count
 
     def createData(self, extension, file) -> Optional[pd.DataFrame]:
         data = None
@@ -278,7 +288,7 @@ class AddStaffMembers(BaseView):
 class AddSingleStaff(BaseView):
     permission_classes = [IsAuthenticated, AddStaffPermissions]
 
-    @swagger_auto_schema(
+    @ swagger_auto_schema(
         tags=['staff'],
         operation_description="""Adiciona um monitor manualmente ao evento.
             Devem ser enviados os dados do monitor a ser adicionado.
@@ -333,7 +343,7 @@ class AddSingleStaff(BaseView):
 class EditStaffData(BaseView):
     permission_classes = [IsAuthenticated, AddStaffPermissions]
 
-    @swagger_auto_schema(
+    @ swagger_auto_schema(
         tags=['staff'],
         operation_description="""Edita os dados de um monitor do evento.
             Devem ser enviados os dados do monitor a ser editado.
