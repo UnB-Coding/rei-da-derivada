@@ -25,7 +25,7 @@ class BaseView(APIView):
             raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
         event = Event.objects.filter(id=event_id).first()
         if not event:
-            raise NotFound(EVENT_NOT_FOUND_ERROR_MESSAGE)
+            raise ValidationError(EVENT_NOT_FOUND_ERROR_MESSAGE)
         return event
 
 
