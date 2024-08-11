@@ -58,6 +58,8 @@ class SumulaAdmin(GuardedModelAdmin):
         return qs.annotate(scores_count=Count('scores'))
 
     def rounds_count(self, obj):
+        if obj.rounds is None:
+            return 0
         return len(obj.rounds)
 
     # def pairs_count(self, obj):
