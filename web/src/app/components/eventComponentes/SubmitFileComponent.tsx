@@ -5,7 +5,6 @@ import request from "@/app/utils/request";
 import toast from "react-hot-toast";
 import { formDataSettings } from "@/app/utils/formDataSettings";
 import AddPlayerComponent from "./AddPlayerComponent";
-
 export default function SubmitFileComponent() {
     const [playerFile, setPlayerFile] = useState<File | null>(null);
     const [staffFile, setStaffFile] = useState<File | null>(null);
@@ -30,10 +29,19 @@ export default function SubmitFileComponent() {
             try {
                 const response = await request.post(`/api/upload-player/?event_id=${currentId}`, formData, formDataSettings(user.access));
                 if (response.status === 201) {
-                    toast.success(response.data);
+                    if (typeof response.data === 'object' && response.data !== null && 'message' in response.data && 'errors' in response.data) {
+                        toast.success(response.data.message, { duration: 6000 });
+                        toast(response.data.errors, { duration: 6000, icon: '⚠️' });
+                    } else {
+                        toast.success(response.data);
+                    }
                 }
             } catch (error) {
-                toast.error("Dados inválidos!");
+                if (error.response && error.response.data && error.response.data.errors) {
+                    toast.error(error.response.data.errors);
+                } else {
+                    toast.error("Ocorreu um erro inesperado.");
+                }
             }
         } else {
             toast.error("Selecione um arquivo para enviar!");
@@ -50,13 +58,17 @@ export default function SubmitFileComponent() {
                 if (response.status === 201) {
                     if (typeof response.data === 'object' && response.data !== null && 'message' in response.data && 'errors' in response.data) {
                         toast.success(response.data.message, { duration: 6000 });
-                        response.data.errors.forEach((error: string) => toast.error(error, { duration: 6000 }));
+                        toast(response.data.errors, { duration: 6000, icon: '⚠️' });
                     } else {
                         toast.success(response.data);
                     }
                 }
             } catch (error) {
-                toast.error("Dados inválidos!");
+                if (error.response && error.response.data && error.response.data.errors) {
+                    toast.error(error.response.data.errors);
+                } else {
+                    toast.error("Ocorreu um erro inesperado.");
+                }
             }
         } else {
             toast.error("Selecione um arquivo para enviar!");
