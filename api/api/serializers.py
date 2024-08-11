@@ -28,6 +28,12 @@ class PlayerSerializer(ModelSerializer):
         fields = ['id', 'full_name', 'social_name', 'is_imortal']
 
 
+class PlayerForRoundRobinSerializer(ModelSerializer):
+    class Meta:
+        model = Player
+        fields = ['id', 'full_name', 'social_name']
+
+
 class TokenSerializer(ModelSerializer):
     class Meta:
         model = Token
@@ -63,6 +69,14 @@ class PlayerScoreSerializer(ModelSerializer):
     class Meta:
         model = PlayerScore
         fields = ['id', 'points', 'rounds_number', 'player']
+
+
+class PlayerScoreForRoundRobinSerializer(ModelSerializer):
+    player = PlayerForRoundRobinSerializer()
+
+    class Meta:
+        model = PlayerScore
+        fields = ['id', 'rounds_number', 'player']
 
 
 class StaffSerializer(ModelSerializer):

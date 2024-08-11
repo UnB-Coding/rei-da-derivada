@@ -3,7 +3,7 @@ from django.forms import ValidationError
 from rest_framework.views import APIView
 from rest_framework.exceptions import NotFound
 
-from ..serializers import PlayerScoreSerializer
+from ..serializers import PlayerScoreForRoundRobinSerializer
 from ..models import Event, PlayerScore, Staff, SumulaImortal, SumulaClassificatoria, Player
 
 EVENT_NOT_FOUND_ERROR_MESSAGE = "Evento não encontrado!"
@@ -112,8 +112,8 @@ class BaseSumulaView(BaseView):
             serialized_round = []
             for pair in round:
                 serialized_pair = {
-                    'player1': PlayerScoreSerializer(pair[0]).data if pair[0] else None,
-                    'player2': PlayerScoreSerializer(pair[1]).data if pair[1] else None
+                    'player1': PlayerScoreForRoundRobinSerializer(pair[0]).data if pair[0] else None,
+                    'player2': PlayerScoreForRoundRobinSerializer(pair[1]).data if pair[1] else None
                 }
                 serialized_round.append(serialized_pair)
             serialized_rounds.append(serialized_round)
