@@ -14,7 +14,7 @@ SUMULA_NOT_FOUND_ERROR_MESSAGE = "Sumula não encontrada!"
 
 
 class BaseView(APIView):
-    def get_object(self) -> Event:
+    def get_event(self) -> Event:
         """ Verifica se o evento existe.
         Retorna o evento associado ao id fornecido ou uma exceção.
         - ValidationError: Se o id do evento não foi fornecido.
@@ -250,22 +250,6 @@ class BaseSumulaView(BaseView):
         if not staff in sumula.referee.all():
             raise ValidationError("Usuário não é um árbitro da sumula!")
         return staff
-
-    def get_object(self) -> Event:
-        """ Verifica se o evento existe.
-        Retorna o evento associado ao id fornecido ou uma exceção.
-        """
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
-        event_id = self.request.query_params.get('event_id')
-        if not event_id:
-            raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise NotFound(EVENT_NOT_FOUND_ERROR_MESSAGE)
-        return event
-
-
 # middleware.py
 
 

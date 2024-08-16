@@ -46,7 +46,7 @@ class PlayersView(BaseView):
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """ Retorna todos os jogadores de um evento."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -104,18 +104,6 @@ class PlayersView(BaseView):
         data = PlayerLoginSerializer(player).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
-    def get_object(self) -> Event:
-        if 'event_id' not in self.request.query_params:  # type: ignore
-            raise ValidationError('Dados inválidos!')
-
-        event_id = self.request.query_params.get('event_id')  # type: ignore
-        if not event_id:
-            raise ValidationError('event_id é obrigatório!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
-
 
 class GetPlayerResults(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
@@ -130,7 +118,7 @@ class GetPlayerResults(BaseView):
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """ Retorna o resultado de pontuação do jogador atual do usuário logado."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except ValidationError as e:
             return handle_400_error(str(e))
         if not event.is_imortal_results_published:
@@ -143,18 +131,6 @@ class GetPlayerResults(BaseView):
         data = PlayerResultsSerializer(player).data
 
         return response.Response(status=status.HTTP_200_OK, data=data)
-
-    def get_object(self) -> Event:
-        if 'event_id' not in self.request.query_params:  # type: ignore
-            raise ValidationError('Dados inválidos!')
-
-        event_id = self.request.query_params.get('event_id')  # type: ignore
-        if not event_id:
-            raise ValidationError('event_id é obrigatório!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
 
 
 class AddPlayersExcel(BaseView):
@@ -173,7 +149,7 @@ class AddPlayersExcel(BaseView):
         """Adiciona os jogadores ao evento através do excel
         forncecido pelo administrador com os participantes do evento."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except ValidationError as e:
             return handle_400_error(str(e))
 
@@ -200,7 +176,7 @@ class AddPlayersExcel(BaseView):
             name = name.strip()
             email = email.strip()
             player, created = Player.objects.get_or_create(
-                full_name=name, registration_email=email, event=event)
+                full_name=name, registration_email=email, event=event, is_present=True)
             if not created:
                 player.full_name = name
                 player.registration_email = email
@@ -229,18 +205,6 @@ class AddPlayersExcel(BaseView):
         if not excel_file.name:
             raise ValidationError('Arquivo inválido!')
         return excel_file
-
-    def get_object(self):
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError('Dados inválidos!')
-
-        event_id = self.request.query_params.get('event_id')
-        if not event_id:
-            raise ValidationError('event_id é obrigatório!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
 
 
 class AddSinglePlayer(BaseView):
@@ -274,7 +238,7 @@ class AddSinglePlayer(BaseView):
         if request.data is None or not all(field in request.data for field in required_fields):
             return handle_400_error('Dados Inválidos!')
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)

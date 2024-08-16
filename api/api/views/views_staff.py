@@ -102,24 +102,13 @@ class StaffView(BaseView):
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Retorna os usuários staff_member associados ao evento."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
         staffs = event.staff.all()
         data = StaffSerializer(staffs, many=True).data
         return response.Response(status=status.HTTP_200_OK, data=data)
-
-    def get_object(self):
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError('Evento não fornecido!')
-        event_id = self.request.query_params['event_id']
-        if not event_id:
-            raise ValidationError('Evento não fornecido!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
 
 
 class AddStaffManagerPermissions(BasePermission):
@@ -154,7 +143,7 @@ class AddStaffManager(BaseView):
         if not email:
             return handle_400_error('Email do Usuário não fornecido!')
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -171,17 +160,6 @@ class AddStaffManager(BaseView):
         staff_object.is_manager = True
         staff_object.save()
         return response.Response(status=status.HTTP_200_OK, data='Gerente de equipe adicionado com sucesso!')
-
-    def get_object(self):
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError('Evento não fornecido!')
-        event_id = self.request.query_params['event_id']
-        if not event_id:
-            raise ValidationError('Evento não fornecido!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
 
 
 class AddStaffPermissions(BasePermission):
@@ -205,7 +183,7 @@ class AddStaffMembers(BaseView):
             201), **Errors([400]).retrieve_erros()})
     def post(self, request: request.Request, *args, **kwargs):
         try:
-            event = self.get_object()
+            event = self.get_event()
         except ValidationError as e:
             return handle_400_error(str(e))
 
@@ -287,7 +265,7 @@ class AddSingleStaff(BaseView):
         if request.data is None or 'full_name' not in request.data or 'registration_email' not in request.data or 'is_manager' not in request.data:
             return handle_400_error('Dados inválidos!')
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
 
@@ -348,7 +326,7 @@ class EditStaffData(BaseView):
         if request.data is None or 'full_name' not in request.data or 'registration_email' not in request.data or 'is_manager' not in request.data or 'new_email' not in request.data:
             return handle_400_error('Dados inválidos!')
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
 

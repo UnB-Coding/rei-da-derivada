@@ -217,7 +217,7 @@ class EventView(BaseView):
         if request.data is None or 'name' not in request.data:
             return handle_400_error("Nome do evento não fornecido!")
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -335,7 +335,7 @@ class ResultsView(BaseView):
         if not all('player_id' in request.data[field] for field in ['paladin', 'ambassor']):
             return handle_400_error('ID do jogador não fornecido em paladin ou ambassor.')
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         if event not in request.user.events.all():
@@ -373,7 +373,7 @@ class ResultsView(BaseView):
     def delete(self, request: request.Request, *args, **kwargs):
         """Deleta o resultado de um evento."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -425,7 +425,7 @@ class ResultsView(BaseView):
     )
     def get(self, request: request.Request, *args, **kwargs):
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         if event not in request.user.events.all():
@@ -453,7 +453,7 @@ class PublishFinalResults(BaseView):
     )
     def put(self, request: request.Request, *args, **kwargs) -> response.Response:
         try:
-            event = self.get_object()
+            event = self.get_event()
         except ValidationError as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -475,7 +475,7 @@ class PublishFinalResults(BaseView):
     def delete(self, request: request.Request, *args, **kwargs) -> response.Response:
         """ Revoga a publicação dos resultados do evento."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except ValidationError as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -500,7 +500,7 @@ class PublishImortalsResults(BaseView):
     )
     def put(self, request: request.Request, *args, **kwargs) -> response.Response:
         try:
-            event = self.get_object()
+            event = self.get_event()
         except ValidationError as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -521,7 +521,7 @@ class Top3ImortalPlayers(BaseView):
         responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         try:
-            event = self.get_object()
+            event = self.get_event()
         except ValidationError as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)

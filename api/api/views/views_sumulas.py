@@ -42,7 +42,7 @@ class GetSumulasView(BaseSumulaView):
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Retorna todas as sumulas associadas a um evento."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
@@ -99,7 +99,7 @@ class SumulaClassificatoriaView(BaseSumulaView):
         if not self.validate_request_data_dict(request.data) or 'name' not in request.data or not self.validate_players(request.data):
             return handle_400_error("Dados inválidos!")
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
@@ -166,7 +166,7 @@ class SumulaClassificatoriaView(BaseSumulaView):
         if not sumula:
             return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -233,7 +233,7 @@ class SumulaImortalView(BaseSumulaView):
         if not self.validate_request_data_dict(request.data) or 'name' not in request.data or not self.validate_players(request.data):
             return handle_400_error("Dados inválidos!")
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
@@ -291,7 +291,7 @@ class SumulaImortalView(BaseSumulaView):
         if not sumula:
             return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -326,7 +326,7 @@ class ActiveSumulaView(BaseSumulaView):
     def get(self, request: request.Request):
         """Retorna todas as sumulas ativas."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
@@ -351,7 +351,7 @@ class FinishedSumulaView(BaseSumulaView):
     def get(self, request: request.Request):
         """Retorna todas as sumulas encerradas."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
@@ -384,7 +384,7 @@ class GetSumulaForPlayer(BaseSumulaView):
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Retorna todas as sumulas ativas associadas a um jogador."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
@@ -447,7 +447,7 @@ class AddRefereeToSumulaView(BaseSumulaView):
         if not sumula_id:
             return handle_400_error(SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE)
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
@@ -484,7 +484,7 @@ class GenerateSumulas(BaseSumulaView):
             'Created', array_of_sumulas_response_schema), **Errors([400]).retrieve_erros()})
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)

@@ -263,7 +263,7 @@ class GetPlayerResultsViewTest(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
-            response.data, {'errors': "['event_id é obrigatório!']"})
+            response.data, {'errors': "['Id do evento não fornecido!']"})
 
     def test_get_player_with_invalid_event_id(self):
         self.client.force_authenticate(user=self.user)
@@ -408,7 +408,7 @@ class AddPlayersViewTest(APITestCase):
         response = self.client.post(url, {'file': self.csv_uploaded_file})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
-            response.data, {'errors': "['Dados inválidos!']"})
+            response.data, {'errors': "['Id do evento não fornecido!']"})
 
     def test_add_players_with_invalid_event_id(self):
         self.client.force_authenticate(user=self.admin)
