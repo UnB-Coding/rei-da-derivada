@@ -3,9 +3,9 @@ import { settingsWithAuth } from "../settingsWithAuth";
 import toast from "react-hot-toast";
 import { isAxiosError } from 'axios';
 
-export default async function setAsManager(email: string, eventId: string, access_token?: string){
+export default async function setAsManager(id: number, eventId: string, access_token?: string){
     const body = {
-        "email": email
+        "id": id
     }
     try {
         const response = await request.post(`/api/staff-manager/?event_id=${eventId}`, body, settingsWithAuth(access_token));
@@ -20,6 +20,6 @@ export default async function setAsManager(email: string, eventId: string, acces
         } else {
             toast.error("Erro desconhecido.");
         }
-        
+
     }
 }

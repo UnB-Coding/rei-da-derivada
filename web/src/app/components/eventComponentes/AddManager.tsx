@@ -44,12 +44,12 @@ export default function AddManager() {
                                 defaultItems={staffs.filter(elem => elem.is_manager === false)}
                                 placeholder="Buscar por monitor"
                                 className="max-w-xs mb-52"
-                                onInputChange={(item) => {setCurrentStaff(staffs.find(elem => elem.full_name === item))}}
+                                onInputChange={(item) => { setCurrentStaff(staffs.find(elem => elem.full_name === item)) }}
                             >
-                                {(item) => <AutocompleteItem key={item.id}>{ item.full_name }</AutocompleteItem>}
+                                {(item) => <AutocompleteItem key={item.id}>{item.full_name}</AutocompleteItem>}
                             </Autocomplete>
                         </div>
-                        <button onClick={() => {setAsManager(currentStaff.registration_email, currentId, user.access)}} className="w-[300px] h-[50px] bg-primary text-white font-semibold rounded-lg mt-6">Adicionar</button>
+                        <button onClick={() => { setAsManager(currentStaff.id, currentId, user.access) }} className="w-[300px] h-[50px] bg-primary text-white font-semibold rounded-lg mt-6">Adicionar</button>
                     </div>
                 </div>
             )}

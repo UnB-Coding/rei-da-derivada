@@ -123,33 +123,32 @@ class AddStaffManager(BaseView):
 
     @ swagger_auto_schema(
         tags=['staff'],
-        operation_description="""Promove um usuário monitor a Gerente de Equipe no evento associado.
-        Deve ser enviado o email do usuário a ser promovido a Gerente de Equipe. Quem envia a requisição é o Admin do evento.
+        operation_description="""Promove um monitor a Gerente de Equipe no evento associado.
+        Deve ser enviado o id do staff a ser promovido a Gerente de Equipe. Quem envia a requisição é o Admin do evento.
         """,
         operation_summary="Promove um monitor a Gerente de Equipe.",
         manual_parameters=manual_parameter_event_id,
         request_body=openapi.Schema
-        (title='Email do Usuário', type=openapi.TYPE_OBJECT,
-         properties={'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do usuário', example='example@email.com')}),
+        (title='ID do Staff', type=openapi.TYPE_OBJECT,
+         properties={'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do objeto Staff', example=1)}),
         responses={200: openapi.Response(
             "Gerente de equipe adicionado com sucesso!'"), **Errors([400]).retrieve_erros()}
     )
     def post(self, request: request.Request, *args, **kwargs):
         """Promove um usuário a staff_manager no evento associado.
         """
-        if 'email' not in self.request.data:
-            raise ValidationError('Email do Usuário não fornecido!')
-        email = self.request.data['email']
-        if not email:
-            return handle_400_error('Email do Usuário não fornecido!')
+        if 'id' not in self.request.data:
+            return handle_400_error('Dados inválidos!')
+        staff_id = self.request.data['id']
+        if not staff_id:
+            return handle_400_error('ID do staff não fornencido!')
         try:
             event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
 
-        staff_object = Staff.objects.filter(
-            registration_email=email, event=event).first()
+        staff_object = Staff.objects.filter(id=staff_id, event=event).first()
         if not staff_object:
             return handle_400_error('O usuário não é monitor deste evento!')
         user = staff_object.user
