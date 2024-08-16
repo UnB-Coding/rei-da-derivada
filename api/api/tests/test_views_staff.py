@@ -492,8 +492,8 @@ class EditStaffDataTestCase(APITestCase):
         self.setUpPermissions()
         self.url = f'{reverse("api:edit-staff")}?event_id={self.event.id}'
         self.data = {
+            'id': self.staff.id,
             "full_name": "João Da Silva",
-            "registration_email": self.admin.email,
             "is_manager": False,
             "new_email": "novo@email.com"
         }
@@ -501,7 +501,7 @@ class EditStaffDataTestCase(APITestCase):
 
     def test_edit_staff_data_valid_request(self):
         self.client.force_authenticate(user=self.admin)
-        response = self.client.post(self.url, self.data, format='json')
+        response = self.client.put(self.url, self.data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         staff = Staff.objects.get(event=self.event)
         self.assertEqual(staff.full_name, self.data['full_name'])
@@ -511,9 +511,9 @@ class EditStaffDataTestCase(APITestCase):
 
     def test_edit_staff_data_invalid_request(self):
         self.client.force_authenticate(user=self.admin)
-        response = self.client.post(self.url, {}, format='json')
+        response = self.client.put(self.url, {}, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_edit_staff_unauthenticated_user(self):
-        response = self.client.post(self.url, self.data, format='json')
+        response = self.client.put(self.url, self.data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

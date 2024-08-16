@@ -25,7 +25,7 @@ class PlayerResultsSerializer(ModelSerializer):
 class PlayerSerializer(ModelSerializer):
     class Meta:
         model = Player
-        fields = ['id', 'full_name', 'social_name', 'is_imortal']
+        fields = ['id', 'full_name', 'social_name', 'is_imortal', 'is_present']
 
 
 class PlayerForRoundRobinSerializer(ModelSerializer):
@@ -202,7 +202,8 @@ class PlayerLoginSerializer(ModelSerializer):
 
     class Meta:
         model = Player
-        fields = ['id', 'full_name', 'social_name', 'is_imortal', 'event']
+        fields = ['id', 'full_name', 'social_name',
+                  'is_imortal', 'is_present', 'event']
 
 
 class ResultsSerializer(ModelSerializer):

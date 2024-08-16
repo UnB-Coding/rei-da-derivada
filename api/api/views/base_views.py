@@ -6,7 +6,7 @@ from rest_framework.exceptions import NotFound
 from ..serializers import PlayerScoreForRoundRobinSerializer
 from ..models import Event, PlayerScore, Staff, SumulaImortal, SumulaClassificatoria, Player
 
-EVENT_NOT_FOUND_ERROR_MESSAGE = "Evento não encontrado!"
+EVENT_NOT_FOUND_ERROR_MESSAGE = 'Evento não encontrado!'
 EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE = "Id do evento não fornecido!"
 SUMULA_NOT_FOUND_ERROR_MESSAGE = "Sumula não encontrada!"
 SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE = "Id da sumula não fornecido!"
