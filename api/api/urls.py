@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path, re_path
-from .views.views_event import EventView, ResultsView, PublishFinalResults, PublishImortalsResults, Top3ImortalPlayers
+from .views.views_event import EventView, ResultsView, PublishFinalResults, PublishImortalsResults, Top3ImortalPlayers, FinishEvent
 from .views.views_staff import StaffView, AddStaffManager, AddStaffMembers, AddSingleStaff, DeleteAllStaffs
 from .views.views_players import PlayersView, GetPlayerResults, AddPlayersExcel, AddSinglePlayer, DeleteAllPlayers
 from .views.views_sumulas import GetSumulasView, ActiveSumulaView, FinishedSumulaView, GetSumulaForPlayer, SumulaImortalView, SumulaClassificatoriaView, AddRefereeToSumulaView, GenerateSumulas
@@ -12,6 +12,7 @@ urlpatterns = [
     # Rotas de evento e token
     #     path('token/', TokenView.as_view(), name='token'),
     path('event/', EventView.as_view(), name='event'),
+    path('event/finish/', FinishEvent.as_view(), name='finish-event'),
     path('results/', ResultsView.as_view(), name='results'),
     path('publish/results/imortals/', PublishImortalsResults.as_view(),
          name='publish-results-imortals'),

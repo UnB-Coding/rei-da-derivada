@@ -280,6 +280,20 @@ class EventView(BaseView):
         return True
 
 
+class FinishEvent(BaseView):
+    permission_classes = [IsAuthenticated, EventPermissions]
+
+    def put(self, request: request.Request, *args, **kwargs) -> response.Response:
+        try:
+            event = self.get_event()
+        except Exception as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+        event.active = False
+        event.save()
+        return response.Response(status=status.HTTP_200_OK, data='Evento finalizado com sucesso!')
+
+
 class ResultsPermissions(BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.method == 'PUT':
