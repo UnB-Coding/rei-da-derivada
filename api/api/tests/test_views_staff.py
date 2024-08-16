@@ -490,7 +490,7 @@ class EditStaffDataTestCase(APITestCase):
         self.setUpGroup()
         self.setUpStaff()
         self.setUpPermissions()
-        self.url = f'{reverse("api:edit-staff")}?event_id={self.event.id}'
+        self.url = f'{reverse("api:staff")}?event_id={self.event.id}'
         self.data = {
             'id': self.staff.id,
             "full_name": "João Da Silva",

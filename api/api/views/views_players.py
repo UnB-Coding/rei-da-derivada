@@ -104,6 +104,121 @@ class PlayersView(BaseView):
         data = PlayerLoginSerializer(player).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
+    @swagger_auto_schema(
+        tags=['player'],
+        security=[{'Bearer': []}],
+        operation_summary='Deleta um jogador do evento.',
+        operation_description='Deleta um jogador do evento através do ID fornecido no request_body.  Apenas o administrador do evento pode realizar essa ação.',
+        manual_parameters=manual_parameter_event_id,
+        request_body=openapi.Schema(type=openapi.TYPE_OBJECT, properties={'id': openapi.Schema(
+            type=openapi.TYPE_INTEGER, description='ID do jogador')}, required=['id']),
+        responses={200: openapi.Response(
+            200), **Errors([400]).retrieve_erros()}
+    )
+    def delete(self, request: request.Request, *args, **kwargs) -> response.Response:
+        """Deleta um jogador do evento."""
+        if 'id' not in request.data:
+            return handle_400_error('ID do jogador é obrigatório!')
+        try:
+            event = self.get_event()
+        except Exception as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+        player_id = request.data.get('id')
+        if not player_id:
+            return handle_400_error('ID do jogador é obrigatório!')
+        player = Player.objects.filter(id=player_id, event=event).first()
+        if not player:
+            return handle_400_error('Jogador não encontrado!')
+        player.delete()
+        return response.Response(status=status.HTTP_200_OK, data='Jogador deletado com sucesso!')
+
+    @swagger_auto_schema(
+        tags=['player'],
+        operation_description="""Edita os dados de um jogador no evento.
+        É permitido editar o **nome completo, nome social, email do jogador, is_imortal e is_present**.
+        **Deve ser fornecido no request_body o email atual do jogador** e os campos que deseja alterar:
+        - registration_email: Email atual do jogador
+        - id: ID do jogador
+        - social_name: Nome social do jogador
+        - new_email: Novo email do jogador
+        - is_imortal: Jogador é imortal
+        - is_present: Jogador está presente no evento
+        - clear_user: Limpar usuário do jogador, caso deseje remover o usuário do jogador.
+        Note que as chaves do request_body devem ser passadas, porém o valor pode ser vazio, **exceto dos campos is_imortal e is_present, que devem ser bools**.
+        """,
+        operation_summary='Edita os dados de um jogador no evento.',
+        manual_parameters=manual_parameter_event_id,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador', example=1),
+                'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João da Silva'),
+                'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='Joana Silva'),
+                'new_email': openapi.Schema(type=openapi.TYPE_STRING, description='Novo email do jogador', example='new@email.com'),
+                'is_imortal': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Jogador é imortal', example=False),
+                'is_present': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Jogador está presente no evento', example=True),
+                'clear_user': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Limpar usuário do jogador', example=False),
+            },
+            required=['registration_email']
+        ),
+        responses={200: openapi.Response(
+            200, PlayerSerializer), **Errors([400]).retrieve_erros()}
+    )
+    def put(self, request: request.Request, *args, **kwargs):
+        required_fields = ['id', 'full_name',
+                           'social_name', 'new_email', 'is_imortal', 'is_present']
+        if request.data is None or not all(field in request.data for field in required_fields):
+            return handle_400_error('Dados Inválidos!')
+        try:
+            event = self.get_event()
+        except Exception as e:
+            return handle_400_error(str(e))
+        if event not in request.user.events.all():
+            return handle_400_error('Usuário não tem permissão para acessar este evento!')
+        self.check_object_permissions(request, event)
+
+        player_id = request.data['id']
+        if not player_id:
+            return handle_400_error('ID do jogador é obrigatório!')
+        player = Player.objects.filter(id=player_id, event=event).first()
+        if not player:
+            return handle_400_error('Jogador não encontrado!')
+
+        full_name = request.data['full_name']
+        social_name = request.data['social_name']
+        new_email = request.data['new_email']
+        is_imortal = request.data['is_imortal']
+        is_present = request.data['is_present']
+        clear_user = request.data.get('clear_user', False)
+        if not isinstance(is_imortal, bool) or not isinstance(is_present, bool):
+            return handle_400_error('is_imortal e is_present devem ser booleanos!')
+        player.is_imortal = is_imortal
+        player.is_present = is_present
+        if full_name:
+            full_name = full_name.strip().lower()
+            for word in full_name.split():
+                full_name = full_name.replace(word, word.capitalize())
+            player.full_name = full_name
+        if social_name:
+            social_name = social_name.strip().lower()
+            for word in social_name.split():
+                social_name = social_name.replace(word, word.capitalize())
+            player.social_name = social_name
+        if new_email:
+            new_email = new_email.strip()
+            try:
+                validate_email(new_email)
+            except Exception:
+                return handle_400_error('Email inválido!')
+            player.registration_email = new_email
+        if clear_user:
+            player.user = None
+            player.save()
+            return response.Response(status=status.HTTP_200_OK, data='Jogador editado com sucesso. Usuário removido do jogador!')
+        player.save()
+        return response.Response(status=status.HTTP_200_OK, data='Jogador editado com sucesso!')
+
 
 class GetPlayerResults(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
@@ -273,91 +388,24 @@ class AddSinglePlayer(BaseView):
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
 
-class EditPlayerData(BaseView):
+class DeleteAllPlayers(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
 
     @swagger_auto_schema(
         tags=['player'],
-        operation_description="""Edita os dados de um jogador no evento.
-        É permitido editar o **nome completo, nome social, email do jogador, is_imortal e is_present**.
-        **Deve ser fornecido no request_body o email atual do jogador** e os campos que deseja alterar:
-        - registration_email: Email atual do jogador
-        - id: ID do jogador
-        - social_name: Nome social do jogador
-        - new_email: Novo email do jogador
-        - is_imortal: Jogador é imortal
-        - is_present: Jogador está presente no evento
-        - clear_user: Limpar usuário do jogador, caso deseje remover o usuário do jogador.
-        Note que as chaves do request_body devem ser passadas, porém o valor pode ser vazio, **exceto dos campos is_imortal e is_present, que devem ser bools**.
-        """,
-        operation_summary='Edita os dados de um jogador no evento.',
+        operation_description='Deleta todos os jogadores do evento.',
+        operation_summary='Deleta todos os jogadores do evento. Apenas o administrador do evento pode realizar essa ação.',
         manual_parameters=manual_parameter_event_id,
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador', example=1),
-                'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João da Silva'),
-                'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='Joana Silva'),
-                'new_email': openapi.Schema(type=openapi.TYPE_STRING, description='Novo email do jogador', example='new@email.com'),
-                'is_imortal': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Jogador é imortal', example=False),
-                'is_present': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Jogador está presente no evento', example=True),
-                'clear_user': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Limpar usuário do jogador', example=False),
-            },
-            required=['registration_email']
-        ),
         responses={200: openapi.Response(
-            200, PlayerSerializer), **Errors([400]).retrieve_erros()}
+            200), **Errors([400]).retrieve_erros()}
     )
-    def put(self, request: request.Request, *args, **kwargs):
-        required_fields = ['id', 'full_name',
-                           'social_name', 'new_email', 'is_imortal', 'is_present']
-        if request.data is None or not all(field in request.data for field in required_fields):
-            return handle_400_error('Dados Inválidos!')
+    def delete(self, request: request.Request, *args, **kwargs):
+        """Deleta todos os jogadores do evento."""
         try:
             event = self.get_event()
-        except Exception as e:
+        except ValidationError as e:
             return handle_400_error(str(e))
-        if event not in request.user.events.all():
-            return handle_400_error('Usuário não tem permissão para acessar este evento!')
         self.check_object_permissions(request, event)
-
-        player_id = request.data['id']
-        if not player_id:
-            return handle_400_error('ID do jogador é obrigatório!')
-        player = Player.objects.filter(id=player_id, event=event).first()
-        if not player:
-            return handle_400_error('Jogador não encontrado!')
-
-        full_name = request.data['full_name']
-        social_name = request.data['social_name']
-        new_email = request.data['new_email']
-        is_imortal = request.data['is_imortal']
-        is_present = request.data['is_present']
-        clear_user = request.data.get('clear_user', False)
-        if not isinstance(is_imortal, bool) or not isinstance(is_present, bool):
-            return handle_400_error('is_imortal e is_present devem ser booleanos!')
-        player.is_imortal = is_imortal
-        player.is_present = is_present
-        if full_name:
-            full_name = full_name.strip().lower()
-            for word in full_name.split():
-                full_name = full_name.replace(word, word.capitalize())
-            player.full_name = full_name
-        if social_name:
-            social_name = social_name.strip().lower()
-            for word in social_name.split():
-                social_name = social_name.replace(word, word.capitalize())
-            player.social_name = social_name
-        if new_email:
-            new_email = new_email.strip()
-            try:
-                validate_email(new_email)
-            except Exception:
-                return handle_400_error('Email inválido!')
-            player.registration_email = new_email
-        if clear_user:
-            player.user = None
-            player.save()
-            return response.Response(status=status.HTTP_200_OK, data='Jogador editado com sucesso. Usuário removido do jogador!')
-        player.save()
-        return response.Response(status=status.HTTP_200_OK, data='Jogador editado com sucesso!')
+        players = Player.objects.filter(event=event)
+        players.delete()
+        return response.Response(status=status.HTTP_200_OK, data='Todos os jogadores deletados com sucesso!')
