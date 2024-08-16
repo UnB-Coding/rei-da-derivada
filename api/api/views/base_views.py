@@ -2,7 +2,7 @@ from django.utils.deprecation import MiddlewareMixin
 from django.forms import ValidationError
 from rest_framework.views import APIView
 from rest_framework.exceptions import NotFound
-
+from rest_framework.permissions import BasePermission
 from ..serializers import PlayerScoreForRoundRobinSerializer
 from ..models import Event, PlayerScore, Staff, SumulaImortal, SumulaClassificatoria, Player
 
@@ -263,3 +263,22 @@ class DisableCSRFMiddleware(MiddlewareMixin):
             setattr(request, '_dont_enforce_csrf_checks', True)
         response = self.get_response(request)
         return response
+
+
+class IsEventActive(BasePermission):
+    """
+    Permissão personalizada para verificar se o evento está ativo.
+    Permite acesso ao método GET independentemente do estado do evento.
+    """
+
+    def has_permission(self, request, view):
+        if request.method == 'GET':
+            return True
+        event_id = request.query_params.get('event_id')
+        if not event_id:
+            return False
+        event = Event.objects.filter(id=event_id).first()
+        if not event:
+            return False
+        print("EVENT ACTIVE", event.active)
+        return event.active
