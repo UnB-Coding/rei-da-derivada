@@ -13,6 +13,7 @@ urlpatterns = [
     #     path('token/', TokenView.as_view(), name='token'),
     path('event/', EventView.as_view(), name='event'),
     path('results/', ResultsView.as_view(), name='results'),
+    path('results/player/', GetPlayerResults.as_view(), name='player'),
     path('publish/results/imortals/', PublishImortalsResults.as_view(),
          name='publish-results-imortals'),
     path('publish/results/final',
@@ -33,7 +34,6 @@ urlpatterns = [
 
     # Rotas de jogadores
     path('players/', PlayersView.as_view(), name='players'),
-    path('player/', GetPlayerResults.as_view(), name='player'),
     path('upload-player/', AddPlayersExcel.as_view(), name='upload-player'),
     path('top3/', Top3ImortalPlayers.as_view(), name='top3'),
     path('player/add/', AddSinglePlayer.as_view(), name='add-player'),
