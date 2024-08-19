@@ -21,7 +21,7 @@ export default function AddManager() {
                     const staffList = await getStaffList(currentId, user.access);
                     setStaffs(staffList);
                 } catch (error) {
-                    console.error("Error fetching staff list:", error);
+                    console.error("Erro ao processar a requisição:", error);
                 }
             }
         };

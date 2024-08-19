@@ -11,6 +11,7 @@ import SubmitFileComponent from "@/app/components/eventComponentes/SubmitFileCom
 import AddPlayerComponent from "@/app/components/eventComponentes/AddPlayerComponent";
 import AddStaffComponent from "@/app/components/eventComponentes/AddStaffComponent";
 import AddManager from "@/app/components/eventComponentes/AddManager";
+import CreateSumula from "@/app/components/eventComponentes/CreateSumula";
 
 export default function Admin() {
   const { user, loading } = useContext(UserContext);
@@ -42,6 +43,7 @@ export default function Admin() {
     <>
       <HeaderComponent/>
       <SubmitFileComponent/>
+      <CreateSumula/>
       <AddPlayerComponent/>
       <AddStaffComponent/>
       <AddManager/>

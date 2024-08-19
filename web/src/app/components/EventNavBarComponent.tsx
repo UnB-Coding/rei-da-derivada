@@ -16,7 +16,7 @@ const EventNavBarComponent = () => {
     const currentPath = usePathname().split('/')[2];
     // this navbar is just a prototype, it will be changed in other branch :)
     return (
-        <div className="bg-secondary w-full items-center justify-around  sm:px-30 lg:px-1/4 xl:px-1/5 h-20 fixed bottom-0 flex">
+        <div className="bg-secondary w-full items-center justify-evenly  sm:px-30 lg:px-1/4 xl:px-1/5 h-20 fixed bottom-0 flex">
             <div className={`bg-primary w-[124px] h-[6px] rounded-full absolute top-0`}/>
             <Image onClick={() => {router.push('./profile')}}src={currentPath === 'profile' ? profilef : profilel} alt="profile" width={36} height={36}/>
             <Image onClick={() => {router.push('./results')}}src={currentPath === 'results' ? resultf : resultl} alt="results" width={36} height={36}/>
