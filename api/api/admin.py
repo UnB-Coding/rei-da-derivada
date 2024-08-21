@@ -29,7 +29,8 @@ class EventAdmin(GuardedModelAdmin):
     list_display = ['id', 'token', 'join_token', 'name', 'active',
                     'final_results_published', 'imortal_results_published']
     search_fields = ['token', 'name', 'active', 'join_token']
-    fields = ['token', 'name', 'active', 'admin_email']
+    fields = ['token', 'name', 'active',
+              'admin_email', 'is_final_results_published', 'is_imortal_results_published', 'join_token']
     ordering = ['name', 'active', 'is_final_results_published',
                 'is_imortal_results_published', 'token', 'join_token']
 

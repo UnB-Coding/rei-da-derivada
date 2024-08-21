@@ -224,7 +224,7 @@ class GetPlayerResults(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
 
     @swagger_auto_schema(
-        tags=['player'],
+        tags=['results'],
         security=[{'Bearer': []}],
         operation_summary='Retorna o resultado a pontuação do jogador',
         operation_description='Retorna o resultado de pontuação do jogador atual do usuário logado.',

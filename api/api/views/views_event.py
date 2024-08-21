@@ -300,7 +300,7 @@ class ResultsView(BaseView):
         Os jogadores devem ser enviados como uma lista de dicionários com os campos *player* e *total_score*.
         Os top3 imortais serão calculados automaticamente, não é necessário enviar.
         """,
-        tags=['event'],
+        tags=['results'],
         operation_summary="Atribui os resultados finais do evento manualmente.",
         manual_parameters=manual_parameter_event_id,
         request_body=openapi.Schema(
@@ -366,7 +366,7 @@ class ResultsView(BaseView):
         Os campos top4, paladin e ambassor serão limpos, mas o cálculo dos imortais não será afetado.
         """,
         operation_summary="Deleta os resultados de um evento.",
-        tags=['event'],
+        tags=['results'],
         manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(
             'OK'), **Errors([400]).retrieve_erros()})
@@ -387,7 +387,7 @@ class ResultsView(BaseView):
         return response.Response(status=status.HTTP_200_OK, data='Resultados deletados com sucesso.')
 
     @swagger_auto_schema(
-        tags=['event'],
+        tags=['results'],
         operation_summary="Retorna os resultados de um evento.",
         operation_description="""Retorna os resultados de um evento.
         Os resultados são compostos por top4, imortais, paladino e embaixador.
@@ -417,7 +417,16 @@ class ResultsView(BaseView):
                         'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador'),
                         'total_score': openapi.Schema(type=openapi.TYPE_INTEGER, description='Pontuação total do jogador', example=98),
                         'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João da Silva'),
-                        'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='João'), })
+                        'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='João'), }),
+                'imortals': openapi.Schema(
+                    type=openapi.TYPE_ARRAY, description='Lista dos top3 imortais do RRDD',
+                    items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+                        'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador', example=5),
+                        'total_score': openapi.Schema(type=openapi.TYPE_INTEGER, description='Pontuação total do jogador', example=98),
+                        'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João da Silva'),
+                        'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='João'),
+                    })),
+
             }
 
             ),
@@ -441,8 +450,8 @@ class ResultsView(BaseView):
 class PublishFinalResults(BaseView):
     permission_classes = [IsAuthenticated, ResultsPermissions]
 
-    @swagger_auto_schema(
-        tags=['event'],
+    @ swagger_auto_schema(
+        tags=['results'],
         security=[{'Bearer': []}],
         operation_description="""Publica TODOS os resultados do evento. Apenas o admin pode realizar a publicacao.
         Os jogadores poderão ver suas próprias pontuações, além de verem o paladino, o embaixador, os top4 finalistas e os imortais.""",
@@ -462,8 +471,8 @@ class PublishFinalResults(BaseView):
         event.save()
         return response.Response(status=status.HTTP_200_OK, data='Resultados publicados com sucesso!')
 
-    @swagger_auto_schema(
-        tags=['event'],
+    @ swagger_auto_schema(
+        tags=['results'],
         operation_summary="Revoga a publicação dos resultados do evento.",
         operation_description="""Revoga a publicação dos resultados do evento. Apenas o admin pode realizar a revogação.
         Os jogadores não poderão mais ver suas pontuações, o paladino, o embaixador, os top4 finalistas e os imortais.
@@ -488,8 +497,8 @@ class PublishFinalResults(BaseView):
 class PublishImortalsResults(BaseView):
     permission_classes = [IsAuthenticated, ResultsPermissions]
 
-    @swagger_auto_schema(
-        tags=['event'],
+    @ swagger_auto_schema(
+        tags=['results'],
         security=[{'Bearer': []}],
         operation_description="""Publica os resultados **APENAS** dos **top3 imortais** do evento. Apenas o admin pode realizar a publicacao.
         **Os jogadores poderão ver APENAS suas próprias pontuações e os imortais.**""",
@@ -512,8 +521,8 @@ class PublishImortalsResults(BaseView):
 class Top3ImortalPlayers(BaseView):
     permission_classes = [IsAuthenticated, ResultsPermissions]
 
-    @swagger_auto_schema(
-        tags=['player'],
+    @ swagger_auto_schema(
+        tags=['results'],
         security=[{'Bearer': []}],
         operation_description='Retorna os 3 jogadores com mais pontos do evento.',
         operation_summary='Retorna os 3 primeiros jogadores do evento.',
