@@ -112,7 +112,7 @@ export default function CreateSumula() {
                         <input onChange={e => setSumName(e.target.value)} className="w-[300px] h-[40px] border-[1.5px] border-primary bg-neutral-100 rounded-lg pl-4" type="text" placeholder="Nome" />
                         <p className="text-primary font-medium">ADICIONAR STAFF'S</p>
                         <input onChange={e => setStaffName(e.target.value)} className="w-[300px] h-[40px] border-[1.5px] border-primary bg-neutral-100 rounded-lg pl-4" type="text" placeholder="Pesquisar" />
-                        <Listbox classNames={{base: "max-w-xs",list: "max-h-[300px] overflow-auto"}} items={staffs.filter(item => item.full_name.toLowerCase().includes(staffName.toLocaleLowerCase())).slice(0,2)}variant="flat" emptyContent="Nenhum staff encontrado">
+                        <Listbox classNames={{base: "max-w-xs",list: "max-h-[300px] overflow-auto"}} items={staffs.filter(item => item?.full_name?.toLowerCase().includes(staffName?.toLocaleLowerCase())).slice(0, 2)} variant="flat" emptyContent="Nenhum staff encontrado">
                             {(item) => (
                                 <ListboxItem key={item.id} variant="flat" className="bg-slate-100 py-2">
                                     <div className="flex gap-2 justify-between items-center">
@@ -139,7 +139,7 @@ export default function CreateSumula() {
                         </Listbox>
                         <p className="text-primary font-medium">ADICIONAR JOGADORES</p>
                         <input onChange={e => setplayerName(e.target.value)} className="w-[300px] h-[40px] border-[1.5px] border-primary bg-neutral-100 rounded-lg pl-4" type="text" placeholder="Pesquisar" />
-                        <Listbox classNames={{base: "max-w-xs",list: "max-h-[300px] overflow-auto"}} items={players.filter(item => item.full_name.toLowerCase().includes(playerName.toLocaleLowerCase())).slice(0,4)}variant="flat" emptyContent="Escolha um jogador">
+                        <Listbox classNames={{base: "max-w-xs",list: "max-h-[300px] overflow-auto"}} items={players.filter(item => item?.full_name?.toLowerCase().includes(playerName?.toLocaleLowerCase())).slice(0,4)}variant="flat" emptyContent="Nenhum jogador encontrado">
                             {(item) => (
                                 <ListboxItem key={item.id} variant="flat" className="bg-slate-100 py-2">
                                     <div className="flex gap-2 justify-between items-center">

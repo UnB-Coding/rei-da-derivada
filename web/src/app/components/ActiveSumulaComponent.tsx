@@ -1,27 +1,29 @@
-import React from "react";
+import React, { useState, useEffect} from "react";
 import JoinBoxComponent from "./JoinBoxComponent";
+import { usePathname } from "next/navigation";
 import { title } from "process";
 
-interface ActiveSumulaComponentProps {
-    title: string;
-    active?: boolean;
-};
-
-const myObject = {  
-    title: "chave-ab",
-};
+interface SumulaProps {
+    id: number;
+    active: boolean;
+    name: string;
+    description: string;
+    referee: string;
+}
 
 const ActiveSumulaComponent = () => {
+    const [ sumulas, setSumulas ] = useState<any[]>([]);
+    useEffect(() => {
+
+    },[]);
+
     return (
         <div className="grid justify-center items-center py-32">
             <p className="text-primary font-semibold pb-4">SÚMULAS ATIVAS</p>
             <div className="grid gap-4">
-                <JoinBoxComponent title={myObject.title} active={true} buttonPath={`./sumula/${myObject.title}`}/>
-                <JoinBoxComponent title="chave-cd" active={true}/>
-                <JoinBoxComponent title="chave-ef" active={true}/>
-                <JoinBoxComponent title="imortais 10" active={true}/>
-                <JoinBoxComponent title="imortais 11" active={true}/>
-                <JoinBoxComponent title="imortais 12" active={true}/>
+                {sumulas.map((sumula) => {
+                    return <JoinBoxComponent key={sumula.id} name={sumula.name} active={sumula.activate} isEvent={false}/>
+                })}
             </div>
         </div>    
     );

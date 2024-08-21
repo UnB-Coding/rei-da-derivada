@@ -35,7 +35,7 @@ export default function Admin() {
     }
   }, [user]);
 
-  if(!canSee || loading){
+  if( !canSee || loading){
     return <LoadingComponent/>;
   }
 

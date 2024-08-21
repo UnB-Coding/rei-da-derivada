@@ -9,6 +9,7 @@ interface JoinBoxComponentProps {
     id?: number;
     name?: string;
     active?: boolean;
+    isEvent?: boolean;
 }
 
 const JoinBoxComponent = (props: JoinBoxComponentProps) => {
@@ -47,6 +48,10 @@ const JoinBoxComponent = (props: JoinBoxComponentProps) => {
         }
     }, [shouldNavigate, currentEvent]);
 
+    async function handleSumulaClick() {
+        
+    }
+
     return (
         <div className="bg-neutral-100 border-2 w-[316px] h-[55px] rounded-md flex justify-between px-2 items-center z-0">
             <p className="text-primary font-semibold text-lg">{props.name?.toUpperCase()}</p>
@@ -56,7 +61,7 @@ const JoinBoxComponent = (props: JoinBoxComponentProps) => {
                     <span className="relative inline-flex rounded-full bg-green-500 h-3 w-3 bg--500"></span>
                 </span>
             )}
-            <ArrowButton onClick={() => { handleClick()/* tirar a arrow se n precisar colocar mais nd*/ }} />
+            <ArrowButton onClick={() => { props.isEvent ? handleClick() : console.log("oi") }} />
         </div>
     );
 }

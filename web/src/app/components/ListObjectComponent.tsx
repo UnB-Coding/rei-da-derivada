@@ -41,7 +41,7 @@ const ListObjectComponent = (props: ListObjectComponentProps) => {
                 {!hasEvents || activeEvents.length === 0 ? <p>Nenhum evento contrado</p>
                 : activeEvents.map((event) => {
                     return (
-                        <JoinBoxComponent key={event.event?.id} name={event.event?.name} active={event.event?.active} id={event.event?.id}/>
+                        <JoinBoxComponent key={event.event?.id} name={event.event?.name} active={event.event?.active} id={event.event?.id} isEvent={true}/>
                     )
                 })}
             </>
@@ -50,7 +50,7 @@ const ListObjectComponent = (props: ListObjectComponentProps) => {
                 {!hasEvents || endedEvents.length === 0 ? <p>Nenhum evento contrado</p>
                 : endedEvents.map((event) => {
                     return (
-                        <JoinBoxComponent key={event.event?.id} name={event.event?.name} active={event.event?.active} id={event.event?.id}/>
+                        <JoinBoxComponent key={event.event?.id} name={event.event?.name} active={event.event?.active} id={event.event?.id} isEvent={true}/>
                     )
                 })}
             </>}
