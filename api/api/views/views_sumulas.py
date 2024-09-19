@@ -451,9 +451,14 @@ class AddRefereeToSumulaView(BaseSumulaView):
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
-        staff = Staff.objects.filter(user=request.user, event=event).first()
+        if event.admin_email == request.user.email:
+            return response.Response(status=status.HTTP_200_OK)
+
+        staff = Staff.objects.filter(
+            user=request.user, event=event).first()
         if not staff:
             return handle_400_error("Usuário não é um monitor do evento!")
+
         is_imortal = request.data.get('is_imortal')
         if is_imortal:
             sumula = SumulaImortal.objects.filter(id=sumula_id).first()
@@ -461,6 +466,7 @@ class AddRefereeToSumulaView(BaseSumulaView):
             sumula = SumulaClassificatoria.objects.filter(id=sumula_id).first()
         if not sumula:
             return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
+        
         if sumula.referee.all().count() > 0 and staff not in sumula.referee.all():
             return handle_400_error("Súmula já possui um ou mais árbitros!")
         elif sumula.referee.all().count() == 0:
