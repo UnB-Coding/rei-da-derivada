@@ -161,12 +161,13 @@ class SumulaClassificatoriaView(BaseSumulaView):
 
     @ swagger_auto_schema(
         tags=['sumula'],
-        operation_summary="Encerra uma sumula classificatoria.",
+        operation_summary="ENCERRA OU EDITA uma sumula classificatoria.",
         operation_description="""Esta rota serve para salvar os dados da sumula e marcar a sumula como **encerrada**.
         As pontuações dos jogadores devem ser enviadas no corpo da requisição e serão atualizadas no banco de dados.
         Devem ser enviados os jogadores **não-classificados** como **IMORTAIS** (is_imortal = True). Já os jogadores **classificados** devem ser enviados como **is_imortal = False.**
         A sumula **não** pode ser mais salva/editada por um monitor comum após encerrada.
-        Apenas um gerente ou administrador do evento pode editar uma sumula encerrada.
+
+**Apenas um gerente ou administrador do evento pode editar uma sumula encerrada.**
 
         Os campos a serem atualizados são:
         - name
@@ -297,11 +298,13 @@ class SumulaImortalView(BaseSumulaView):
 
     @ swagger_auto_schema(
         tags=['sumula'],
-        operation_summary="Encerra uma sumula imortal.",
+        operation_summary="ENCERRA OU EDITA uma sumula imortal.",
         operation_description="""Esta rota serve para salvar os dados da sumula e marcar a sumula como **encerrada**.
         As pontuações dos jogadores devem ser enviadas no corpo da requisição e serão atualizadas no banco de dados.
         A sumula **não** pode ser mais salva/editada por um monitor comum após encerrada.
-        Apenas um gerente ou administrador do evento pode editar uma sumula encerrada.
+
+**Apenas um gerente ou administrador do evento pode editar uma sumula encerrada.**
+
         Os campos a serem atualizados são:
         - name
         - description
