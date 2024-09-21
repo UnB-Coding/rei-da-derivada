@@ -28,7 +28,7 @@ class HasSumulaPermission(BasePermission):
         return True
 
 
-class GetSumulasView(BaseSumulaView):
+class SumulasView(BaseSumulaView):
     """Lida com os requests relacionados a sumulas."""
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
@@ -51,6 +51,43 @@ class GetSumulasView(BaseSumulaView):
         data = SumulaSerializer(
             {'sumulas_classificatoria': sumulas_classificatoria, 'sumulas_imortal': sumulas_imortal}).data
         return response.Response(status=status.HTTP_200_OK, data=data)
+
+    @swagger_auto_schema(
+        tags=['sumula'],
+        operation_summary="Deleta uma súmula.",
+        operation_description="""Deleta uma súmula.
+        Apenas um gerente ou administrador do evento pode deletar uma súmula.
+        """,
+        security=[{'Bearer': []}],
+        manual_parameters=manual_parameter_event_id,
+        request_body=openapi.Schema(
+            title='Sumula',
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID da sumula', example=1),
+            },
+            required=['id']
+        ),
+        responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
+    def delete(self, request: request.Request, *args, **kwargs):
+        """Deleta uma súmula."""
+        if not self.validate_request_data_dict(request.data) or 'id' not in request.data:
+            return handle_400_error("Dados inválidos!")
+        sumula_id = request.data.get('id')
+        if not sumula_id:
+            return handle_400_error(SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE)
+        try:
+            event = self.get_event()
+        except Exception as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(self.request, event)
+        sumula = SumulaImortal.objects.filter(id=sumula_id).first()
+        if not sumula:
+            sumula = SumulaClassificatoria.objects.filter(id=sumula_id).first()
+        if not sumula:
+            return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
+        sumula.delete()
+        return response.Response(status=status.HTTP_200_OK)
 
 
 class SumulaClassificatoriaView(BaseSumulaView):
@@ -466,7 +503,7 @@ class AddRefereeToSumulaView(BaseSumulaView):
             sumula = SumulaClassificatoria.objects.filter(id=sumula_id).first()
         if not sumula:
             return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
-        
+
         if sumula.referee.all().count() > 0 and staff not in sumula.referee.all():
             return handle_400_error("Súmula já possui um ou mais árbitros!")
         elif sumula.referee.all().count() == 0:
