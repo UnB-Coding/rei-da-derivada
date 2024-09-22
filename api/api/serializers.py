@@ -207,11 +207,36 @@ class PlayerLoginSerializer(ModelSerializer):
 
 
 class ResultsSerializer(ModelSerializer):
-    top4 = PlayerResultsSerializer(many=True)
-    imortals = PlayerResultsSerializer(many=True)
-    ambassor = PlayerResultsSerializer()
-    paladin = PlayerResultsSerializer()
+    top4 = serializers.SerializerMethodField()
+    imortals = serializers.SerializerMethodField()
+    ambassor = serializers.SerializerMethodField()
+    paladin = serializers.SerializerMethodField()
 
     class Meta:
         model = Results
         fields = ['id', 'top4', 'imortals', 'ambassor', 'paladin']
+
+    def get_top4(self, obj):
+        if not obj.event.is_final_results_published:
+            return None
+        result = PlayerResultsSerializer(obj.top4, many=True).data
+        if len(result) == 0:
+            return None
+        return result
+
+    def get_imortals(self, obj):
+        result = PlayerResultsSerializer(obj.imortals, many=True).data
+        if len(result) == 0:
+            return None
+        return result
+
+    def get_ambassor(self, obj):
+        if not obj.event.is_final_results_published:
+            return None
+        result = PlayerResultsSerializer(obj.ambassor).data
+        return result
+    def get_paladin(self, obj):
+        if not obj.event.is_final_results_published:
+            return None
+        result = PlayerResultsSerializer(obj.paladin).data
+        return result
