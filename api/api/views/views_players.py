@@ -239,7 +239,7 @@ class GetPlayerResults(BaseView):
             event = self.get_event()
         except ValidationError as e:
             return handle_400_error(str(e))
-        if not event.is_imortal_results_published:
+        if not event.is_imortal_results_published and not event.is_final_results_published:
             return response.Response(status=status.HTTP_403_FORBIDDEN, data='Resultados de pontuação não publicados!')
         self.check_object_permissions(request, event)
         player = Player.objects.filter(event=event, user=request.user).first()
