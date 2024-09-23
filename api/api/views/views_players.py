@@ -294,7 +294,7 @@ class AddPlayersExcel(BaseView):
             name = name.strip()
             email = email.strip()
             player, created = Player.objects.get_or_create(
-                full_name=name, registration_email=email, event=event, is_present=True)
+                full_name=name, registration_email=email, event=event)
             if not created:
                 player.full_name = name
                 player.registration_email = email
