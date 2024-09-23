@@ -236,6 +236,19 @@ class BaseSumulaView(BaseView):
 
         if not self.update_player_score(players_score):
             raise ValidationError("Dados de pontuação inválidos!")
+
+        if 'imortal_players' in self.request.data:
+            players = self.request.data['imortal_players']
+            for player in players:
+                player_id = player.get('id')
+                if player_id is None:
+                    continue
+                player_obj = Player.objects.filter(id=player_id).first()
+                if not player_obj:
+                    raise ValidationError("Jogador não encontrado!")
+                player_obj.is_imortal = True
+                player_obj.save()
+
         sumula.name = self.request.data['name']
         sumula.description = self.request.data['description']
         sumula.active = False

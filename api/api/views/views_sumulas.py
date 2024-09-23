@@ -173,6 +173,7 @@ class SumulaClassificatoriaView(BaseSumulaView):
         - name
         - description
         - pontuação dos players
+        - players que se tornaram imortais
         - define a sumula como encerrada
         """,
         security=[{'Bearer': []}],
@@ -189,6 +190,7 @@ class SumulaClassificatoriaView(BaseSumulaView):
         - name
         - description
         - pontuação dos players
+        - players que se tornaram imortais
         - define a sumula como encerrada
         """
 
