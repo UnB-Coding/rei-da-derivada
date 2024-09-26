@@ -51,3 +51,9 @@ makemigrations:
 
 migrate:
 	sudo docker exec api-django python3 manage.py migrate
+
+back:
+	docker compose up backend db
+
+front:
+	docker compose up frontend

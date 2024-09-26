@@ -17,6 +17,9 @@ export default function Results() {
   const params = usePathname().split("/");
   const currentId = parseInt(params[1]);
   const currentPath = params[2];
+  const [ userType, setUserType ] = useState<UserType>('common');
+
+  type UserType = 'player' | 'staff' | 'manager' | 'admin' | 'common';
 
   useEffect(() => {
     if (!user.access && !loading) {
@@ -24,8 +27,13 @@ export default function Results() {
     } else if (user.all_events) {
       const current = user.all_events.find(elem => elem.event?.id === currentId);
       if (current && current.role) {
-        validatePath(current.role,currentPath) === true ?
-        setCanSee(true) : router.push(`/${currentId}/${getBasePath(current.role)}`);
+        const isValidPath = validatePath(current.role, currentPath);
+        if(isValidPath){
+          setUserType(current.role as UserType);
+          setCanSee(true);
+        } else {
+          router.push(`/${currentId}/${getBasePath(current.role)}`);
+        }
       } else {
         router.push("/contests");
       }
@@ -40,7 +48,7 @@ export default function Results() {
     <>
         <HeaderComponent/>
         <ResultsComponent/>
-        <EventNavBarComponent/>
+        <EventNavBarComponent userType={userType}/>
     </>
   );
 }

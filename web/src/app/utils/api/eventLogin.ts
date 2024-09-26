@@ -15,7 +15,6 @@ export default async function eventLogin(args: any){
         if(response.status === 200){
             const { data } = response;
             const { event } = data;
-            console.log(event);
             toast.success("Evento adicionado com sucesso!");
         }   
     } catch (error: unknown) {

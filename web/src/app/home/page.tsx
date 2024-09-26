@@ -3,9 +3,9 @@ import { useContext, useEffect } from "react";
 import { UserContext } from "@/app/contexts/UserContext";
 import { useRouter } from "next/navigation";
 import HeaderComponent from "@/app/components/HeaderComponent";
-import NavBarComponent from "@/app/components/NavBarComponent";
 import LoadingComponent from "@/app/components/LoadingComponent";
 import HomeJoinComponent from "../components/HomeJoinComponent";
+import EventNavBarComponent from "@/app/components/EventNavBarComponent";
 
 export default function JoinEvents() {
   const { user, loading } = useContext(UserContext);
@@ -25,7 +25,7 @@ export default function JoinEvents() {
     <>
       <HeaderComponent/>
       <HomeJoinComponent/>
-      <NavBarComponent/>
+      <EventNavBarComponent userType="common"/>
     </>
   );
 }

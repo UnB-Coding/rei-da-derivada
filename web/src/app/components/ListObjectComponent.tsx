@@ -19,26 +19,19 @@ interface ListObjectComponentProps {
 const ListObjectComponent = (props: ListObjectComponentProps) => {
     const { user } = useContext(UserContext);
     const events = user.all_events;
-    const activeEvents: UserEvent[] = [];
-    const endedEvents: UserEvent[] = [];
-    let hasEvents = false;
+    let activeEvents: UserEvent[] = [];
+    let endedEvents: UserEvent[] = [];
 
     if (events !== undefined && events.length > 0) {
-        hasEvents = true;
-        events.forEach((event) => {
-            if(event.event?.active){
-                activeEvents.push(event);
-            } else {
-                endedEvents.push(event);
-            }
-        })
+        activeEvents = events.filter(event => event.event?.active)
+        endedEvents = events.filter(event => !event.event?.active)
     }
     return(
         <div className="grid justify-center items-center gap-4 pb-4 pt-10">
             <p className="text-xl font-semibold text-primary ">{props.title.toUpperCase()}</p>
             {props.live ? 
             <>
-                {!hasEvents || activeEvents.length === 0 ? <p>Nenhum evento contrado</p>
+                {activeEvents.length === 0 ? <p>Nenhum evento contrado</p>
                 : activeEvents.map((event) => {
                     return (
                         <JoinBoxComponent key={event.event?.id} name={event.event?.name} active={event.event?.active} id={event.event?.id} isEvent={true}/>
@@ -47,7 +40,7 @@ const ListObjectComponent = (props: ListObjectComponentProps) => {
             </>
             :
             <>
-                {!hasEvents || endedEvents.length === 0 ? <p>Nenhum evento contrado</p>
+                {endedEvents.length === 0 ? <p>Nenhum evento contrado</p>
                 : endedEvents.map((event) => {
                     return (
                         <JoinBoxComponent key={event.event?.id} name={event.event?.name} active={event.event?.active} id={event.event?.id} isEvent={true}/>

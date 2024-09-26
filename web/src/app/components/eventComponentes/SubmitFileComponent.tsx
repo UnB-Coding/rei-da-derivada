@@ -46,7 +46,6 @@ export default function SubmitFileComponent() {
             formData.append("file", staffFile);
             try {
                 const response = await request.post(`/api/upload-staff/?event_id=${currentId}`, formData, formDataSettings(user.access));
-                console.log(response.data);
                 if(response.status === 201){
                     toast.success(response.data);
                 }

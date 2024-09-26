@@ -68,12 +68,14 @@ const ActiveSumulaComponent = () => {
 
     return (
         <div className="grid justify-center items-center py-32">
-            <p className="text-primary font-semibold pb-4">SÚMULAS ATIVAS</p>
-            <div className="grid gap-4">
+            <p className="text-primary font-semibold pb-4 text-center">SÚMULAS ATIVAS</p>
+            { sumulas.length === 0 ? 
+                <p className="text-center">Nenhuma súmula ativa encontrada</p> :
+                <div className="grid gap-4">
                 {sumulas.map((sumula, index) => {
                     return <JoinBoxComponent key={index} name={sumula.name} active={true} isEvent={false} onClick={() => handleClick(index)} />
                 })}
-            </div>
+            </div>}
         </div>
     );
 };
