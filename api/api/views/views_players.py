@@ -226,8 +226,11 @@ class GetPlayerResults(BaseView):
     @swagger_auto_schema(
         tags=['results'],
         security=[{'Bearer': []}],
-        operation_summary='Retorna o resultado a pontuação do jogador',
-        operation_description='Retorna o resultado de pontuação do jogador atual do usuário logado.',
+        operation_summary='Retorna o resultado a pontuação do usuário PLAYER logado.',
+        operation_description="""Retorna o resultado de pontuação do jogador atual do usuário logado.
+        Note que o resultado de pontuação só é retornado se o administrador do evento tiver publicado os resultados.
+        **Este resultado representa a pontuação individual do jogador no evento.**
+        """,
         manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
@@ -291,7 +294,7 @@ class AddPlayersExcel(BaseView):
             name = name.strip()
             email = email.strip()
             player, created = Player.objects.get_or_create(
-                full_name=name, registration_email=email, event=event, is_present=True)
+                full_name=name, registration_email=email, event=event)
             if not created:
                 player.full_name = name
                 player.registration_email = email
