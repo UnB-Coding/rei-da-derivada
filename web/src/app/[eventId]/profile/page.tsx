@@ -19,21 +19,29 @@ export default function Profile() {
   const currentId = parseInt(params[1]);
   const currentPath = params[2];
 
+  const [ userType, setUserType ] = useState<UserType>('common');
+
+  type UserType = 'player' | 'staff' | 'manager' | 'admin' | 'common';
+
   useEffect(() => {
     if (!user.access && !loading) {
       router.push("/");
     } else if (user.all_events) {
       const current = user.all_events.find(elem => elem.event?.id === currentId);
       if (current && current.role) {
-        validatePath(current.role,currentPath) === true ?
-        setCanSee(true) : router.push(`/${currentId}/${getBasePath(current.role)}`);
+        const isValidPath = validatePath(current.role, currentPath);
+        if(isValidPath){
+          setUserType(current.role as UserType);
+          setCanSee(true);
+        } else {
+          router.push(`/${currentId}/${getBasePath(current.role)}`);
+        }
       } else {
         router.push("/contests");
       }
     }
   }, [user]);
 
-  console.log(playerInfo);
   if(!canSee || loading){
     return <LoadingComponent/>;
   }
@@ -42,10 +50,10 @@ export default function Profile() {
     <>
       <HeaderComponent/>
       <div className="grid justify-center items-center py-32 px-2 text-center">
-        <p className="text-primary font-semibold text-xl">N SEI OQ COLOCAR</p>
-        <p className="text-slate-700">Você não está inscrito em nenhuma chave no momento.</p>
+        <h1 className="text-2xl font-semibold text-primary">PERFIL</h1>
+        <p>Essa funcionalidade ainda não está disponível.</p>
       </div>
-      <EventNavBarComponent/>
+      <EventNavBarComponent userType={userType}/>
     </>
   );
 }

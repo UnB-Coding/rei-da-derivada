@@ -4,6 +4,7 @@ import { UserContext } from "@/app/contexts/UserContext";
 import HeaderComponent from "@/app/components/HeaderComponent";
 import NavBarComponent from "@/app/components/NavBarComponent";
 import LoadingComponent from "@/app/components/LoadingComponent";
+import EventNavBarComponent from "@/app/components/EventNavBarComponent"
 import Contests from "@/app/components/Contests";
 import { useRouter } from "next/navigation";
 
@@ -25,7 +26,7 @@ export default function AllContests() {
     <>
         <HeaderComponent/>
           <Contests/>
-        <NavBarComponent/>
+        <EventNavBarComponent userType="common"/>
     </>
   );
     
