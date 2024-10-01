@@ -83,7 +83,10 @@ class SumulaAdmin(GuardedModelAdmin):
 
 @ admin.register(SumulaImortal)
 class SumulaImortalAdmin(SumulaAdmin):
-    pass
+    list_display = ['name', 'event', 'referees',
+                    'id', 'player_scores', 'players_count', 'active', 'rounds_count', 'rounds', 'number']
+    fields = ['referee', 'event', 'name',
+              'active', 'description', 'rounds', 'number']
 
 
 @ admin.register(SumulaClassificatoria)

@@ -13,6 +13,7 @@ class User(AbstractUser):
     - email: EmailField
     - picture_url: URLField
     - is_active: BooleanField
+    - events: ManyToManyField
     """
     uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     first_name = models.CharField(default='', max_length=64, blank=True)
