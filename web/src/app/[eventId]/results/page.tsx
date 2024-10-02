@@ -47,7 +47,7 @@ export default function Results() {
   return(
     <>
         <HeaderComponent/>
-        <ResultsComponent/>
+        <ResultsComponent isPlayer={userType === 'player' ? true : false }/>
         <EventNavBarComponent userType={userType}/>
     </>
   );

@@ -7,19 +7,42 @@ import request from "@/app/utils/request";
 import { settingsWithAuth } from "@/app/utils/settingsWithAuth";
 import { usePathname } from "next/navigation";
 import capitalize from "@/app/utils/capitalize";
+import { isAxiosError } from "axios";
 
-export default function ResultsComponent() {
+interface ResultsComponentProps {
+    isPlayer: boolean,
+}
+
+export default function ResultsComponent({isPlayer} : ResultsComponentProps) {
     const { user } = useContext(UserContext);
-    const [isPlayer, setIsPlayer] = useState<boolean>(false);
     const [published, setPublished] = useState<boolean>(false);
     const [results, setResults] = useState<any>();
+    const [playerResults, setPlayerResults] = useState<any>();
     const currentId = usePathname().split('/')[1];
-    const getEventResults = async () => {
 
+    const fetchResults = async () => {
+        try {
+            const response = await request.get(`/api/results/?event_id=${currentId}`, settingsWithAuth(user.access));
+            if(response.status === 200) {
+                setResults(response.data);
+            }
+            if(isPlayer){
+                const playerResponse = await request.get(`/api/results/player/?event_id=${currentId}`, settingsWithAuth(user.access));
+                if(playerResponse.status === 200) {
+                    setPlayerResults(response.data);
+                }
+            }
+            setPublished(true);
+        } catch (error: unknown) {
+            if(isAxiosError(error)){
+                const errorMessage = error.response?.data.errors || "Erro desconhecido";
+                console.log(errorMessage);               
+            }
+        }
     }
 
     useEffect(() => {
-        getEventResults()
+        fetchResults();
     }, [user])
 
     const playerMock = {
@@ -35,57 +58,57 @@ export default function ResultsComponent() {
             {
                 "id": 5,
                 "total_score": 98,
-                "full_name": "João da Silva",
+                "full_name": "JOÃO DA SILVA",
                 "social_name": "João"
             },
             {
                 "id": 6,
                 "total_score": 98,
-                "full_name": "João da Silva",
+                "full_name": "JOÃO DA SILVA",
                 "social_name": "João"
             },
             {
                 "id": 5,
                 "total_score": 98,
-                "full_name": "João da Silva",
+                "full_name": "JOÃO DA SILVA",
                 "social_name": "João"
             },
             {
                 "id": 5,
                 "total_score": 98,
-                "full_name": "João da Silva",
+                "full_name": "JOÃO DA SILVA",
                 "social_name": "João"
             },
         ],
         "paladin": {
             "id": 0,
             "total_score": 98,
-            "full_name": "João da Silva",
+            "full_name": "JOÃO DA SILVA",
             "social_name": "João"
         },
         "ambassor": {
             "id": 0,
             "total_score": 98,
-            "full_name": "João da Silva",
+            "full_name": "JOÃO DA SILVA",
             "social_name": "João"
         },
         "imortals": [
             {
                 "id": 5,
                 "total_score": 98,
-                "full_name": "João da Silva",
+                "full_name": "ALEXANDRE TOSTES SALIN E SOUZA",
                 "social_name": "João"
             },
             {
                 "id": 5,
                 "total_score": 98,
-                "full_name": "João da Silva",
+                "full_name": "JOÃO DA SILVA",
                 "social_name": "João"
             },
             {
                 "id": 5,
                 "total_score": 98,
-                "full_name": "João da Silva",
+                "full_name": "JOÃO DA SILVA",
                 "social_name": "João"
             },
         ]
@@ -97,7 +120,7 @@ export default function ResultsComponent() {
                 {isPlayer &&
                     <div>
                         <p className="font-semibold text-slate-700">SEU DESEMPENHO</p>
-                        <DisplayComponent playerName={playerMock.full_name} points={playerMock.total_score} />
+                        <DisplayComponent playerName={capitalize(playerMock.full_name)} points={playerMock.total_score} />
                     </div>}
                 <div className="grid gap-3">
                     <p className="font-semibold text-slate-700">TOP 4</p>
@@ -108,18 +131,18 @@ export default function ResultsComponent() {
                 <div className="grid gap-3">
                     <p className="font-semibold text-slate-700">IMORTAIS</p>
                     {mock.imortals ? mock.imortals.map((player, index) => {
-                        return <DisplayComponent key={index} playerName={capitalize(player.full_name)} points={player.total_score}/>
-                    }): <p>Ainda não divulgado</p>}
+                        return <DisplayComponent key={index} playerName={capitalize(player.full_name)} points={player.full_name.length} />
+                    }) : <p>Ainda não divulgado</p>}
                 </div>
                 <div className="grid gap-3">
                     <p className="font-semibold text-slate-700">PALADINO</p>
-                    {mock.paladin ? <DisplayComponent playerName={mock.paladin.full_name} points={mock.paladin.total_score}/> :
-                    <p>Ainda não divulgado</p>}
+                    {mock.paladin ? <DisplayComponent playerName={capitalize(mock.paladin.full_name)} points={mock.paladin.total_score} /> :
+                        <p>Ainda não divulgado</p>}
                 </div>
                 <div className="grid gap-3">
                     <p className="font-semibold text-slate-700">EMBAIXADOR</p>
-                    {mock.ambassor ? <DisplayComponent playerName={mock.ambassor.full_name} points={mock.ambassor.total_score}/> :
-                    <p>Ainda não divulgado</p>}
+                    {mock.ambassor ? <DisplayComponent playerName={capitalize(mock.ambassor.full_name)} points={mock.ambassor.total_score} /> :
+                        <p>Ainda não divulgado</p>}
                 </div>
             </div>
         </>
