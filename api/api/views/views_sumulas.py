@@ -553,11 +553,11 @@ class GenerateSumulas(BaseSumulaView):
 
     def generate_sumulas(self, event) -> list[SumulaClassificatoria] | Exception:
         """Gera sumulas classificatorias para iniciar um evento.
-        Uma sumula possui no maximo 8 e no mínimo 5 jogadores.
+        Uma sumula possui no maximo 8 e no mínimo 6 jogadores.
         """
         MIN_PLAYERS = 6  # A DECIDIR
         MAX_PLAYERS = 8
-        letters = string.ascii_uppercase
+        letters = string.ascii_uppercase #Alfabeto para nomear as chaves
         letters_count = 0
         players = Player.objects.filter(
             event=event, is_present=True, is_imortal=False)
