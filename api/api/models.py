@@ -77,7 +77,7 @@ class Event (models.Model):
         Token, on_delete=models.CASCADE, related_name='event')
     join_token = models.CharField(
         default='', max_length=TOKEN_LENGTH, blank=True)
-    name = models.CharField(default='', max_length=64, blank=True, null=True)
+    name = models.CharField(default='', max_length=64, blank=False, null=True)
     active = models.BooleanField(default=True)
     admin_email = models.EmailField(default='', blank=True, null=True)
     is_final_results_published = models.BooleanField(default=False)
