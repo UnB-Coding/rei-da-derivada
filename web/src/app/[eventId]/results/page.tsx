@@ -1,7 +1,6 @@
 'use client'
-import { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { UserContext } from "@/app/contexts/UserContext";
-import { EventContext } from "@/app/contexts/EventContext";
 import { useRouter, usePathname } from "next/navigation";
 import HeaderComponent from "@/app/components/HeaderComponent";
 import LoadingComponent from "@/app/components/LoadingComponent";
