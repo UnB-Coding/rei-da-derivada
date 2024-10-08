@@ -1,0 +1,13 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools %}
+    <div class="object-tools">
+        <ul class="object-tools">
+            <li>
+                <a href="{% url 'admin:create-10-tokens' %}" class="addlink">
+                    Criar 10 tokens
+                </a>
+            </li>
+        </ul>
+    </div>
+{% endblock %}

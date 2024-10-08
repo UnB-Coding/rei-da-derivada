@@ -249,9 +249,10 @@ class BaseSumulaView(BaseView):
                 player_obj.is_imortal = True
                 player_obj.save()
 
-        sumula.name = self.request.data['name']
         sumula.description = self.request.data['description']
         sumula.active = False
+        if sumula.__class__ != SumulaImortal:
+            sumula.name = self.request.data['name']
         sumula.save()
 
     def validate_if_staff_is_sumula_referee(self, sumula: SumulaClassificatoria | SumulaImortal, event: Event) -> Exception | Staff:

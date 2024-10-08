@@ -233,14 +233,21 @@ class SumulaImortalView(BaseSumulaView):
     @ swagger_auto_schema(
         tags=['sumula'],
         operation_summary="Cria uma nova sumula imortal.",
-        operation_description="Cria uma nova sumula imortal e retorna a sumula criada com os jogadores e suas pontuações.",
+        operation_description="""Cria uma nova sumula imortal e retorna a sumula criada com os jogadores e suas pontuações.
+        O nome da súmula é criado automaticamente e é composto por "Imortais" + o numero da chave imortal, na ordem em que as súmulas foram criadas.
+
+        Ex: Imortais 01, Imortais 02, Imortais 03, etc.
+
+        No exemplo acima, se a súmula 03 for deletada, a próxima súmula a ser criada será Imortais 03, pois continuará a contagem no maior número existente, que seria 02.
+        Já caso a súmula 02 seja deletada e a 03 mantida, a próxima súmula criada será chamada de Imortais 04, pois última súmula tem número 03, não havendo
+        possibilidade de reutilizar o número 02.
+        """,
         security=[{'Bearer': []}],
         manual_parameters=manual_parameter_event_id,
         request_body=openapi.Schema(
             title='Sumula',
             type=openapi.TYPE_OBJECT,
             properties={
-                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome da sumula'),
                 'players': openapi.Schema(
                     type=openapi.TYPE_ARRAY,
                     title='Players',
@@ -270,7 +277,8 @@ class SumulaImortalView(BaseSumulaView):
 
         Permissões necessárias: IsAuthenticated, HasSumulaPermission
         """
-        if not self.validate_request_data_dict(request.data) or 'name' not in request.data or not self.validate_players(request.data):
+        required_fields = ['players', 'referees']
+        if not self.validate_request_data_dict(request.data) or not all(field in request.data for field in required_fields) or not self.validate_players(request.data):
             return handle_400_error("Dados inválidos!")
         try:
             event = self.get_event()
@@ -279,9 +287,8 @@ class SumulaImortalView(BaseSumulaView):
         self.check_object_permissions(self.request, event)
 
         players = request.data['players']
-        name = request.data['name']
         sumula = SumulaImortal.objects.create(
-            event=event, name=name)
+            event=event)
         try:
             players_score = self.create_players_score(
                 players=players, sumula=sumula, event=event)
@@ -546,11 +553,11 @@ class GenerateSumulas(BaseSumulaView):
 
     def generate_sumulas(self, event) -> list[SumulaClassificatoria] | Exception:
         """Gera sumulas classificatorias para iniciar um evento.
-        Uma sumula possui no maximo 8 e no mínimo 5 jogadores.
+        Uma sumula possui no maximo 8 e no mínimo 6 jogadores.
         """
         MIN_PLAYERS = 6  # A DECIDIR
         MAX_PLAYERS = 8
-        letters = string.ascii_uppercase
+        letters = string.ascii_uppercase #Alfabeto para nomear as chaves
         letters_count = 0
         players = Player.objects.filter(
             event=event, is_present=True, is_imortal=False)
