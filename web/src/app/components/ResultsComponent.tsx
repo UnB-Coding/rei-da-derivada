@@ -8,6 +8,7 @@ import { settingsWithAuth } from "@/app/utils/settingsWithAuth";
 import { usePathname } from "next/navigation";
 import capitalize from "@/app/utils/capitalize";
 import { isAxiosError } from "axios";
+import Loading from "./LoadingComponent";
 
 interface ResultsComponentProps {
     isPlayer: boolean,
@@ -15,7 +16,8 @@ interface ResultsComponentProps {
 
 export default function ResultsComponent({isPlayer} : ResultsComponentProps) {
     const { user } = useContext(UserContext);
-    const [published, setPublished] = useState<boolean>(false);
+    const [published, setPublished] = useState<boolean>(true);
+    const [ canSee, setCanSee ] = useState<boolean>(false);
     const [results, setResults] = useState<any>();
     const [playerResults, setPlayerResults] = useState<any>();
     const currentId = usePathname().split('/')[1];
@@ -25,14 +27,17 @@ export default function ResultsComponent({isPlayer} : ResultsComponentProps) {
             const response = await request.get(`/api/results/?event_id=${currentId}`, settingsWithAuth(user.access));
             if(response.status === 200) {
                 setResults(response.data);
+                console.log(response.data);
             }
             if(isPlayer){
                 const playerResponse = await request.get(`/api/results/player/?event_id=${currentId}`, settingsWithAuth(user.access));
                 if(playerResponse.status === 200) {
                     setPlayerResults(response.data);
+                    console.log(response.data);
                 }
             }
             setPublished(true);
+            setCanSee(true);
         } catch (error: unknown) {
             if(isAxiosError(error)){
                 const errorMessage = error.response?.data.errors || "Erro desconhecido";
@@ -114,35 +119,39 @@ export default function ResultsComponent({isPlayer} : ResultsComponentProps) {
         ]
     }
 
-    return published ? <NoResults /> :
+    if(!canSee) {
+        return <Loading />
+    }
+
+    return !published ? <NoResults /> :
         <>
             <div className="grid justify-center items-center gap-5 py-32">
                 {isPlayer &&
                     <div>
-                        <p className="font-semibold text-slate-700">SEU DESEMPENHO</p>
+                        <p className="font-semibold text-slate-700 md:text-2xl">SEU DESEMPENHO</p>
                         <DisplayComponent playerName={capitalize(playerMock.full_name)} points={playerMock.total_score} />
                     </div>}
                 <div className="grid gap-3">
-                    <p className="font-semibold text-slate-700">TOP 4</p>
-                    {mock.top4 ? mock.top4.map((player, index) => {
+                    <p className="font-semibold text-slate-700 md:text-2xl">TOP 4</p>
+                    {results.top4 ? results.top4.map((player: any, index: number) => {
                         return <DisplayComponent key={index} playerName={capitalize(player.full_name)} points={player.total_score} />
-                    }) : <p> Ainda não divulgado</p>}
+                    }) : <p className="text-lg md:text-xl">Ainda não divulgado</p>}
                 </div>
                 <div className="grid gap-3">
-                    <p className="font-semibold text-slate-700">IMORTAIS</p>
-                    {mock.imortals ? mock.imortals.map((player, index) => {
-                        return <DisplayComponent key={index} playerName={capitalize(player.full_name)} points={player.full_name.length} />
-                    }) : <p>Ainda não divulgado</p>}
+                    <p className="font-semibold text-slate-700 md:text-2xl">IMORTAIS</p>
+                    {results.imortals ? results.imortals.map((player: any, index: number) => {
+                        return <DisplayComponent key={index} playerName={capitalize(player.full_name)} points={player.total_score} />
+                    }) : <p className="text-lg md:text-xl">Ainda não divulgado</p>}
                 </div>
                 <div className="grid gap-3">
-                    <p className="font-semibold text-slate-700">PALADINO</p>
-                    {mock.paladin ? <DisplayComponent playerName={capitalize(mock.paladin.full_name)} points={mock.paladin.total_score} /> :
-                        <p>Ainda não divulgado</p>}
+                    <p className="font-semibold text-slate-700 md:text-2xl">PALADINO</p>
+                    {results.paladin.full_name ? <DisplayComponent playerName={capitalize(results.paladin.full_name)} points={results.paladin.total_score} /> :
+                        <p className="text-lg md:text-xl">Ainda não divulgado</p>}
                 </div>
                 <div className="grid gap-3">
-                    <p className="font-semibold text-slate-700">EMBAIXADOR</p>
-                    {mock.ambassor ? <DisplayComponent playerName={capitalize(mock.ambassor.full_name)} points={mock.ambassor.total_score} /> :
-                        <p>Ainda não divulgado</p>}
+                    <p className="font-semibold text-slate-700 md:text-2xl">EMBAIXADOR</p>
+                    {results.ambassor.full_name ? <DisplayComponent playerName={capitalize(results.ambassor.full_name)} points={results.ambassor.total_score} /> :
+                        <p className="text-lg md:text-xl">Ainda não divulgado</p>}
                 </div>
             </div>
         </>
