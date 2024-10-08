@@ -50,7 +50,7 @@ export default function UserContextProvider({ children }:{children: React.ReactN
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    fetch("http://localhost:8000/users/login/", {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/login/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
