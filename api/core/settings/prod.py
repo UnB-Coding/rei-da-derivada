@@ -15,7 +15,7 @@ ALLOWED_HOSTS = [
 # https://github.com/adamchainz/django-cors-headers
 
 CORS_ALLOWED_ORIGINS = [
-    "https://rei-da-derivada.vercel.app/",
+    "https://rei-da-derivada.vercel.app",
 ]
 # CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
