@@ -261,7 +261,7 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
                             "total_score": 0,
                             "registration_email": self.player2.registration_email,
                         }
-                    }
+                        }
             ]
         }
         self.data_post = {
@@ -334,7 +334,7 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
         self.assertEqual(SumulaImortal.objects.count(), 4)
         self.assertEqual(PlayerScore.objects.count(), 4)
         self.assertIsNotNone(SumulaImortal.objects.filter(
-            name='imortais 01').first())
+            name='Imortais 01').first())
         sumula_id = response.data['id']
         sumula = SumulaImortal.objects.get(id=sumula_id)
         self.assertEqual(sumula.referee.count(), 1)
@@ -389,7 +389,7 @@ class SumulaImortalViewTest(BaseSumulaViewTest):
         self.assertIsNotNone(self.sumula)
         self.assertEqual(len(referees), 2)
         self.assertEqual(len(scores), 2)
-        self.assertEqual(self.sumula.name, 'imortais 01')
+        self.assertEqual(self.sumula.name, 'Imortais 01')
         self.assertEqual(self.sumula.referee.count(), 2)
         self.assertEqual(self.sumula.scores.count(), 2)
         self.assertFalse(SumulaImortal.objects.get(id=self.sumula.id).active)
@@ -489,7 +489,7 @@ class SumulaClassificatoriaViewTest(BaseSumulaViewTest):
                             "total_score": 0,
                             "registration_email": self.player2.registration_email,
                         }
-                    }
+                        }
             ]
         }
         self.data_post = {

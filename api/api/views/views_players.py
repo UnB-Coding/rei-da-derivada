@@ -412,3 +412,32 @@ class DeleteAllPlayers(BaseView):
         players = Player.objects.filter(event=event)
         players.delete()
         return response.Response(status=status.HTTP_200_OK, data='Todos os jogadores deletados com sucesso!')
+
+
+class GetNotImortalPlayers(BaseView):
+    permission_classes = [IsAuthenticated, PlayersPermission]
+
+    @swagger_auto_schema(
+        tags=['player'],
+        operation_description="""Retorna todos os jogadores não imortais do evento, ou seja **jogadores que ainda estão disputando as chaves princiapais do RRDD**. """,
+        operation_summary="""Retorna todos os jogadores NÃO imortais do evento (classficados nas chaves). """,
+        manual_parameters=manual_parameter_event_id,
+        responses={200: openapi.Response(
+            200, PlayerSerializer), **Errors([400]).retrieve_erros()}
+    )
+    def get(self, request: request.Request, *args, **kwargs) -> response.Response:
+        """ Retorna todos os jogadores não imortais do evento."""
+        try:
+            event = self.get_event()
+        except Exception as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(request, event)
+
+        players = Player.objects.filter(event=event, is_imortal=False)
+        players_list = []
+        for player in players:
+            players_list.append(player)
+
+        data = PlayerSerializer(players_list, many=True).data
+
+        return response.Response(status=status.HTTP_200_OK, data=data)

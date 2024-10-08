@@ -1,6 +1,7 @@
 import random
 from django.db.models import UniqueConstraint
 from django.db import IntegrityError, models
+from django.db import transaction
 from django.forms import ValidationError
 from django.dispatch import receiver
 from django.db.models.signals import post_save, pre_delete
@@ -15,8 +16,9 @@ class Token (models.Model):
     """Modelo de Token. Um token é um codigo de uso unico utilizado para criar um evento"
 
     fields:
-    - token_code: CharField com o código do token
-    - used: BooleanField que indica se o token foi utilizado ou não
+    - token_code: CharField
+    - used: BooleanField
+    - created_at: DateTimeField
     """
     token_code = models.CharField(
         default='', max_length=TOKEN_LENGTH, unique=True, blank=True)
@@ -64,14 +66,18 @@ class Event (models.Model):
     """Modelo de Evento. Um evento esta associado a um token de uso unico e possui multiplas models Sumula associadas.
      fields:
     - token: ForeignKey para Token
+    - join_token: CharField com o código de join do evento
     - name: CharField com o nome do evento
     - active: BooleanField que indica se o evento está ativo ou não
+    - admin_email: EmailField
+    - is_final_results_published: BooleanField
+    - is_imortal_results_published: BooleanField
     """
     token = models.OneToOneField(
         Token, on_delete=models.CASCADE, related_name='event')
     join_token = models.CharField(
         default='', max_length=TOKEN_LENGTH, blank=True)
-    name = models.CharField(default='', max_length=64, blank=True, null=True)
+    name = models.CharField(default='', max_length=64, blank=False, null=True)
     active = models.BooleanField(default=True)
     admin_email = models.EmailField(default='', blank=True, null=True)
     is_final_results_published = models.BooleanField(default=False)
@@ -163,6 +169,9 @@ class Sumula (models.Model):
     - referee: ManyToManyField para Staff (related_name='sumulas')
     - event: ForeignKey para Event
     - name: CharField com o nome da sumula
+    - active: BooleanField
+    - description: TextField
+    - rounds: JSONField
     """
     referee = models.ManyToManyField(Staff, blank=True)
     event = models.ForeignKey(
@@ -180,8 +189,6 @@ class Sumula (models.Model):
 
     def __str__(self):
         return self.name
-    [[[{"id": 2471}, {"id": 2478}], [{"id": 2472}, {"id": 2477}], [{"id": 2473}, {"id": 2476}], [{"id": 2474}, {"id": 2475}]], [[{"id": 2471}, {"id": 2477}], [{"id": 2478}, {"id": 2476}], [{"id": 2472}, {"id": 2475}], [{"id": 2473}, {"id": 2474}]], [[{"id": 2471}, {"id": 2476}], [{"id": 2477}, {"id": 2475}], [{"id": 2478}, {"id": 2474}], [{"id": 2472}, {"id": 2473}]], [[{"id": 2471}, {"id": 2475}], [{"id": 2476}, {"id": 2474}], [
-        {"id": 2477}, {"id": 2473}], [{"id": 2478}, {"id": 2472}]], [[{"id": 2471}, {"id": 2474}], [{"id": 2475}, {"id": 2473}], [{"id": 2476}, {"id": 2472}], [{"id": 2477}, {"id": 2478}]], [[{"id": 2471}, {"id": 2473}], [{"id": 2474}, {"id": 2472}], [{"id": 2475}, {"id": 2478}], [{"id": 2476}, {"id": 2477}]], [[{"id": 2471}, {"id": 2472}], [{"id": 2473}, {"id": 2478}], [{"id": 2474}, {"id": 2477}], [{"id": 2475}, {"id": 2476}]]]
 
 
 class SumulaImortal(Sumula):
@@ -190,12 +197,31 @@ class SumulaImortal(Sumula):
     - event: ForeignKey para Event
     - name: CharField com o nome da sumula
     """
+    name = models.CharField(default='', max_length=64, blank=True)
     referee = models.ManyToManyField(
         Staff, related_name='sumula_imortal', blank=True)
+    number = models.SmallIntegerField(default=0, blank=True, null=True)
 
     class Meta:
         verbose_name = ("Sumula Imortal")
         verbose_name_plural = ("Sumulas Imortais")
+
+    def _set_name(self):
+        with transaction.atomic():
+            sumulas = self.__class__.objects.select_for_update().filter(event=self.event)
+            if not sumulas.exists():
+                self.number = 1
+                return f"Imortais 01"
+            number_max = sumulas.aggregate(models.Max('number'))['number__max']
+            self.number = number_max + 1
+            if self.number < 10:
+                return f"Imortais 0{self.number}"
+            return f"Imortais {self.number}"
+
+    def save(self, *args, **kwargs):
+        if not self.name:
+            self.name = self._set_name()
+        super().save(*args, **kwargs)
 
 
 class SumulaClassificatoria(Sumula):
@@ -275,8 +301,10 @@ class PlayerScore(models.Model):
     fields:
     - player: ForeignKey para Player
     - event: ForeignKey para Event
-    - sumula: ForeignKey para Sumula
+    - sumula_classificatoria: ForeignKey para SumulaClassificatoria
+    - sumula_imortal: ForeignKey para SumulaImortal
     - points: IntegerField com a pontuacao do player
+    - rounds_number: IntegerField com o numero de rounds
     """
     player = models.ForeignKey(
         Player, on_delete=models.CASCADE, related_name='scores', default=None, blank=False, null=False)

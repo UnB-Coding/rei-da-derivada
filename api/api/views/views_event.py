@@ -186,6 +186,7 @@ class EventView(BaseView):
         if not event:
             return handle_400_error(EVENT_DOES_NOT_EXIST_ERROR_MESSAGE)
         if created:
+            token.mark_as_used()
             event.name = name
 
         response_status, data = self.handle_event_permissions(
