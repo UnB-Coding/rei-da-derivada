@@ -23,6 +23,7 @@ type NavItem = {
 const navItems: Record< UserType, NavItem[]> = {
     player: [
         { figure: <Image src={homel} alt="home" width={36} height={36}/>, href: '/home' },
+        { figure: <Image src={resultl} alt="results" width={36} height={36}/>, href: './results' },
         { figure: <Image src={profilel} alt="profile" width={36} height={36}/>, href: '/profile' },
     ],
     staff: [

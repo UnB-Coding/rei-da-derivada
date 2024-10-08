@@ -16,12 +16,12 @@ import Navbar from "@/app/components/eventComponentes/Navbar";
 
 export default function Admin() {
   const { user, loading } = useContext(UserContext);
-  const [ canSee, setCanSee ] = useState<boolean>(false);
+  const [canSee, setCanSee] = useState<boolean>(false);
   const router = useRouter();
   const params = usePathname().split("/");
   const currentId = parseInt(params[1]);
   const currentPath = params[2];
-  const [ userType, setUserType ] = useState<UserType>('common');
+  const [userType, setUserType] = useState<UserType>('common');
   type UserType = 'player' | 'staff' | 'manager' | 'admin' | 'common';
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export default function Admin() {
       const current = user.all_events.find(elem => elem.event?.id === currentId);
       if (current && current.role) {
         const isValidPath = validatePath(current.role, currentPath);
-        if(isValidPath){
+        if (isValidPath) {
           setUserType(current.role as UserType);
           setCanSee(true);
         } else {
@@ -43,19 +43,21 @@ export default function Admin() {
     }
   }, [user]);
 
-  if( !canSee || loading){
-    return <LoadingComponent/>;
+  if (!canSee || loading) {
+    return <LoadingComponent />;
   }
 
-  return(
+  return (
     <>
-      <HeaderComponent/>
-      <SubmitFileComponent/>
-      <CreateSumula/>
-      <AddPlayerComponent/>
-      <AddStaffComponent/>
-      <AddManager/>
-      <EventNavBarComponent userType={userType}/>
+      <HeaderComponent />
+      <div className="py-32">
+        <SubmitFileComponent />
+        <CreateSumula />
+        <AddPlayerComponent />
+        <AddStaffComponent />
+        <AddManager />
+      </div>
+      <EventNavBarComponent userType={userType} />
     </>
   );
 }

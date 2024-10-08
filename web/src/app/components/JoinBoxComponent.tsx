@@ -30,11 +30,11 @@ const JoinBoxComponent = (props: JoinBoxComponentProps) => {
         const atual: CurrentEvent = {
             role: current?.role,
             event: current?.event,
-            paths: current?.role === "admin" || current?.role === "manager" 
-            ? adminpaths 
-            : current?.role === "staff" 
-            ? staffpaths 
-            : playerpaths
+            paths: current?.role === "admin" || current?.role === "manager"
+                ? adminpaths
+                : current?.role === "staff"
+                    ? staffpaths
+                    : playerpaths
         }
 
         setCurrentEvent(atual);
@@ -49,15 +49,17 @@ const JoinBoxComponent = (props: JoinBoxComponentProps) => {
     }, [shouldNavigate, currentEvent]);
 
     return (
-        <div className="bg-neutral-100 border-2 w-[316px] h-[55px] rounded-md flex justify-between px-2 items-center z-0">
-            <p className="text-primary font-semibold text-lg">{props.name?.toUpperCase()}</p>
-            {props.active && (
-                <span className="flex h-3 w-3 absolute ml-56">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full bg-green-500 h-3 w-3 bg--500"></span>
-                </span>
-            )}
-            <ArrowButton onClick={() => { props.isEvent ? handleClick() : props.onClick?.()}} />
+        <div className="bg-neutral-100 border-2 w-[316px] h-[55px] md:w-[400px] md:h-[60px] rounded-md flex justify-between px-2 items-center z-0">
+            <p className="text-primary font-semibold text-lg md:text-xl">{props.name?.toUpperCase()}</p>
+            <div className="flex items-center relative">
+                {props.active && (
+                    <span className="absolute flex h-3 w-3 right-14">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full bg-green-500 h-3 w-3"></span>
+                    </span>
+                )}
+                <ArrowButton onClick={() => { props.isEvent ? handleClick() : props.onClick?.() }} />
+            </div>
         </div>
     );
 }
