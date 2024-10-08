@@ -91,8 +91,12 @@ sumula_classicatoria_api_put_schema = openapi.Schema(
                 required=['points', 'player']
             )
         ),
+        'imortal_players': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(
+            type=openapi.TYPE_OBJECT, description='ID dos jogadores imortais', properties={
+                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador', example=1),
+            })),
     },
-    required=['id', 'name', 'referee', 'players_score']
+    required=['id', 'name', 'referee', 'players_score', 'imortal_players']
 )
 
 indivual_sumulas_response_schema = openapi.Schema(title='Sumula', type=openapi.TYPE_OBJECT, properties={

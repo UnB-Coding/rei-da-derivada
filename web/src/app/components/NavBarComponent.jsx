@@ -16,7 +16,7 @@ const NavBarComponent = () => {
     };
 
     return (
-        <div className="bg-secondary w-full items-center justify-around  sm:px-30 lg:px-1/4 xl:px-1/5 h-20 fixed bottom-0 flex">
+        <div className="bg-secondary w-full items-center justify-evenly  sm:px-30 lg:px-1/4 xl:px-1/5 h-20 fixed bottom-0 flex">
             <div className={`bg-primary w-[124px] h-[6px] rounded-full absolute top-0  ${barPosition[routpath]}`}/>
             <Image onClick={() => {router.push("/home")}} src={routpath == '/home' ? homefill : homeline} alt="home icons" width={36} height={36} />
             <Image onClick={() => {router.push("/contests")}} src={routpath == '/contests' ? calendarfill : calendarline} alt="calendar icons" width={36} height={36}/>

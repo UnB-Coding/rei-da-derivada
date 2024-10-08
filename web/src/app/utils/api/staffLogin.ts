@@ -12,7 +12,6 @@ export default async function staffLogin(args: any) {
         const response = await request.post("/api/staff/",body, settingsWithAuth(access));
         if(response.status === 200){
             const data = response.data;
-            console.log(data);
             toast.success("Autenticado com sucesso!")
         }
     } catch (error: unknown) {

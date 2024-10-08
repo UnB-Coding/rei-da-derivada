@@ -28,7 +28,6 @@ export default async function addNewStaff(fullName: string, registrationEmail: s
     } catch (error: unknown) {
         if(isAxiosError(error)){
             const { data } = error.response || {};
-            console.log(data);
             const errorMessage = data.errors || "Erro desconhecido.";
             toast.error(errorMessage);
         }

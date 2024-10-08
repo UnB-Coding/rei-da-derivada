@@ -54,14 +54,8 @@ export default function SubmitFileComponent() {
             formData.append("file", staffFile);
             try {
                 const response = await request.post(`/api/upload-staff/?event_id=${currentId}`, formData, formDataSettings(user.access));
-                console.log(response.data);
-                if (response.status === 201) {
-                    if (typeof response.data === 'object' && response.data !== null && 'message' in response.data && 'errors' in response.data) {
-                        toast.success(response.data.message, { duration: 6000 });
-                        toast(response.data.errors, { duration: 6000, icon: '⚠️' });
-                    } else {
-                        toast.success(response.data);
-                    }
+                if(response.status === 201){
+                    toast.success(response.data);
                 }
             } catch (error) {
                 if (error.response && error.response.data && error.response.data.errors) {

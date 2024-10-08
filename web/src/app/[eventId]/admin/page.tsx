@@ -11,6 +11,8 @@ import SubmitFileComponent from "@/app/components/eventComponentes/SubmitFileCom
 import AddPlayerComponent from "@/app/components/eventComponentes/AddPlayerComponent";
 import AddStaffComponent from "@/app/components/eventComponentes/AddStaffComponent";
 import AddManager from "@/app/components/eventComponentes/AddManager";
+import CreateSumula from "@/app/components/eventComponentes/CreateSumula";
+import Navbar from "@/app/components/eventComponentes/Navbar";
 
 export default function Admin() {
   const { user, loading } = useContext(UserContext);
@@ -19,6 +21,8 @@ export default function Admin() {
   const params = usePathname().split("/");
   const currentId = parseInt(params[1]);
   const currentPath = params[2];
+  const [ userType, setUserType ] = useState<UserType>('common');
+  type UserType = 'player' | 'staff' | 'manager' | 'admin' | 'common';
 
   useEffect(() => {
     if (!user.access && !loading) {
@@ -26,15 +30,20 @@ export default function Admin() {
     } else if (user.all_events) {
       const current = user.all_events.find(elem => elem.event?.id === currentId);
       if (current && current.role) {
-        validatePath(current.role,currentPath) === true ?
-        setCanSee(true) : router.push(`/${currentId}/${getBasePath(current.role)}`);
+        const isValidPath = validatePath(current.role, currentPath);
+        if(isValidPath){
+          setUserType(current.role as UserType);
+          setCanSee(true);
+        } else {
+          router.push(`/${currentId}/${getBasePath(current.role)}`);
+        }
       } else {
         router.push("/contests");
       }
     }
   }, [user]);
 
-  if(!canSee || loading){
+  if( !canSee || loading){
     return <LoadingComponent/>;
   }
 
@@ -42,10 +51,11 @@ export default function Admin() {
     <>
       <HeaderComponent/>
       <SubmitFileComponent/>
+      <CreateSumula/>
       <AddPlayerComponent/>
       <AddStaffComponent/>
       <AddManager/>
-      <EventNavBarComponent/>
+      <EventNavBarComponent userType={userType}/>
     </>
-  );   
+  );
 }

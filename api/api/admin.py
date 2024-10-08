@@ -1,9 +1,12 @@
+from django.http import HttpResponse, HttpResponseRedirect
+import openpyxl
 from django import forms
 from django.contrib import admin
 from django.forms import ValidationError
 from .models import Token, Event, SumulaImortal, SumulaClassificatoria, PlayerScore, Player, Staff, Results
 from guardian.admin import GuardedModelAdmin
 from django.db.models import Count
+from django.urls import path
 
 
 @admin.register(Token)
@@ -13,6 +16,52 @@ class TokenAdmin(GuardedModelAdmin):
     list_display = ['token_code', 'id', 'created_at', 'used', 'event']
     search_fields = ['token_code']
     fields = ['used']
+    actions = ['export_as_excel']
+    change_list_template = "admin/token_changelist.html"
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('create-10-tokens/', self.admin_site.admin_view(
+                self.create_10_tokens), name='create-10-tokens'),
+        ]
+        return custom_urls + urls
+
+    def create_10_tokens(self, request):
+        for i in range(10):
+            Token.objects.create()
+        self.message_user(request, "10 tokens foram criados com sucesso.")
+        return HttpResponseRedirect("../")
+
+    def export_as_excel(self, request, queryset):
+        # Cria um workbook e uma worksheet
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
+        worksheet.title = 'Tokens'
+
+        # Define os cabeçalhos
+        headers = ['TOKEN', 'USADO', 'CRIADO EM']
+        worksheet.append(headers)
+
+        bold_font = openpyxl.styles.Font(bold=True)
+        for cell in worksheet[1]:
+            cell.font = bold_font
+        # Adiciona os dados dos eventos
+        for token in queryset:
+            used = 'Não'
+            if token.used:
+                used = 'Sim'
+            created_at = token.created_at.strftime('%d/%m/%Y %H:%M:%S')
+            row = [token.token_code, used, created_at]
+            worksheet.append(row)
+
+        # Cria a resposta HTTP
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=tokens.xlsx'
+        workbook.save(response)
+        return response
+    export_as_excel.short_description = 'Exportar tokens como Excel'
 
 
 @admin.register(Event)
@@ -26,12 +75,54 @@ class EventAdmin(GuardedModelAdmin):
         return obj.is_imortal_results_published
     imortal_results_published.short_description = 'Imortal Results Published?'
     imortal_results_published.boolean = True
+
     list_display = ['id', 'token', 'join_token', 'name', 'active',
                     'final_results_published', 'imortal_results_published']
     search_fields = ['token', 'name', 'active', 'join_token']
-    fields = ['token', 'name', 'active', 'admin_email']
+    fields = ['token', 'name', 'active',
+              'admin_email', 'is_final_results_published', 'is_imortal_results_published', 'join_token']
     ordering = ['name', 'active', 'is_final_results_published',
                 'is_imortal_results_published', 'token', 'join_token']
+
+    actions = ['export_as_excel']
+
+    def export_as_excel(self, request, queryset):
+        # Cria um workbook e uma worksheet
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
+        worksheet.title = 'Events'
+
+        # Define os cabeçalhos
+        headers = ['NOME', 'ATIVO', 'ADMIN TOKEN', 'JOIN TOKEN',
+                   'RESULTADOS IMORTAIS PUBLICADOS', 'RESULTADOS FINAIS PUBLICADOS']
+        worksheet.append(headers)
+
+        bold_font = openpyxl.styles.Font(bold=True)
+        for cell in worksheet[1]:
+            cell.font = bold_font
+        # Adiciona os dados dos eventos
+        for event in queryset:
+            token = event.token.token_code
+            active = 'Não'
+            imortal = 'Não'
+            final = 'Não'
+            if event.active:
+                active = 'Sim'
+            if event.is_imortal_results_published:
+                imortal = 'Sim'
+            if event.is_final_results_published:
+                final = 'Sim'
+            row = [event.name, active, token, event.join_token, imortal, final]
+            worksheet.append(row)
+
+        # Cria a resposta HTTP
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=events.xlsx'
+        workbook.save(response)
+        return response
+
+    export_as_excel.short_description = 'Exportar eventos como Excel'
 
 
 class SumulaAdmin(GuardedModelAdmin):
@@ -82,7 +173,10 @@ class SumulaAdmin(GuardedModelAdmin):
 
 @ admin.register(SumulaImortal)
 class SumulaImortalAdmin(SumulaAdmin):
-    pass
+    list_display = ['name', 'event', 'referees',
+                    'id', 'player_scores', 'players_count', 'active', 'rounds_count', 'rounds', 'number']
+    fields = ['referee', 'event', 'name',
+              'active', 'description', 'rounds', 'number']
 
 
 @ admin.register(SumulaClassificatoria)

@@ -9,6 +9,8 @@ interface JoinBoxComponentProps {
     id?: number;
     name?: string;
     active?: boolean;
+    isEvent?: boolean;
+    onClick?: () => Promise<void>;
 }
 
 const JoinBoxComponent = (props: JoinBoxComponentProps) => {
@@ -39,7 +41,6 @@ const JoinBoxComponent = (props: JoinBoxComponentProps) => {
         setShouldNavigate(true);
         setLoading(false);
     }
-
     useEffect(() => {
         if (shouldNavigate && currentEvent && currentEvent.paths) {
             router.push(`/${currentEvent.event?.id}/${currentEvent.paths[0]}`);
@@ -56,7 +57,7 @@ const JoinBoxComponent = (props: JoinBoxComponentProps) => {
                     <span className="relative inline-flex rounded-full bg-green-500 h-3 w-3 bg--500"></span>
                 </span>
             )}
-            <ArrowButton onClick={() => { handleClick()/* tirar a arrow se n precisar colocar mais nd*/ }} />
+            <ArrowButton onClick={() => { props.isEvent ? handleClick() : props.onClick?.()}} />
         </div>
     );
 }

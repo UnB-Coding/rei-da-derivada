@@ -30,15 +30,15 @@ class StaffPermissions(BasePermission):
 
         if request.method == 'GET':
             return request.user.has_perm('api.add_sumula_event', obj)
+        if request.method == 'PUT':
+            return request.user.has_perm('api.change_event', obj)
+        if request.method == 'DELETE':
+            return request.user.has_perm('api.delete_event', obj)
         return False
 
 
 class StaffView(BaseView):
     permission_classes = [IsAuthenticated, StaffPermissions]
-
-    def get_token(self, token_code: str) -> Optional[Token]:
-        """Retorna um token com o código-token fornecido."""
-        return Token.objects.filter(token_code=token_code).first()
 
     @ swagger_auto_schema(
         tags=['staff'],
@@ -102,7 +102,7 @@ class StaffView(BaseView):
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Retorna os usuários staff_member associados ao evento."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -110,16 +110,104 @@ class StaffView(BaseView):
         data = StaffSerializer(staffs, many=True).data
         return response.Response(status=status.HTTP_200_OK, data=data)
 
-    def get_object(self):
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError('Evento não fornecido!')
-        event_id = self.request.query_params['event_id']
-        if not event_id:
-            raise ValidationError('Evento não fornecido!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
+    @swagger_auto_schema(
+        tags=['staff'],
+        operation_description="""Edita os dados de um monitor do evento.,
+        É permitido editar o **nome completo,email do staff e se é gerente ou não**.
+        **Deve ser fornecido no request_body o email atual do staff** e os campos que deseja alterar:
+        - registration_email: Email atual do staff
+        - full_name: Nome completo do staff
+        - new_email: Novo email do stagg
+        - is_manager: Se é gerente de equipe ou não
+        - clear_user: Limpar usuário associado ao monitor, caso deseje remover a relação com o usuário.
+        Note que as chaves do request_body devem ser passadas, porém o valor pode ser vazio, **exceto do campo is_manager, que deve ser bool**.""",
+        operation_summary='Edita os dados de um monitor do evento.',
+        manual_parameters=manual_parameter_event_id,
+        request_body=openapi.Schema(
+            title='Dados do Monitor', type=openapi.TYPE_OBJECT,
+            properties={
+                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do objeto Staff', example=1),
+                'full_name': openapi.Schema(
+                    type=openapi.TYPE_STRING, description='Nome Completo', example='João da Silva'),
+                'is_manager': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Gerente de Equipe', example=False),
+                'new_email': openapi.Schema(type=openapi.TYPE_STRING, description='Novo e-mail do monitor', example='joao1234@outroemail.com'),
+                'clear_user': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Limpar usuário associado ao monitor', example=False)
+            }
+        ),
+        required=['registration_email'],
+        responses={200: openapi.Response(
+            'Monitor editado com sucesso!'), **Errors([400]).retrieve_erros()}
+    )
+    def put(self, request: request.Request, *args, **kwargs):
+        required_fields = ['id', 'full_name', 'new_email', 'is_manager']
+        if not all(field in request.data for field in required_fields):
+            return handle_400_error('Dados inválidos!')
+        try:
+            event = self.get_event()
+        except Exception as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(self.request, event)
+        staff_id = request.data['id']
+        if not staff_id:
+            return handle_400_error('ID do monitor não fornecido!')
+        staff = Staff.objects.filter(id=staff_id).first()
+        if not staff:
+            return handle_400_error('Monitor não encontrado para este evento!')
+        full_name = request.data['full_name']
+        new_email = request.data['new_email']
+        is_manager = request.data['is_manager']
+        clear_user = request.data.get('clear_user', False)
+        if not isinstance(is_manager, bool):
+            return handle_400_error('is_manager deve ser um booleano!')
+        if full_name:
+            full_name = full_name.strip()
+            for word in full_name.split():
+                full_name = full_name.replace(word, word.capitalize())
+        if new_email:
+            try:
+                validate_email(new_email)
+            except Exception:
+                return handle_400_error('Email inválido!')
+        staff.is_manager = is_manager
+        staff.full_name = full_name
+        staff.registration_email = new_email
+        if clear_user:
+            staff.user = None
+            staff.save()
+            return response.Response(status=status.HTTP_200_OK, data='Monitor editado com sucesso e relação com usuário removida!')
+        staff.save()
+        return response.Response(status=status.HTTP_200_OK, data='Monitor editado com sucesso!')
+
+    @swagger_auto_schema(
+        tags=['staff'],
+        operation_description="""Deleta um monitor associado ao evento.
+        Deve ser fornecido o ID do monitor a ser deletado. Após a deleção, o monitor não terá mais acesso ao evento.
+        Apenas o Admin do evento pode realizar essa ação.""",
+        operation_summary='Deleta um monitor associado ao evento.',
+        manual_parameters=manual_parameter_event_id,
+        request_body=openapi.Schema(
+            title='ID do Monitor', type=openapi.TYPE_OBJECT,
+            properties={'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do monitor', example=1)}),
+        required=['id'],
+        responses={200: openapi.Response(
+            'Monitor deletado com sucesso!'), **Errors([400]).retrieve_erros()}
+    )
+    def delete(self, request: request.Request, *args, **kwargs):
+        if 'id' not in request.data:
+            return handle_400_error('ID do monitor não fornecido!')
+        try:
+            event = self.get_event()
+        except Exception as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(self.request, event)
+        staff_id = request.data['id']
+        if not staff_id:
+            return handle_400_error('ID do monitor não fornecido!')
+        staff = Staff.objects.filter(id=staff_id).first()
+        if not staff:
+            return handle_400_error('Monitor não encontrado para este evento!')
+        staff.delete()
+        return response.Response(status=status.HTTP_200_OK, data='Monitor deletado com sucesso!')
 
 
 class AddStaffManagerPermissions(BasePermission):
@@ -134,14 +222,14 @@ class AddStaffManager(BaseView):
 
     @ swagger_auto_schema(
         tags=['staff'],
-        operation_description="""Promove um usuário monitor a Gerente de Equipe no evento associado.
-        Deve ser enviado o email do usuário a ser promovido a Gerente de Equipe. Quem envia a requisição é o Admin do evento.
+        operation_description="""Promove um monitor a Gerente de Equipe no evento associado.
+        Deve ser enviado o email do monitor a ser promovido a Gerente de Equipe. Quem envia a requisição é o Admin do evento.
         """,
         operation_summary="Promove um monitor a Gerente de Equipe.",
         manual_parameters=manual_parameter_event_id,
         request_body=openapi.Schema
-        (title='Email do Usuário', type=openapi.TYPE_OBJECT,
-         properties={'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do usuário', example='example@email.com')}),
+        (title='Email do Staff', type=openapi.TYPE_OBJECT,
+         properties={'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email do staff', example='example@email.com')}),
         responses={200: openapi.Response(
             "Gerente de equipe adicionado com sucesso!'"), **Errors([400]).retrieve_erros()}
     )
@@ -154,7 +242,7 @@ class AddStaffManager(BaseView):
         if not email:
             return handle_400_error('Email do Usuário não fornecido!')
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -171,17 +259,6 @@ class AddStaffManager(BaseView):
         staff_object.is_manager = True
         staff_object.save()
         return response.Response(status=status.HTTP_200_OK, data='Gerente de equipe adicionado com sucesso!')
-
-    def get_object(self):
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError('Evento não fornecido!')
-        event_id = self.request.query_params['event_id']
-        if not event_id:
-            raise ValidationError('Evento não fornecido!')
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise ValidationError('Evento não encontrado!')
-        return event
 
 
 class AddStaffPermissions(BasePermission):
@@ -205,7 +282,7 @@ class AddStaffMembers(BaseView):
             201), **Errors([400]).retrieve_erros()})
     def post(self, request: request.Request, *args, **kwargs):
         try:
-            event = self.get_object()
+            event = self.get_event()
         except ValidationError as e:
             return handle_400_error(str(e))
 
@@ -310,7 +387,7 @@ class AddSingleStaff(BaseView):
         if request.data is None or 'full_name' not in request.data or 'registration_email' not in request.data or 'is_manager' not in request.data:
             return handle_400_error('Dados inválidos!')
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
 
@@ -340,52 +417,23 @@ class AddSingleStaff(BaseView):
         return response.Response(status=status.HTTP_201_CREATED, data='Monitor adicionado com sucesso!')
 
 
-class EditStaffData(BaseView):
-    permission_classes = [IsAuthenticated, AddStaffPermissions]
+class DeleteAllStaffs(BaseView):
+    permission_classes = [IsAuthenticated, StaffPermissions]
 
     @ swagger_auto_schema(
         tags=['staff'],
-        operation_description="""Edita os dados de um monitor do evento.
-            Devem ser enviados os dados do monitor a ser editado.
-            Obrigatório: Nome Completo, E-mail e se é Gerente de Equipe ou não.
-            Esta rota permite que o nome de um monitor seja alterado e se ele é gerente de equipe ou não.
-                """,
-        operation_summary='Edita os dados de um monitor do evento.',
+        operation_description="""Deleta todos os monitores associados ao evento. Apenas o Admin do evento pode realizar essa ação.""",
+        operation_summary='Deleta todos os monitores associados ao evento.',
         manual_parameters=manual_parameter_event_id,
-        request_body=openapi.Schema(
-            title='Dados do Monitor', type=openapi.TYPE_OBJECT,
-            properties={
-                'full_name': openapi.Schema(
-                    type=openapi.TYPE_STRING, description='Nome Completo', example='João da Silva'),
-                'registration_email': openapi.Schema(
-                    type=openapi.TYPE_STRING, description='E-mail atual do monitor', example='joao@email.com'),
-                'is_manager': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Gerente de Equipe', example=False),
-                'new_email': openapi.Schema(type=openapi.TYPE_STRING, description='Novo e-mail do monitor', example='joao1234@outroemail.com')
-            }
-        ),
-        required=['registration_email'],
         responses={200: openapi.Response(
-            'Monitor editado com sucesso!'), **Errors([400]).retrieve_erros()}
+            'Monitores deletados com sucesso!'), **Errors([400]).retrieve_erros()}
     )
-    def post(self, request: request.Request, *args, **kwargs):
-        if request.data is None or 'full_name' not in request.data or 'registration_email' not in request.data or 'is_manager' not in request.data or 'new_email' not in request.data:
-            return handle_400_error('Dados inválidos!')
+    def delete(self, request: request.Request, *args, **kwargs):
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
-
-        self.check_object_permissions(self.request, event)
-        full_name = request.data['full_name']
-        registration_email = request.data['registration_email']
-        new_email = request.data['new_email']
-        is_manager = request.data['is_manager']
-        staff = Staff.objects.filter(
-            registration_email=registration_email, event=event).first()
-        if not staff:
-            return handle_400_error('Monitor não encontrado para este evento!')
-        staff.is_manager = is_manager
-        staff.full_name = full_name
-        staff.registration_email = new_email
-        staff.save()
-        return response.Response(status=status.HTTP_200_OK, data='Monitor editado com sucesso!')
+        self.check_object_permissions(request, event)
+        staffs = Staff.objects.filter(event=event)
+        staffs.delete()
+        return response.Response(status=status.HTTP_200_OK, data='Monitores deletados com sucesso!')

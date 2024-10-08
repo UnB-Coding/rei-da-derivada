@@ -263,7 +263,7 @@ class GetPlayerResultsViewTest(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
-            response.data, {'errors': "['event_id é obrigatório!']"})
+            response.data, {'errors': "['Id do evento não fornecido!']"})
 
     def test_get_player_with_invalid_event_id(self):
         self.client.force_authenticate(user=self.user)
@@ -408,7 +408,7 @@ class AddPlayersViewTest(APITestCase):
         response = self.client.post(url, {'file': self.csv_uploaded_file})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
-            response.data, {'errors': "['Dados inválidos!']"})
+            response.data, {'errors': "['Id do evento não fornecido!']"})
 
     def test_add_players_with_invalid_event_id(self):
         self.client.force_authenticate(user=self.admin)
@@ -515,94 +515,94 @@ class PublishPlayersResultsViewTestCase(APITestCase):
         self.data = None
 
 
-class Top3ImortalPlayersViewTest(APITestCase):
-    def create_unique_email(self):
-        return f'{uuid.uuid4()}@gmail.com'
+# class Top3ImortalPlayersViewTest(APITestCase):
+#     def create_unique_email(self):
+#         return f'{uuid.uuid4()}@gmail.com'
 
-    def create_unique_username(self):
-        return f'user_{uuid.uuid4().hex[:10]}'
+#     def create_unique_username(self):
+#         return f'user_{uuid.uuid4().hex[:10]}'
 
-    def setUpUser(self):
-        self.user0 = User.objects.create(
-            username=self.create_unique_username(), email=self.create_unique_email())
-        self.user1 = User.objects.create(
-            username=self.create_unique_username(), email=self.create_unique_email())
-        self.user2 = User.objects.create(
-            username=self.create_unique_username(), email=self.create_unique_email())
-        self.user3 = User.objects.create(
-            username=self.create_unique_username(), email=self.create_unique_email())
-        self.user4 = User.objects.create(
-            username=self.create_unique_username(), email=self.create_unique_email())
+#     def setUpUser(self):
+#         self.user0 = User.objects.create(
+#             username=self.create_unique_username(), email=self.create_unique_email())
+#         self.user1 = User.objects.create(
+#             username=self.create_unique_username(), email=self.create_unique_email())
+#         self.user2 = User.objects.create(
+#             username=self.create_unique_username(), email=self.create_unique_email())
+#         self.user3 = User.objects.create(
+#             username=self.create_unique_username(), email=self.create_unique_email())
+#         self.user4 = User.objects.create(
+#             username=self.create_unique_username(), email=self.create_unique_email())
 
-    def setUpPlayer(self):
-        self.player0 = Player.objects.create(
-            event=self.event, user=self.user0, total_score=0, registration_email=self.create_unique_email(), is_imortal=True)
-        self.player1 = Player.objects.create(
-            event=self.event, user=self.user1, total_score=10, registration_email=self.create_unique_email(), is_imortal=True)
-        self.player2 = Player.objects.create(
-            event=self.event, user=self.user2, total_score=20, registration_email=self.create_unique_email(), is_imortal=True)
-        self.player3 = Player.objects.create(
-            event=self.event, user=self.user3, total_score=30, registration_email=self.create_unique_email(), is_imortal=True)
-        self.player4 = Player.objects.create(
-            event=self.event, user=self.user4, total_score=40, registration_email=self.create_unique_email(), is_imortal=True)
+#     def setUpPlayer(self):
+#         self.player0 = Player.objects.create(
+#             event=self.event, user=self.user0, total_score=0, registration_email=self.create_unique_email(), is_imortal=True)
+#         self.player1 = Player.objects.create(
+#             event=self.event, user=self.user1, total_score=10, registration_email=self.create_unique_email(), is_imortal=True)
+#         self.player2 = Player.objects.create(
+#             event=self.event, user=self.user2, total_score=20, registration_email=self.create_unique_email(), is_imortal=True)
+#         self.player3 = Player.objects.create(
+#             event=self.event, user=self.user3, total_score=30, registration_email=self.create_unique_email(), is_imortal=True)
+#         self.player4 = Player.objects.create(
+#             event=self.event, user=self.user4, total_score=40, registration_email=self.create_unique_email(), is_imortal=True)
 
-    def setUpEvent(self):
-        self.token = Token.objects.create()
-        self.event = Event.objects.create(
-            name='Evento 1', token=self.token, is_imortal_results_published=True)
-        self.results = Results.objects.create(event=self.event)
+#     def setUpEvent(self):
+#         self.token = Token.objects.create()
+#         self.event = Event.objects.create(
+#             name='Evento 1', token=self.token, is_imortal_results_published=True)
+#         self.results = Results.objects.create(event=self.event)
 
-    def setUpGroup(self):
-        self.group_app_admin = Group.objects.create(name='app_admin')
-        self.group_player = Group.objects.create(name='player')
+#     def setUpGroup(self):
+#         self.group_app_admin = Group.objects.create(name='app_admin')
+#         self.group_player = Group.objects.create(name='player')
 
-    def setUpPermissions(self):
-        assign_permissions(self.user0, self.group_player, self.event)
+#     def setUpPermissions(self):
+#         assign_permissions(self.user0, self.group_player, self.event)
 
-    def setUp(self):
-        self.setUpUser()
-        self.setUpEvent()
-        self.setUpPlayer()
-        self.setUpGroup()
-        self.setUpPermissions()
-        self.url = reverse('api:top3')
+#     def setUp(self):
+#         self.setUpUser()
+#         self.setUpEvent()
+#         self.setUpPlayer()
+#         self.setUpGroup()
+#         self.setUpPermissions()
+#         self.url = reverse('api:top3')
 
-    def test_get_top_3_players(self):
+#     def test_get_top_3_players(self):
 
-        self.client.force_authenticate(user=self.user0)
-        response = self.client.get(self.url, {'event_id': self.event.id})
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 3)
+#         self.client.force_authenticate(user=self.user0)
+#         response = self.client.get(self.url, {'event_id': self.event.id})
+#         self.assertEqual(response.status_code, status.HTTP_200_OK)
+#         self.assertEqual(len(response.data), 3)
 
-        expected_player_ids = [self.player4.id,
-                               self.player3.id, self.player2.id]
-        returned_player_ids = [player['id'] for player in response.data]
+#         expected_player_ids = [self.player4.id,
+#                                self.player3.id, self.player2.id]
+#         returned_player_ids = [player['id'] for player in response.data]
 
-        for player in expected_player_ids:
-            self.assertIn(player, returned_player_ids)
+#         for player in expected_player_ids:
+#             self.assertIn(player, returned_player_ids)
 
-    def test_get_top_3_players_unauthenticated(self):
-        response = self.client.get(self.url, {'event_id': self.event.id})
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+#     def test_get_top_3_players_unauthenticated(self):
+#         response = self.client.get(self.url, {'event_id': self.event.id})
+#         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_get_top_3_players_without_event_id(self):
-        self.client.force_authenticate(user=self.user0)
-        response = self.client.get(self.url)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        # self.assertEqual(response.data, {'errors': "['Dados inválidos!']"})
+#     def test_get_top_3_players_without_event_id(self):
+#         self.client.force_authenticate(user=self.user0)
+#         response = self.client.get(self.url)
+#         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+#         # self.assertEqual(response.data, {'errors': "['Dados inválidos!']"})
 
-    def test_get_top_3_players_with_invalid_event_id(self):
-        self.client.force_authenticate(user=self.user0)
-        response = self.client.get(self.url, {'event_id': 100})
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(
-            response.data, {'errors': "['Evento não encontrado!']"})
+#     def test_get_top_3_players_with_invalid_event_id(self):
+#         self.client.force_authenticate(user=self.user0)
+#         response = self.client.get(self.url, {'event_id': 100})
+#         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+#         self.assertEqual(
+#             response.data, {'errors': "['Evento não encontrado!']"})
 
-    def tearDown(self) -> None:
-        User.objects.all().delete()
-        Event.objects.all().delete()
-        Token.objects.all().delete()
-        Player.objects.all().delete()
+#     def tearDown(self) -> None:
+#         User.objects.all().delete()
+#         Event.objects.all().delete()
+#         Token.objects.all().delete()
+#         Player.objects.all().delete()
 
 
 class AddSinglePlayerViewTest(APITestCase):

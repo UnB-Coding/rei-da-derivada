@@ -28,7 +28,7 @@ class HasSumulaPermission(BasePermission):
         return True
 
 
-class GetSumulasView(BaseSumulaView):
+class SumulasView(BaseSumulaView):
     """Lida com os requests relacionados a sumulas."""
     permission_classes = [IsAuthenticated, HasSumulaPermission]
 
@@ -42,7 +42,7 @@ class GetSumulasView(BaseSumulaView):
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Retorna todas as sumulas associadas a um evento."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
@@ -51,6 +51,43 @@ class GetSumulasView(BaseSumulaView):
         data = SumulaSerializer(
             {'sumulas_classificatoria': sumulas_classificatoria, 'sumulas_imortal': sumulas_imortal}).data
         return response.Response(status=status.HTTP_200_OK, data=data)
+
+    @swagger_auto_schema(
+        tags=['sumula'],
+        operation_summary="Deleta uma súmula.",
+        operation_description="""Deleta uma súmula.
+        Apenas um gerente ou administrador do evento pode deletar uma súmula.
+        """,
+        security=[{'Bearer': []}],
+        manual_parameters=manual_parameter_event_id,
+        request_body=openapi.Schema(
+            title='Sumula',
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID da sumula', example=1),
+            },
+            required=['id']
+        ),
+        responses={200: openapi.Response('OK'), **Errors([400]).retrieve_erros()})
+    def delete(self, request: request.Request, *args, **kwargs):
+        """Deleta uma súmula."""
+        if not self.validate_request_data_dict(request.data) or 'id' not in request.data:
+            return handle_400_error("Dados inválidos!")
+        sumula_id = request.data.get('id')
+        if not sumula_id:
+            return handle_400_error(SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE)
+        try:
+            event = self.get_event()
+        except Exception as e:
+            return handle_400_error(str(e))
+        self.check_object_permissions(self.request, event)
+        sumula = SumulaImortal.objects.filter(id=sumula_id).first()
+        if not sumula:
+            sumula = SumulaClassificatoria.objects.filter(id=sumula_id).first()
+        if not sumula:
+            return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
+        sumula.delete()
+        return response.Response(status=status.HTTP_200_OK)
 
 
 class SumulaClassificatoriaView(BaseSumulaView):
@@ -99,7 +136,7 @@ class SumulaClassificatoriaView(BaseSumulaView):
         if not self.validate_request_data_dict(request.data) or 'name' not in request.data or not self.validate_players(request.data):
             return handle_400_error("Dados inválidos!")
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
@@ -124,17 +161,19 @@ class SumulaClassificatoriaView(BaseSumulaView):
 
     @ swagger_auto_schema(
         tags=['sumula'],
-        operation_summary="Encerra uma sumula classificatoria.",
+        operation_summary="ENCERRA OU EDITA uma sumula classificatoria.",
         operation_description="""Esta rota serve para salvar os dados da sumula e marcar a sumula como **encerrada**.
         As pontuações dos jogadores devem ser enviadas no corpo da requisição e serão atualizadas no banco de dados.
         Devem ser enviados os jogadores **não-classificados** como **IMORTAIS** (is_imortal = True). Já os jogadores **classificados** devem ser enviados como **is_imortal = False.**
         A sumula **não** pode ser mais salva/editada por um monitor comum após encerrada.
-        Apenas um gerente ou administrador do evento pode editar uma sumula encerrada.
+
+**Apenas um gerente ou administrador do evento pode editar uma sumula encerrada.**
 
         Os campos a serem atualizados são:
         - name
         - description
         - pontuação dos players
+        - players que se tornaram imortais
         - define a sumula como encerrada
         """,
         security=[{'Bearer': []}],
@@ -151,6 +190,7 @@ class SumulaClassificatoriaView(BaseSumulaView):
         - name
         - description
         - pontuação dos players
+        - players que se tornaram imortais
         - define a sumula como encerrada
         """
 
@@ -166,7 +206,7 @@ class SumulaClassificatoriaView(BaseSumulaView):
         if not sumula:
             return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -193,14 +233,21 @@ class SumulaImortalView(BaseSumulaView):
     @ swagger_auto_schema(
         tags=['sumula'],
         operation_summary="Cria uma nova sumula imortal.",
-        operation_description="Cria uma nova sumula imortal e retorna a sumula criada com os jogadores e suas pontuações.",
+        operation_description="""Cria uma nova sumula imortal e retorna a sumula criada com os jogadores e suas pontuações.
+        O nome da súmula é criado automaticamente e é composto por "Imortais" + o numero da chave imortal, na ordem em que as súmulas foram criadas.
+
+        Ex: Imortais 01, Imortais 02, Imortais 03, etc.
+
+        No exemplo acima, se a súmula 03 for deletada, a próxima súmula a ser criada será Imortais 03, pois continuará a contagem no maior número existente, que seria 02.
+        Já caso a súmula 02 seja deletada e a 03 mantida, a próxima súmula criada será chamada de Imortais 04, pois última súmula tem número 03, não havendo
+        possibilidade de reutilizar o número 02.
+        """,
         security=[{'Bearer': []}],
         manual_parameters=manual_parameter_event_id,
         request_body=openapi.Schema(
             title='Sumula',
             type=openapi.TYPE_OBJECT,
             properties={
-                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome da sumula'),
                 'players': openapi.Schema(
                     type=openapi.TYPE_ARRAY,
                     title='Players',
@@ -230,18 +277,18 @@ class SumulaImortalView(BaseSumulaView):
 
         Permissões necessárias: IsAuthenticated, HasSumulaPermission
         """
-        if not self.validate_request_data_dict(request.data) or 'name' not in request.data or not self.validate_players(request.data):
+        required_fields = ['players', 'referees']
+        if not self.validate_request_data_dict(request.data) or not all(field in request.data for field in required_fields) or not self.validate_players(request.data):
             return handle_400_error("Dados inválidos!")
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
 
         players = request.data['players']
-        name = request.data['name']
         sumula = SumulaImortal.objects.create(
-            event=event, name=name)
+            event=event)
         try:
             players_score = self.create_players_score(
                 players=players, sumula=sumula, event=event)
@@ -260,11 +307,13 @@ class SumulaImortalView(BaseSumulaView):
 
     @ swagger_auto_schema(
         tags=['sumula'],
-        operation_summary="Encerra uma sumula imortal.",
+        operation_summary="ENCERRA OU EDITA uma sumula imortal.",
         operation_description="""Esta rota serve para salvar os dados da sumula e marcar a sumula como **encerrada**.
         As pontuações dos jogadores devem ser enviadas no corpo da requisição e serão atualizadas no banco de dados.
         A sumula **não** pode ser mais salva/editada por um monitor comum após encerrada.
-        Apenas um gerente ou administrador do evento pode editar uma sumula encerrada.
+
+**Apenas um gerente ou administrador do evento pode editar uma sumula encerrada.**
+
         Os campos a serem atualizados são:
         - name
         - description
@@ -291,7 +340,7 @@ class SumulaImortalView(BaseSumulaView):
         if not sumula:
             return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -326,7 +375,7 @@ class ActiveSumulaView(BaseSumulaView):
     def get(self, request: request.Request):
         """Retorna todas as sumulas ativas."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
@@ -351,7 +400,7 @@ class FinishedSumulaView(BaseSumulaView):
     def get(self, request: request.Request):
         """Retorna todas as sumulas encerradas."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
@@ -384,7 +433,7 @@ class GetSumulaForPlayer(BaseSumulaView):
     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
         """Retorna todas as sumulas ativas associadas a um jogador."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
@@ -447,13 +496,18 @@ class AddRefereeToSumulaView(BaseSumulaView):
         if not sumula_id:
             return handle_400_error(SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE)
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
-        staff = Staff.objects.filter(user=request.user, event=event).first()
+        if event.admin_email == request.user.email:
+            return response.Response(status=status.HTTP_200_OK)
+
+        staff = Staff.objects.filter(
+            user=request.user, event=event).first()
         if not staff:
             return handle_400_error("Usuário não é um monitor do evento!")
+
         is_imortal = request.data.get('is_imortal')
         if is_imortal:
             sumula = SumulaImortal.objects.filter(id=sumula_id).first()
@@ -461,6 +515,7 @@ class AddRefereeToSumulaView(BaseSumulaView):
             sumula = SumulaClassificatoria.objects.filter(id=sumula_id).first()
         if not sumula:
             return handle_400_error(SUMULA_NOT_FOUND_ERROR_MESSAGE)
+
         if sumula.referee.all().count() > 0 and staff not in sumula.referee.all():
             return handle_400_error("Súmula já possui um ou mais árbitros!")
         elif sumula.referee.all().count() == 0:
@@ -484,7 +539,7 @@ class GenerateSumulas(BaseSumulaView):
             'Created', array_of_sumulas_response_schema), **Errors([400]).retrieve_erros()})
     def post(self, request: request.Request, *args, **kwargs) -> response.Response:
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
@@ -498,11 +553,11 @@ class GenerateSumulas(BaseSumulaView):
 
     def generate_sumulas(self, event) -> list[SumulaClassificatoria] | Exception:
         """Gera sumulas classificatorias para iniciar um evento.
-        Uma sumula possui no maximo 8 e no mínimo 5 jogadores.
+        Uma sumula possui no maximo 8 e no mínimo 6 jogadores.
         """
         MIN_PLAYERS = 6  # A DECIDIR
         MAX_PLAYERS = 8
-        letters = string.ascii_uppercase
+        letters = string.ascii_uppercase #Alfabeto para nomear as chaves
         letters_count = 0
         players = Player.objects.filter(
             event=event, is_present=True, is_imortal=False)

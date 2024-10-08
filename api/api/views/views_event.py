@@ -186,6 +186,7 @@ class EventView(BaseView):
         if not event:
             return handle_400_error(EVENT_DOES_NOT_EXIST_ERROR_MESSAGE)
         if created:
+            token.mark_as_used()
             event.name = name
 
         response_status, data = self.handle_event_permissions(
@@ -217,7 +218,7 @@ class EventView(BaseView):
         if request.data is None or 'name' not in request.data:
             return handle_400_error("Nome do evento não fornecido!")
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -300,7 +301,7 @@ class ResultsView(BaseView):
         Os jogadores devem ser enviados como uma lista de dicionários com os campos *player* e *total_score*.
         Os top3 imortais serão calculados automaticamente, não é necessário enviar.
         """,
-        tags=['event'],
+        tags=['results'],
         operation_summary="Atribui os resultados finais do evento manualmente.",
         manual_parameters=manual_parameter_event_id,
         request_body=openapi.Schema(
@@ -335,7 +336,7 @@ class ResultsView(BaseView):
         if not all('player_id' in request.data[field] for field in ['paladin', 'ambassor']):
             return handle_400_error('ID do jogador não fornecido em paladin ou ambassor.')
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         if event not in request.user.events.all():
@@ -366,14 +367,14 @@ class ResultsView(BaseView):
         Os campos top4, paladin e ambassor serão limpos, mas o cálculo dos imortais não será afetado.
         """,
         operation_summary="Deleta os resultados de um evento.",
-        tags=['event'],
+        tags=['results'],
         manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(
             'OK'), **Errors([400]).retrieve_erros()})
     def delete(self, request: request.Request, *args, **kwargs):
         """Deleta o resultado de um evento."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -387,10 +388,14 @@ class ResultsView(BaseView):
         return response.Response(status=status.HTTP_200_OK, data='Resultados deletados com sucesso.')
 
     @swagger_auto_schema(
-        tags=['event'],
+        tags=['results'],
         operation_summary="Retorna os resultados de um evento.",
         operation_description="""Retorna os resultados de um evento.
         Os resultados são compostos por top4, imortais, paladino e embaixador.
+
+        Valor de retorno:
+        - **id**: ID do objeto results.
+        - **top4**: Lista dos top4 jogadores do RRDD. **Caso os resultados **
         """,
         manual_parameters=manual_parameter_event_id,
         responses={200: openapi.Response(
@@ -417,7 +422,16 @@ class ResultsView(BaseView):
                         'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador'),
                         'total_score': openapi.Schema(type=openapi.TYPE_INTEGER, description='Pontuação total do jogador', example=98),
                         'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João da Silva'),
-                        'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='João'), })
+                        'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='João'), }),
+                'imortals': openapi.Schema(
+                   type=openapi.TYPE_ARRAY, description='Lista dos top3 imortais do RRDD',
+                    items=openapi.Schema(type=openapi.TYPE_OBJECT, properties={
+                        'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID do jogador', example=5),
+                        'total_score': openapi.Schema(type=openapi.TYPE_INTEGER, description='Pontuação total do jogador', example=98),
+                        'full_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome completo do jogador', example='João da Silva'),
+                        'social_name': openapi.Schema(type=openapi.TYPE_STRING, description='Nome social do jogador', example='João'),
+                    })),
+
             }
 
             ),
@@ -425,13 +439,13 @@ class ResultsView(BaseView):
     )
     def get(self, request: request.Request, *args, **kwargs):
         try:
-            event = self.get_object()
+            event = self.get_event()
         except Exception as e:
             return handle_400_error(str(e))
         if event not in request.user.events.all():
             return response.Response(status=status.HTTP_403_FORBIDDEN, data={'errors': 'Você não tem permissão para acessar este evento.'})
-        if not event.is_final_results_published:
-            return handle_400_error('Resultados finais ainda não publicados.')
+        if not event.is_final_results_published and not event.is_imortal_results_published:
+            return handle_400_error('Resultados ainda não publicados.')
         results = Results.objects.get(event=event)
         results.calculate_imortals()
         data = ResultsSerializer(results).data
@@ -441,8 +455,8 @@ class ResultsView(BaseView):
 class PublishFinalResults(BaseView):
     permission_classes = [IsAuthenticated, ResultsPermissions]
 
-    @swagger_auto_schema(
-        tags=['event'],
+    @ swagger_auto_schema(
+        tags=['results'],
         security=[{'Bearer': []}],
         operation_description="""Publica TODOS os resultados do evento. Apenas o admin pode realizar a publicacao.
         Os jogadores poderão ver suas próprias pontuações, além de verem o paladino, o embaixador, os top4 finalistas e os imortais.""",
@@ -453,7 +467,7 @@ class PublishFinalResults(BaseView):
     )
     def put(self, request: request.Request, *args, **kwargs) -> response.Response:
         try:
-            event = self.get_object()
+            event = self.get_event()
         except ValidationError as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -462,8 +476,8 @@ class PublishFinalResults(BaseView):
         event.save()
         return response.Response(status=status.HTTP_200_OK, data='Resultados publicados com sucesso!')
 
-    @swagger_auto_schema(
-        tags=['event'],
+    @ swagger_auto_schema(
+        tags=['results'],
         operation_summary="Revoga a publicação dos resultados do evento.",
         operation_description="""Revoga a publicação dos resultados do evento. Apenas o admin pode realizar a revogação.
         Os jogadores não poderão mais ver suas pontuações, o paladino, o embaixador, os top4 finalistas e os imortais.
@@ -475,7 +489,7 @@ class PublishFinalResults(BaseView):
     def delete(self, request: request.Request, *args, **kwargs) -> response.Response:
         """ Revoga a publicação dos resultados do evento."""
         try:
-            event = self.get_object()
+            event = self.get_event()
         except ValidationError as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -488,8 +502,8 @@ class PublishFinalResults(BaseView):
 class PublishImortalsResults(BaseView):
     permission_classes = [IsAuthenticated, ResultsPermissions]
 
-    @swagger_auto_schema(
-        tags=['event'],
+    @ swagger_auto_schema(
+        tags=['results'],
         security=[{'Bearer': []}],
         operation_description="""Publica os resultados **APENAS** dos **top3 imortais** do evento. Apenas o admin pode realizar a publicacao.
         **Os jogadores poderão ver APENAS suas próprias pontuações e os imortais.**""",
@@ -500,7 +514,7 @@ class PublishImortalsResults(BaseView):
     )
     def put(self, request: request.Request, *args, **kwargs) -> response.Response:
         try:
-            event = self.get_object()
+            event = self.get_event()
         except ValidationError as e:
             return handle_400_error(str(e))
         self.check_object_permissions(request, event)
@@ -509,26 +523,26 @@ class PublishImortalsResults(BaseView):
         return response.Response(status=status.HTTP_200_OK, data='Resultados de imortais publicados com sucesso!')
 
 
-class Top3ImortalPlayers(BaseView):
-    permission_classes = [IsAuthenticated, ResultsPermissions]
+# class Top3ImortalPlayers(BaseView):
+#     permission_classes = [IsAuthenticated, ResultsPermissions]
 
-    @swagger_auto_schema(
-        tags=['player'],
-        security=[{'Bearer': []}],
-        operation_description='Retorna os 3 jogadores com mais pontos do evento.',
-        operation_summary='Retorna os 3 primeiros jogadores do evento.',
-        manual_parameters=manual_parameter_event_id,
-        responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
-    def get(self, request: request.Request, *args, **kwargs) -> response.Response:
-        try:
-            event = self.get_object()
-        except ValidationError as e:
-            return handle_400_error(str(e))
-        self.check_object_permissions(request, event)
-        if not event.is_imortal_results_published:
-            return response.Response(status=status.HTTP_403_FORBIDDEN, data='Resultados não publicados!')
-        results = Results.objects.get(event=event)
-        results.calculate_imortals()
-        players = [player for player in results.imortals.all()]
-        data = PlayerResultsSerializer(players, many=True).data
-        return response.Response(status=status.HTTP_200_OK, data=data)
+#     @ swagger_auto_schema(
+#         tags=['results'],
+#         security=[{'Bearer': []}],
+#         operation_description='Retorna os 3 jogadores com mais pontos do evento.',
+#         operation_summary='Retorna os 3 primeiros jogadores do evento.',
+#         manual_parameters=manual_parameter_event_id,
+#         responses={200: openapi.Response(200, PlayerResultsSerializer), **Errors([400]).retrieve_erros()})
+#     def get(self, request: request.Request, *args, **kwargs) -> response.Response:
+#         try:
+#             event = self.get_event()
+#         except ValidationError as e:
+#             return handle_400_error(str(e))
+#         self.check_object_permissions(request, event)
+#         if not event.is_imortal_results_published:
+#             return response.Response(status=status.HTTP_403_FORBIDDEN, data='Resultados não publicados!')
+#         results = Results.objects.get(event=event)
+#         results.calculate_imortals()
+#         players = [player for player in results.imortals.all()]
+#         data = PlayerResultsSerializer(players, many=True).data
+#         return response.Response(status=status.HTTP_200_OK, data=data)

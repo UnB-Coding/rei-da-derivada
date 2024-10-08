@@ -6,7 +6,7 @@ from rest_framework.exceptions import NotFound
 from ..serializers import PlayerScoreForRoundRobinSerializer
 from ..models import Event, PlayerScore, Staff, SumulaImortal, SumulaClassificatoria, Player
 
-EVENT_NOT_FOUND_ERROR_MESSAGE = "Evento não encontrado!"
+EVENT_NOT_FOUND_ERROR_MESSAGE = 'Evento não encontrado!'
 EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE = "Id do evento não fornecido!"
 SUMULA_NOT_FOUND_ERROR_MESSAGE = "Sumula não encontrada!"
 SUMULA_ID_NOT_PROVIDED_ERROR_MESSAGE = "Id da sumula não fornecido!"
@@ -14,7 +14,7 @@ SUMULA_NOT_FOUND_ERROR_MESSAGE = "Sumula não encontrada!"
 
 
 class BaseView(APIView):
-    def get_object(self) -> Event:
+    def get_event(self) -> Event:
         """ Verifica se o evento existe.
         Retorna o evento associado ao id fornecido ou uma exceção.
         - ValidationError: Se o id do evento não foi fornecido.
@@ -244,9 +244,23 @@ class BaseSumulaView(BaseView):
 
         if not self.update_player_score(players_score):
             raise ValidationError("Dados de pontuação inválidos!")
-        sumula.name = self.request.data['name']
+
+        if 'imortal_players' in self.request.data:
+            players = self.request.data['imortal_players']
+            for player in players:
+                player_id = player.get('id')
+                if player_id is None:
+                    continue
+                player_obj = Player.objects.filter(id=player_id).first()
+                if not player_obj:
+                    raise ValidationError("Jogador não encontrado!")
+                player_obj.is_imortal = True
+                player_obj.save()
+
         sumula.description = self.request.data['description']
         sumula.active = False
+        if sumula.__class__ != SumulaImortal:
+            sumula.name = self.request.data['name']
         sumula.save()
 
     def validate_if_staff_is_sumula_referee(self, sumula: SumulaClassificatoria | SumulaImortal, event: Event) -> Exception | Staff:
@@ -258,22 +272,6 @@ class BaseSumulaView(BaseView):
         if not staff in sumula.referee.all():
             raise ValidationError("Usuário não é um árbitro da sumula!")
         return staff
-
-    def get_object(self) -> Event:
-        """ Verifica se o evento existe.
-        Retorna o evento associado ao id fornecido ou uma exceção.
-        """
-        if 'event_id' not in self.request.query_params:
-            raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
-        event_id = self.request.query_params.get('event_id')
-        if not event_id:
-            raise ValidationError(EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE)
-        event = Event.objects.filter(id=event_id).first()
-        if not event:
-            raise NotFound(EVENT_NOT_FOUND_ERROR_MESSAGE)
-        return event
-
-
 # middleware.py
 
 
