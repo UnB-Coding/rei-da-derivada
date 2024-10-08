@@ -32,7 +32,9 @@ class BaseView(APIView):
 
     def treat_name_and_email_excel(self, name: str, email: str) -> tuple[str, str]:
         """Trata o nome e o email de um jogador para serem inseridos no banco de dados."""
-        name = name.strip()
+        if name.__class__ != str or email.__class__ != str:
+            raise ValidationError('Nome ou email inválidos!')
+        name = name.strip().lower()
         email = email.strip().lower()
         for word in name.split():
             name = name.replace(word, word.capitalize())
