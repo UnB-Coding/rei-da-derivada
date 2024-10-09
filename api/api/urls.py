@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, re_path
 from .views.views_event import EventView, ResultsView, PublishFinalResults, PublishImortalsResults
 from .views.views_staff import StaffView, AddStaffManager, AddStaffMembers, AddSingleStaff, DeleteAllStaffs
-from .views.views_players import PlayersView, GetPlayerResults, AddPlayersExcel, AddSinglePlayer, DeleteAllPlayers, GetNotImortalPlayers
+from .views.views_players import PlayersView, GetPlayerResults, AddPlayersExcel, AddSinglePlayer, DeleteAllPlayers, GetNotImortalPlayers, ExportPlayersView
 from .views.views_sumulas import SumulasView, ActiveSumulaView, FinishedSumulaView, GetSumulaForPlayer, SumulaImortalView, SumulaClassificatoriaView, AddRefereeToSumulaView, GenerateSumulas
 
 app_name = 'api'
@@ -39,6 +39,7 @@ urlpatterns = [
     path('players/delete/', DeleteAllPlayers.as_view(), name='delete-players'),
     path('players/qualified/', GetNotImortalPlayers.as_view(),
          name='qualified-players'),
+    path('players/export/', ExportPlayersView.as_view(), name='export-players'),
     # Rotas de staff
     path('staff/', StaffView.as_view(), name='staff'),
     path('staff/add', AddSingleStaff.as_view(), name='add-staff'),

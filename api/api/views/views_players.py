@@ -469,3 +469,61 @@ class GetNotImortalPlayers(BaseView):
         data = PlayerSerializer(players_list, many=True).data
 
         return response.Response(status=status.HTTP_200_OK, data=data)
+
+
+class ExportPlayersView(BaseView):
+    permission_classes = [IsAuthenticated, PlayersPermission]
+
+    @swagger_auto_schema(
+        tags=['player'],
+        operation_description="""Exporta os jogadores classificados nas chaves do evento em um arquivo Excel.
+        O arquivo Excel contém as informações de **Nome Completo, Email e Nome Social** dos jogadores classificados nas chaves.
+        """,
+        operation_summary='Exporta os jogadores classificados nas chaves do evento em um arquivo Excel.',
+        manual_parameters=manual_parameter_event_id,
+        responses={200: openapi.Response(
+            description='Arquivo Excel gerado com sucesso',
+            content={'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {}}), **Errors([400]).retrieve_erros()})
+    def get(self, request, *args, **kwargs):
+        try:
+            event = self.get_event()
+        except Exception as e:
+            return handle_400_error(str(e))
+
+        self.check_object_permissions(request, event)
+
+        players = Player.objects.filter(
+            event=event, is_imortal=False, total_score__gt=0)
+        print(players)
+        if not players:
+            return handle_400_error('Nenhum jogador encontrado!')
+
+        # Gera o arquivo Excel
+        excel_file = self.generate_excel(players=players)
+
+        # Cria a resposta HTTP com o arquivo Excel
+        response = HttpResponse(
+            excel_file, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=jogadores_classificados.xlsx'
+
+        return response
+
+    def generate_excel(self, players):
+        # Cria um DataFrame com os dados dos jogadores
+        data = {
+            'Nome Completo': [player.full_name for player in players],
+            'Email': [player.registration_email for player in players],
+            'Nome Social': [player.social_name for player in players],
+        }
+        df = pd.DataFrame(data)
+
+        # Salva o DataFrame em um buffer de memória
+        buffer = BytesIO()
+        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False,
+                        sheet_name='Jogadores Classificados')
+
+        # Move o ponteiro do buffer para o início
+        buffer.seek(0)
+
+        return buffer
