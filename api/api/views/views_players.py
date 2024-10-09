@@ -281,25 +281,48 @@ class AddPlayersExcel(BaseView):
         df = self.createData(extension=extension, file=excel_file)
         if df is None:
             return handle_400_error('Arquivo inválido!')
-        self.create_players(df=df, event=event)
+        try:
+            errors_count, players_count = self.create_players(
+                df=df, event=event)
+        except Exception as e:
+            return handle_400_error(str(e))
+        if errors_count > 0 and errors_count < players_count:
+            return response.Response(status=status.HTTP_201_CREATED, data={
+                'message': 'Jogadores adicionados com sucesso!',
+                'errors': f'{errors_count} jogadores não foram adicionados devido a e-mail inválido. Verfique os e-mails dos jogadores e tente novamente.'
+            })
+        elif errors_count >= players_count:
+            return handle_400_error('Nenhum jogador adicionado! Verifique os e-mails do arquivo!')
         return response.Response(status=status.HTTP_201_CREATED, data='Jogadores adicionados com sucesso!')
 
-    def create_players(self, df: pd.DataFrame, event: Event) -> None:
-        process_data = ['Nome Completo', 'E-mail']
+    def create_players(self, df: pd.DataFrame, event: Event) -> tuple[int, int]:
+        process_data = ['nome completo', 'e-mail']
+        df.columns = df.columns.str.strip().str.lower()
+        # Verificar se as colunas necessárias estão presentes
+        missing_columns = [
+            col for col in process_data if col not in df.columns]
+        if missing_columns:
+            raise ValueError(
+                f"ERRO - Colunas ausentes no arquivo: {', '.join(missing_columns)}")
         df_needed = df[process_data]
 
+        players_count = 0
+        errors_count = 0
         for i, line in df_needed.iterrows():
-            name = line['Nome Completo']
-            email = line['E-mail']
-            name = name.strip()
-            email = email.strip()
+            name = line['nome completo']
+            email = line['e-mail']
+            name, email = self.treat_name_and_email_excel(name, email)
+            players_count += 1
+            try:
+                validate_email(email)
+            except ValidationError:
+                errors_count += 1
+                continue
             player, created = Player.objects.get_or_create(
-                full_name=name, registration_email=email, event=event)
-            if not created:
-                player.full_name = name
-                player.registration_email = email
-                player.event = event
-                player.save()
+                registration_email=email, event=event)
+            player.full_name = name
+            player.save()
+        return errors_count, players_count
 
     def createData(self, extension, file) -> Optional[pd.DataFrame]:
         data = None
@@ -328,7 +351,7 @@ class AddPlayersExcel(BaseView):
 class AddSinglePlayer(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
 
-    @swagger_auto_schema(
+    @ swagger_auto_schema(
         tags=['player'],
         operation_description="""Adiciona um jogador manualmente ao evento.
         Deve ser fornecido o nome completo do jogador como _request body_ e o ID do evento como _manual parameter_. Nome social e email são opcionais.

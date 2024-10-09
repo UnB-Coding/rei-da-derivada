@@ -30,6 +30,16 @@ class BaseView(APIView):
             raise ValidationError(EVENT_NOT_FOUND_ERROR_MESSAGE)
         return event
 
+    def treat_name_and_email_excel(self, name: str, email: str) -> tuple[str, str]:
+        """Trata o nome e o email de um jogador para serem inseridos no banco de dados."""
+        if name.__class__ != str or email.__class__ != str:
+            raise ValidationError('Nome ou email inválidos!')
+        name = name.strip().lower()
+        email = email.strip().lower()
+        for word in name.split():
+            name = name.replace(word, word.capitalize())
+        return name, email
+
 
 class BaseSumulaView(BaseView):
     """Classe base para as views de sumula. Contém métodos comuns a todas as views de sumula."""
