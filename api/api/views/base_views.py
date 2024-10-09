@@ -1,3 +1,5 @@
+from io import StringIO
+import chardet
 from django.utils.deprecation import MiddlewareMixin
 from django.forms import ValidationError
 from rest_framework.views import APIView
@@ -39,6 +41,26 @@ class BaseView(APIView):
         for word in name.split():
             name = name.replace(word, word.capitalize())
         return name, email
+
+    def treat_csv(self, file) -> tuple[StringIO, str]:
+        """Trata um arquivo CSV para ser lido pelo pandas.
+        Lidando com a codificação do arquivo e convertendo-o em um StringIO.
+        """
+        raw_data = file.read()
+        detection = chardet.detect(raw_data)
+        encoding = detection['encoding']
+        file_data = raw_data.decode(encoding)
+        # Converte a string em um StringIO, que pode ser lido pelo pandas
+        csv_data = StringIO(file_data)
+        return csv_data, encoding
+
+    def get_delimiter(self, csv_data):
+        first_line = csv_data.readline()
+        csv_data.seek(0)  # Resetar o ponteiro para o início do arquivo
+        if ';' in first_line:
+            return ';'
+        else:
+            return ','
 
 
 class BaseSumulaView(BaseView):

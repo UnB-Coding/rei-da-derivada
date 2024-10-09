@@ -1,4 +1,5 @@
 from io import StringIO
+import os
 import pandas as pd
 from typing import Optional
 from django.forms import ValidationError
@@ -292,7 +293,7 @@ class AddStaffMembers(BaseView):
             excel_file = self.get_excel_file()
         except ValidationError as e:
             return handle_400_error(str(e))
-        extension = (excel_file.name.split("."))[1]
+        extension = os.path.splitext(excel_file.name)[-1].lower().strip('.')
         df = self.createData(extension=extension, file=excel_file)
         if df is None:
             return handle_400_error('Arquivo inválido!')
@@ -343,10 +344,10 @@ class AddStaffMembers(BaseView):
     def createData(self, extension, file) -> Optional[pd.DataFrame]:
         data = None
         if extension == 'csv':
-            file_data = file.read().decode('utf-8')
-            csv_data = StringIO(file_data)
-            data = pd.read_csv(csv_data, header=0, encoding='utf-8')
-
+            csv_data, encoding = self.treat_csv(file)
+            delimiter = self.get_delimiter(csv_data)
+            data = pd.read_csv(csv_data, header=0,
+                               encoding=encoding, delimiter=delimiter)
         elif extension == 'xlsx' or extension == 'xls':
             data = pd.read_excel(file)
         return data

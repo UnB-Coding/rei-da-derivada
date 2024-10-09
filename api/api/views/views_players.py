@@ -1,4 +1,5 @@
-from io import StringIO
+from django.http import HttpResponse
+from io import BytesIO, StringIO
 from typing import Optional
 from django.forms import ValidationError
 from django.contrib.auth.models import Group
@@ -18,6 +19,8 @@ from ..serializers import PlayerSerializer, UploadFileSerializer, PlayerResultsS
 from ..swagger import Errors, manual_parameter_event_id
 from ..permissions import assign_permissions
 import pandas as pd
+import chardet
+import os
 
 
 class PlayersPermission(BasePermission):
@@ -277,7 +280,10 @@ class AddPlayersExcel(BaseView):
             excel_file = self.get_excel_file()
         except ValidationError as e:
             return handle_400_error(str(e))
-        extension = (excel_file.name.split("."))[1]
+
+        # Obtém a última extensão do arquivo
+        extension = os.path.splitext(excel_file.name)[-1].lower().strip('.')
+        # Cria o DataFrame usando a extensão correta
         df = self.createData(extension=extension, file=excel_file)
         if df is None:
             return handle_400_error('Arquivo inválido!')
@@ -327,11 +333,10 @@ class AddPlayersExcel(BaseView):
     def createData(self, extension, file) -> Optional[pd.DataFrame]:
         data = None
         if extension == 'csv':
-            # Lê os dados do arquivo como uma string
-            file_data = file.read().decode('utf-8')
-            # Converte a string em um StringIO, que pode ser lido pelo pandas
-            csv_data = StringIO(file_data)
-            data = pd.read_csv(csv_data, header=0, encoding='utf-8')
+            csv_data, encoding = self.treat_csv(file)
+            delimiter = self.get_delimiter(csv_data)
+            data = pd.read_csv(csv_data, header=0,
+                               encoding=encoding, delimiter=delimiter)
 
         elif extension == 'xlsx' or extension == 'xls':
             data = pd.read_excel(file)
