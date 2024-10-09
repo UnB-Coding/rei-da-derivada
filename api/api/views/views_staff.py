@@ -66,6 +66,7 @@ class StaffView(BaseView):
         if request.data is None or 'join_token' not in request.data:
             return handle_400_error('Dados inválidos!')
         token = request.data['join_token']
+        token = token.strip()
         if not token:
             return handle_400_error(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
         event = Event.objects.filter(join_token=token).first()
