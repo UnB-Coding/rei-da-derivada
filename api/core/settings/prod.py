@@ -6,19 +6,17 @@ import dj_database_url
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-# ALLOWED_HOSTS = [
-#     ".herokuapp.com",
-#     ".suagradeunb.com.br"
-# ]
+ALLOWED_HOSTS = [
+    ".herokuapp.com",
+]
 
 
 # django-cors-headers
 # https://github.com/adamchainz/django-cors-headers
 
-# CORS_ALLOWED_ORIGINS = [
-#     "https://suagradeunb.com.br",
-#     "https://api.suagradeunb.com.br"
-# ]
+CORS_ALLOWED_ORIGINS = [
+    "https://rei-da-derivada.vercel.app",
+]
 # CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
@@ -58,4 +56,3 @@ STORAGES = {
 # Don't store the original (un-hashed filename) version of static files, to reduce slug size:
 # https://whitenoise.readthedocs.io/en/latest/django.html#WHITENOISE_KEEP_ONLY_HASHED_FILES
 WHITENOISE_KEEP_ONLY_HASHED_FILES = True
-

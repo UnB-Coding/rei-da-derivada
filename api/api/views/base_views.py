@@ -249,9 +249,10 @@ class BaseSumulaView(BaseView):
                 player_obj.is_imortal = True
                 player_obj.save()
 
-        sumula.name = self.request.data['name']
         sumula.description = self.request.data['description']
         sumula.active = False
+        if sumula.__class__ != SumulaImortal:
+            sumula.name = self.request.data['name']
         sumula.save()
 
     def validate_if_staff_is_sumula_referee(self, sumula: SumulaClassificatoria | SumulaImortal, event: Event) -> Exception | Staff:
@@ -266,13 +267,13 @@ class BaseSumulaView(BaseView):
 # middleware.py
 
 
-class DisableCSRFMiddleware(MiddlewareMixin):
-    def __init__(self, get_response):
-        self.get_response = get_response
+# class DisableCSRFMiddleware(MiddlewareMixin):
+#     def __init__(self, get_response):
+#         self.get_response = get_response
 
-    def __call__(self, request):
-        # Desativar CSRF para POST, PUT, DELETE
-        if request.method in ['POST', 'PUT', 'DELETE']:
-            setattr(request, '_dont_enforce_csrf_checks', True)
-        response = self.get_response(request)
-        return response
+#     def __call__(self, request):
+#         # Desativar CSRF para POST, PUT, DELETE
+#         if request.method in ['POST', 'PUT', 'DELETE']:
+#             setattr(request, '_dont_enforce_csrf_checks', True)
+#         response = self.get_response(request)
+#         return response

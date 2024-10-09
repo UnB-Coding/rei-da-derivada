@@ -1,44 +1,158 @@
-import React, { use, useContext } from "react";
+import React, { use, useContext, useEffect } from "react";
 import { useState } from "react";
 import DisplayComponent from "./DisplayPlayerComponent";
 import NoResults from "./NoResults";
 import { UserContext } from "../contexts/UserContext";
-import getResults from "../utils/api/getResults";
+import request from "@/app/utils/request";
+import { settingsWithAuth } from "@/app/utils/settingsWithAuth";
+import { usePathname } from "next/navigation";
+import capitalize from "@/app/utils/capitalize";
+import { isAxiosError } from "axios";
+import Loading from "./LoadingComponent";
 
-export default function ResultsComponent() {
+interface ResultsComponentProps {
+    isPlayer: boolean,
+}
+
+export default function ResultsComponent({isPlayer} : ResultsComponentProps) {
     const { user } = useContext(UserContext);
-    const [ isPlayer, setIsPlayer ] = useState<boolean>(false);
-    const [ result, setResult ] = useState<boolean>(false);
+    const [published, setPublished] = useState<boolean>(true);
+    const [ canSee, setCanSee ] = useState<boolean>(false);
+    const [results, setResults] = useState<any>();
+    const [playerResults, setPlayerResults] = useState<any>();
+    const currentId = usePathname().split('/')[1];
 
-    return result ? <NoResults/> :
+    const fetchResults = async () => {
+        try {
+            const response = await request.get(`/api/results/?event_id=${currentId}`, settingsWithAuth(user.access));
+            if(response.status === 200) {
+                setResults(response.data);
+                console.log(response.data);
+            }
+            if(isPlayer){
+                const playerResponse = await request.get(`/api/results/player/?event_id=${currentId}`, settingsWithAuth(user.access));
+                if(playerResponse.status === 200) {
+                    setPlayerResults(response.data);
+                    console.log(response.data);
+                }
+            }
+            setPublished(true);
+            setCanSee(true);
+        } catch (error: unknown) {
+            if(isAxiosError(error)){
+                const errorMessage = error.response?.data.errors || "Erro desconhecido";
+                console.log(errorMessage);               
+            }
+        }
+    }
+
+    useEffect(() => {
+        fetchResults();
+    }, [user])
+
+    const playerMock = {
+        "id": 0,
+        "total_score": 32767,
+        "full_name": "string",
+        "social_name": "string"
+    }
+
+    const mock = {
+        "id": 5,
+        "top4": [
+            {
+                "id": 5,
+                "total_score": 98,
+                "full_name": "JOÃO DA SILVA",
+                "social_name": "João"
+            },
+            {
+                "id": 6,
+                "total_score": 98,
+                "full_name": "JOÃO DA SILVA",
+                "social_name": "João"
+            },
+            {
+                "id": 5,
+                "total_score": 98,
+                "full_name": "JOÃO DA SILVA",
+                "social_name": "João"
+            },
+            {
+                "id": 5,
+                "total_score": 98,
+                "full_name": "JOÃO DA SILVA",
+                "social_name": "João"
+            },
+        ],
+        "paladin": {
+            "id": 0,
+            "total_score": 98,
+            "full_name": "JOÃO DA SILVA",
+            "social_name": "João"
+        },
+        "ambassor": {
+            "id": 0,
+            "total_score": 98,
+            "full_name": "JOÃO DA SILVA",
+            "social_name": "João"
+        },
+        "imortals": [
+            {
+                "id": 5,
+                "total_score": 98,
+                "full_name": "ALEXANDRE TOSTES SALIN E SOUZA",
+                "social_name": "João"
+            },
+            {
+                "id": 5,
+                "total_score": 98,
+                "full_name": "JOÃO DA SILVA",
+                "social_name": "João"
+            },
+            {
+                "id": 5,
+                "total_score": 98,
+                "full_name": "JOÃO DA SILVA",
+                "social_name": "João"
+            },
+        ]
+    }
+
+    if(!canSee) {
+        return <Loading />
+    }
+
+    return !published ? <NoResults /> :
         <>
             <div className="grid justify-center items-center gap-5 py-32">
-            {isPlayer && 
-                <div>
-                    <p className="font-semibold text-slate-700">SEU DESEMPENHO</p>
-                    <DisplayComponent playerName="Player 1" points={10}/>
-                </div>}
-            <div className="grid gap-3">
-                <p className="font-semibold text-slate-700">TOP 4</p>
-                <DisplayComponent playerName="Player 2" points={52}/>
-                <DisplayComponent playerName="Player 2" points={48}/>
-                <DisplayComponent playerName="Player 2" points={46}/>
-                <DisplayComponent playerName="Player 2" points={47}/>
+                {isPlayer &&
+                    <div>
+                        <p className="font-semibold text-slate-700 md:text-2xl">SEU DESEMPENHO</p>
+                        <DisplayComponent playerName={capitalize(playerMock.full_name)} points={playerMock.total_score} />
+                    </div>}
+                <div className="grid gap-3">
+                    <p className="font-semibold text-slate-700 md:text-2xl">TOP 4</p>
+                    {results.top4 ? results.top4.map((player: any, index: number) => {
+                        return <DisplayComponent key={index} playerName={capitalize(player.full_name)} points={player.total_score} />
+                    }) : <p className="text-lg md:text-xl">Ainda não divulgado</p>}
+                </div>
+                <div className="grid gap-3">
+                    <p className="font-semibold text-slate-700 md:text-2xl">IMORTAIS</p>
+                    {results.imortals ? results.imortals.map((player: any, index: number) => {
+                        return <DisplayComponent key={index} playerName={capitalize(player.full_name)} points={player.total_score} />
+                    }) : <p className="text-lg md:text-xl">Ainda não divulgado</p>}
+                </div>
+                <div className="grid gap-3">
+                    <p className="font-semibold text-slate-700 md:text-2xl">PALADINO</p>
+                    {results.paladin.full_name ? <DisplayComponent playerName={capitalize(results.paladin.full_name)} points={results.paladin.total_score} /> :
+                        <p className="text-lg md:text-xl">Ainda não divulgado</p>}
+                </div>
+                <div className="grid gap-3">
+                    <p className="font-semibold text-slate-700 md:text-2xl">EMBAIXADOR</p>
+                    {results.ambassor.full_name ? <DisplayComponent playerName={capitalize(results.ambassor.full_name)} points={results.ambassor.total_score} /> :
+                        <p className="text-lg md:text-xl">Ainda não divulgado</p>}
+                </div>
             </div>
-            <div className="grid gap-3">
-                <p className="font-semibold text-slate-700">IMORTAIS</p>
-                <DisplayComponent playerName="Player 2" points={90}/>
-                <DisplayComponent playerName="Player 2" points={89}/>
-                <DisplayComponent playerName="Player 2" points={88}/>
-            </div>
-            <div className="grid gap-3">
-                <p className="font-semibold text-slate-700">PALADINO</p>
-                <DisplayComponent playerName="Player 2" points={50}/>
-            </div>
-            
-
-        </div>
         </>
-        
-    
 };

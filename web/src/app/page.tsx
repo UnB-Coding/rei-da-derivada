@@ -11,10 +11,12 @@ const scopes = list.join(" ");
 const rrddUrl = 'https://www.reidaderivada.com/';
 
 export default function Home() {
+  const redirectUri = process.env.NEXT_PUBLIC_LOCAL_URL || "http://localhost:3000";
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
   const params = new URLSearchParams({
-    client_id: "28351905545-kehhusl90e4avsgrcurrgedh6t2p1756.apps.googleusercontent.com",
+    client_id: clientId,
     include_granted_scopes: "false",
-    redirect_uri: "http://localhost:3000",
+    redirect_uri: redirectUri,
     state: "state_parameter_passthrough_value_sosalve",
     response_type: "token",
     scope: scopes,
@@ -29,7 +31,7 @@ export default function Home() {
       myHeaders.append("Content-Type", "application/json");
       myHeaders.append("Accept", "application/json");
 
-      fetch("http://localhost:8000/users/register/google/", {
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/register/google/`, {
         method: "POST",
         headers: myHeaders,
         credentials: "include",
