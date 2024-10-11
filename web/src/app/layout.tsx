@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
-import UserContextProvider from "@/app/contexts/UserContext";
+import  UserContextProvider  from "@/app/contexts/UserContext";
+import EventContextProvider from "./contexts/EventContext";
+import { Toaster } from "react-hot-toast";
+import { NextUIProvider } from "@nextui-org/react";
 import "./globals.css";
 const APP_NAME = "PWA Rei da derivada";
 const APP_DEFAULT_TITLE = "RRDD App";
@@ -60,11 +63,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={outfit.className}>
+    <html lang="en" suppressHydrationWarning={true}>
+      <body className={outfit.className} suppressHydrationWarning={true}>
+      <Toaster position="top-center" />
+        <NextUIProvider>
         <UserContextProvider>
-          {children}
+          <EventContextProvider>
+            {children}
+          </EventContextProvider>
         </UserContextProvider>
+        </NextUIProvider>
       </body>
     </html>
   );

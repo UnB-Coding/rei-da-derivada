@@ -27,7 +27,6 @@ schema_view = get_schema_view(
         description="""API para o projeto Aplicação Mobile para apoio ao Rei e Rainha da Derivada
 
         Grupos de usuários e permissões:
-            - App_Admin: Total permissão sobre os Eventos, Sumulas, PlayerScore e Player.
             - Event_Admin: Permissão para Alterar, Deletar e Visualizar Eventos e todas as permissões de Sumula, Player_Score e player.
             - Staff_Manager: Permissão para Visualizar Eventos e todas as permissões de Sumula, Player_Score e player, exceto deletar player.
             - Staff_Member: Permissão para Visualizar Eventos, Alterar e Visualizar Sumulas, Alterar e Visualizar Player_Score e player.
@@ -47,10 +46,10 @@ urlpatterns = [
     # Views
     path('users/', include('users.urls')),
     path('api/', include('api.urls')),
+    # swagger
     re_path(r'^swagger(?P<format>\.json|\.yaml)$',
             schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('swagger/', schema_view.with_ui('swagger',
          cache_timeout=0), name='schema-swagger-ui'),
-    path('redoc/', schema_view.with_ui('redoc',
-         cache_timeout=0), name='schema-redoc'),
+    path('', schema_view.with_ui('redoc', cache_timeout=0), name='redoc'),
 ]

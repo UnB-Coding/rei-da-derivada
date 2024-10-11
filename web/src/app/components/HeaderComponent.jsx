@@ -7,7 +7,7 @@ import logo from '@/app/assets/logo.png';
 const HeaderComponent = () => {
     const { user } = useContext(UserContext);
     return (
-      <div className=" pt-10 flex justify-between items-center px-9 pb-4 bg-white w-full h-32 fixed top-0 z-10">
+      <div className=" pt-10 flex justify-between items-center px-9 pb-4  backdrop-blur-2xl w-full h-32 fixed top-0 z-10">
         <Image className="w-20 h-20 rounded-[10px]" src={user.picture_url} alt="Foto de perfil do usuário" width="250" height="250" />
           <div className="justify-between absolute left-32">
             <h2 className="text-lg font-normal text-slate-600">Seja bem-vindo(a)</h2>

@@ -1,29 +1,37 @@
 import React from "react";
 import EventsComponent from "./EventsComponent";
+import eventLogin from "../utils/api/eventLogin";
+import staffLogin from "../utils/api/staffLogin";
+import createEvent from "../utils/api/createEvent";
 
 const HomeJoinComponent = () => {
     return (
         <div className="grid justify-center items-center pb-28 pt-32">
         <EventsComponent
-        type="none"
-        description="Insira abaixo o token fornecido pelo organizador do evento."
+        type="create"
+        description="Insira abaixo o nome do evento e o token fornecido pelo organizador do evento."
+        optionalph="Ex: Nome do evento"
         placeholder="Ex: RRDD-TOKEN-1234"
         title="criar um evento"
-        useEmail={false}
+        useEmail={true}
+        function={createEvent}
         />
       <EventsComponent 
-        type="bla" 
+        type="join" 
         description="Insira abaixo o e-mail utilizado na inscrição do evento e o token." 
+        optionalph="Ex: example@email.com"
         placeholder="Ex: RRDD-TOKEN-1234" 
         title="participar de um evento" 
         useEmail={true}
+        function={eventLogin}
         />
         <EventsComponent 
-        type="bla" 
+        type="staff" 
         description="Insira abaixo o e-mail utilizado na inscrição do evento e o token." 
         placeholder="Ex: RRDD-TOKEN-1234" 
-        title="Entrar como monitor" 
-        useEmail={true}
+        title="Entrar como staff" 
+        useEmail={false}
+        function={staffLogin}
         />
         </div>
     );

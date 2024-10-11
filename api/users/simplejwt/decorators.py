@@ -17,6 +17,6 @@ def move_refresh_token_to_cookie(view_func: callable) -> callable:
             response.set_cookie(key="refresh", value=refresh_token,
                                 max_age=jwt_settings["REFRESH_TOKEN_LIFETIME"],
                                 secure=jwt_settings["REFRESH_TOKEN_SECURE"],
-                                httponly=True, samesite="Lax")
+                                httponly=True, samesite="None")
         return response
     return wrapper
