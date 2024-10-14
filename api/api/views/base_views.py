@@ -1,3 +1,5 @@
+from io import StringIO
+import chardet
 from django.utils.deprecation import MiddlewareMixin
 from django.forms import ValidationError
 from rest_framework.views import APIView
@@ -29,6 +31,36 @@ class BaseView(APIView):
         if not event:
             raise ValidationError(EVENT_NOT_FOUND_ERROR_MESSAGE)
         return event
+
+    def treat_name_and_email_excel(self, name: str, email: str) -> tuple[str, str]:
+        """Trata o nome e o email de um jogador para serem inseridos no banco de dados."""
+        if name.__class__ != str or email.__class__ != str:
+            raise ValidationError('Nome ou email inválidos!')
+        name = name.strip().lower()
+        email = email.strip().lower()
+        for word in name.split():
+            name = name.replace(word, word.capitalize())
+        return name, email
+
+    def treat_csv(self, file) -> tuple[StringIO, str]:
+        """Trata um arquivo CSV para ser lido pelo pandas.
+        Lidando com a codificação do arquivo e convertendo-o em um StringIO.
+        """
+        raw_data = file.read()
+        detection = chardet.detect(raw_data)
+        encoding = detection['encoding']
+        file_data = raw_data.decode(encoding)
+        # Converte a string em um StringIO, que pode ser lido pelo pandas
+        csv_data = StringIO(file_data)
+        return csv_data, encoding
+
+    def get_delimiter(self, csv_data):
+        first_line = csv_data.readline()
+        csv_data.seek(0)  # Resetar o ponteiro para o início do arquivo
+        if ';' in first_line:
+            return ';'
+        else:
+            return ','
 
 
 class BaseSumulaView(BaseView):

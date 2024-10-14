@@ -1,4 +1,5 @@
 from io import StringIO
+import os
 import pandas as pd
 from typing import Optional
 from django.forms import ValidationError
@@ -65,6 +66,7 @@ class StaffView(BaseView):
         if request.data is None or 'join_token' not in request.data:
             return handle_400_error('Dados inválidos!')
         token = request.data['join_token']
+        token = token.strip()
         if not token:
             return handle_400_error(TOKEN_NOT_PROVIDED_ERROR_MESSAGE)
         event = Event.objects.filter(join_token=token).first()
@@ -292,38 +294,61 @@ class AddStaffMembers(BaseView):
             excel_file = self.get_excel_file()
         except ValidationError as e:
             return handle_400_error(str(e))
-        extension = (excel_file.name.split("."))[1]
+        extension = os.path.splitext(excel_file.name)[-1].lower().strip('.')
         df = self.createData(extension=extension, file=excel_file)
         if df is None:
             return handle_400_error('Arquivo inválido!')
-        self.create_staff(df, event)
+
+        try:
+            errors_count, staff_count = self.create_staff(df, event)
+        except Exception as e:
+            return handle_400_error(str(e))
+        if errors_count > 0 and errors_count < staff_count:
+            return response.Response(status=status.HTTP_201_CREATED, data={
+                'message': 'Monitores adicionados com sucesso!',
+                'errors': f'{errors_count} monitores não foram adicionados devido a e-mail inválido. Verfique os e-mails dos monitores e tente novamente.'
+            })
+        elif errors_count == staff_count:
+            return handle_400_error('Nenhum monitor foi adicionado! Verifique os dados de e-mail dos monitores e tente novamente')
+
         return response.Response(status=status.HTTP_201_CREATED, data='Monitores adicionados com sucesso!')
 
-    def create_staff(self, df: pd.DataFrame, event: Event) -> None:
-        process_data = ['Nome Completo', 'E-mail']
-        df_needed = df[process_data]
+    def create_staff(self, df: pd.DataFrame, event: Event) -> tuple:
+        process_data = ['nome completo', 'e-mail']
+        df.columns = df.columns.str.strip().str.lower()
+        # Verificar se as colunas necessárias estão presentes
+        missing_columns = [
+            col for col in process_data if col not in df.columns]
+        if missing_columns:
+            raise ValueError(
+                f"ERRO - Colunas ausentes no arquivo: {', '.join(missing_columns)}")
 
+        df_needed = df[process_data]
+        errors_count = 0
+        staff_count = 0
         for i, line in df_needed.iterrows():
-            name = line['Nome Completo']
-            email = line['E-mail']
-            name = name.strip()
-            for word in name.split():
-                name = name.replace(word, word.capitalize())
-            email = email.strip()
+            name = line['nome completo']
+            email = line['e-mail']
+            name, email = self.treat_name_and_email_excel(name, email)
+            staff_count += 1
+            try:
+                validate_email(email)
+            except:
+                errors_count += 1
+                continue
             staff, created = Staff.objects.get_or_create(
-                full_name=name, registration_email=email, event=event)
-            if not created:
-                staff.full_name = name
-                staff.registration_email = email
-                staff.save()
+                registration_email=email, event=event)
+            staff.full_name = name
+            staff.save()
+        return errors_count, staff_count
 
     def createData(self, extension, file) -> Optional[pd.DataFrame]:
         data = None
         if extension == 'csv':
-            file_data = file.read().decode('utf-8')
-            csv_data = StringIO(file_data)
-            data = pd.read_csv(csv_data, header=0, encoding='utf-8')
-
+            csv_data, encoding = self.treat_csv(file)
+            delimiter = self.get_delimiter(csv_data)
+            data = pd.read_csv(csv_data, header=0,
+                               encoding=encoding, delimiter=delimiter)
         elif extension == 'xlsx' or extension == 'xls':
             data = pd.read_excel(file)
         return data
@@ -342,7 +367,7 @@ class AddStaffMembers(BaseView):
 class AddSingleStaff(BaseView):
     permission_classes = [IsAuthenticated, AddStaffPermissions]
 
-    @swagger_auto_schema(
+    @ swagger_auto_schema(
         tags=['staff'],
         operation_description="""Adiciona um monitor manualmente ao evento.
             Devem ser enviados os dados do monitor a ser adicionado.
@@ -397,7 +422,7 @@ class AddSingleStaff(BaseView):
 class DeleteAllStaffs(BaseView):
     permission_classes = [IsAuthenticated, StaffPermissions]
 
-    @swagger_auto_schema(
+    @ swagger_auto_schema(
         tags=['staff'],
         operation_description="""Deleta todos os monitores associados ao evento. Apenas o Admin do evento pode realizar essa ação.""",
         operation_summary='Deleta todos os monitores associados ao evento.',

@@ -1,4 +1,5 @@
-from io import StringIO
+from django.http import HttpResponse
+from io import BytesIO, StringIO
 from typing import Optional
 from django.forms import ValidationError
 from django.contrib.auth.models import Group
@@ -18,6 +19,8 @@ from ..serializers import PlayerSerializer, UploadFileSerializer, PlayerResultsS
 from ..swagger import Errors, manual_parameter_event_id
 from ..permissions import assign_permissions
 import pandas as pd
+import chardet
+import os
 
 
 class PlayersPermission(BasePermission):
@@ -277,38 +280,63 @@ class AddPlayersExcel(BaseView):
             excel_file = self.get_excel_file()
         except ValidationError as e:
             return handle_400_error(str(e))
-        extension = (excel_file.name.split("."))[1]
+
+        # Obtém a última extensão do arquivo
+        extension = os.path.splitext(excel_file.name)[-1].lower().strip('.')
+        # Cria o DataFrame usando a extensão correta
         df = self.createData(extension=extension, file=excel_file)
         if df is None:
             return handle_400_error('Arquivo inválido!')
-        self.create_players(df=df, event=event)
+        try:
+            errors_count, players_count = self.create_players(
+                df=df, event=event)
+        except Exception as e:
+            return handle_400_error(str(e))
+        if errors_count > 0 and errors_count < players_count:
+            return response.Response(status=status.HTTP_201_CREATED, data={
+                'message': 'Jogadores adicionados com sucesso!',
+                'errors': f'{errors_count} jogadores não foram adicionados devido a e-mail inválido. Verfique os e-mails dos jogadores e tente novamente.'
+            })
+        elif errors_count >= players_count:
+            return handle_400_error('Nenhum jogador adicionado! Verifique os e-mails do arquivo!')
         return response.Response(status=status.HTTP_201_CREATED, data='Jogadores adicionados com sucesso!')
 
-    def create_players(self, df: pd.DataFrame, event: Event) -> None:
-        process_data = ['Nome Completo', 'E-mail']
+    def create_players(self, df: pd.DataFrame, event: Event) -> tuple[int, int]:
+        process_data = ['nome completo', 'e-mail']
+        df.columns = df.columns.str.strip().str.lower()
+        # Verificar se as colunas necessárias estão presentes
+        missing_columns = [
+            col for col in process_data if col not in df.columns]
+        if missing_columns:
+            raise ValueError(
+                f"ERRO - Colunas ausentes no arquivo: {', '.join(missing_columns)}")
         df_needed = df[process_data]
 
+        players_count = 0
+        errors_count = 0
         for i, line in df_needed.iterrows():
-            name = line['Nome Completo']
-            email = line['E-mail']
-            name = name.strip()
-            email = email.strip()
+            name = line['nome completo']
+            email = line['e-mail']
+            name, email = self.treat_name_and_email_excel(name, email)
+            players_count += 1
+            try:
+                validate_email(email)
+            except ValidationError:
+                errors_count += 1
+                continue
             player, created = Player.objects.get_or_create(
-                full_name=name, registration_email=email, event=event)
-            if not created:
-                player.full_name = name
-                player.registration_email = email
-                player.event = event
-                player.save()
+                registration_email=email, event=event)
+            player.full_name = name
+            player.save()
+        return errors_count, players_count
 
     def createData(self, extension, file) -> Optional[pd.DataFrame]:
         data = None
         if extension == 'csv':
-            # Lê os dados do arquivo como uma string
-            file_data = file.read().decode('utf-8')
-            # Converte a string em um StringIO, que pode ser lido pelo pandas
-            csv_data = StringIO(file_data)
-            data = pd.read_csv(csv_data, header=0, encoding='utf-8')
+            csv_data, encoding = self.treat_csv(file)
+            delimiter = self.get_delimiter(csv_data)
+            data = pd.read_csv(csv_data, header=0,
+                               encoding=encoding, delimiter=delimiter)
 
         elif extension == 'xlsx' or extension == 'xls':
             data = pd.read_excel(file)
@@ -328,7 +356,7 @@ class AddPlayersExcel(BaseView):
 class AddSinglePlayer(BaseView):
     permission_classes = [IsAuthenticated, PlayersPermission]
 
-    @swagger_auto_schema(
+    @ swagger_auto_schema(
         tags=['player'],
         operation_description="""Adiciona um jogador manualmente ao evento.
         Deve ser fornecido o nome completo do jogador como _request body_ e o ID do evento como _manual parameter_. Nome social e email são opcionais.
@@ -441,3 +469,61 @@ class GetNotImortalPlayers(BaseView):
         data = PlayerSerializer(players_list, many=True).data
 
         return response.Response(status=status.HTTP_200_OK, data=data)
+
+
+class ExportPlayersView(BaseView):
+    permission_classes = [IsAuthenticated, PlayersPermission]
+
+    @swagger_auto_schema(
+        tags=['player'],
+        operation_description="""Exporta os jogadores classificados nas chaves do evento em um arquivo Excel.
+        O arquivo Excel contém as informações de **Nome Completo, Email e Nome Social** dos jogadores classificados nas chaves.
+        """,
+        operation_summary='Exporta os jogadores classificados nas chaves do evento em um arquivo Excel.',
+        manual_parameters=manual_parameter_event_id,
+        responses={200: openapi.Response(
+            description='Arquivo Excel gerado com sucesso',
+            content={'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {}}), **Errors([400]).retrieve_erros()})
+    def get(self, request, *args, **kwargs):
+        try:
+            event = self.get_event()
+        except Exception as e:
+            return handle_400_error(str(e))
+
+        self.check_object_permissions(request, event)
+
+        players = Player.objects.filter(
+            event=event, is_imortal=False, total_score__gt=0)
+        print(players)
+        if not players:
+            return handle_400_error('Nenhum jogador encontrado!')
+
+        # Gera o arquivo Excel
+        excel_file = self.generate_excel(players=players)
+
+        # Cria a resposta HTTP com o arquivo Excel
+        response = HttpResponse(
+            excel_file, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=jogadores_classificados.xlsx'
+
+        return response
+
+    def generate_excel(self, players):
+        # Cria um DataFrame com os dados dos jogadores
+        data = {
+            'Nome Completo': [player.full_name for player in players],
+            'Email': [player.registration_email for player in players],
+            'Nome Social': [player.social_name for player in players],
+        }
+        df = pd.DataFrame(data)
+
+        # Salva o DataFrame em um buffer de memória
+        buffer = BytesIO()
+        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False,
+                        sheet_name='Jogadores Classificados')
+
+        # Move o ponteiro do buffer para o início
+        buffer.seek(0)
+
+        return buffer
