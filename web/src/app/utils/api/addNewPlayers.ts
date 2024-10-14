@@ -28,7 +28,6 @@ export default async function addNewPlayers(fullName: string, socialName: string
         }
     } catch (error: unknown){
         if(isAxiosError(error)){
-            console.log(error.status);
             const { data } = error.response || {};
             console.log(data);
             const errorMessage = data.errors || "Erro desconhecido.";

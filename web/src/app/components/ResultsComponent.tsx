@@ -27,13 +27,11 @@ export default function ResultsComponent({isPlayer} : ResultsComponentProps) {
             const response = await request.get(`/api/results/?event_id=${currentId}`, settingsWithAuth(user.access));
             if(response.status === 200) {
                 setResults(response.data);
-                console.log(response.data);
             }
             if(isPlayer){
                 const playerResponse = await request.get(`/api/results/player/?event_id=${currentId}`, settingsWithAuth(user.access));
                 if(playerResponse.status === 200) {
                     setPlayerResults(response.data);
-                    console.log(response.data);
                 }
             }
             setPublished(true);
