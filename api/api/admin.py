@@ -75,12 +75,13 @@ class EventAdmin(GuardedModelAdmin):
         return obj.is_imortal_results_published
     imortal_results_published.short_description = 'Imortal Results Published?'
     imortal_results_published.boolean = True
-
+    def is_sumulas_generated(self, obj):
+        return obj.is_sumulas_generated
     list_display = ['id', 'token', 'join_token', 'name', 'active',
-                    'final_results_published', 'imortal_results_published']
+                    'final_results_published', 'imortal_results_published', 'admin_email', "is_sumulas_generated"]
     search_fields = ['token', 'name', 'active', 'join_token']
     fields = ['token', 'name', 'active',
-              'admin_email', 'is_final_results_published', 'is_imortal_results_published', 'join_token']
+              'admin_email', 'is_final_results_published', 'is_imortal_results_published', "is_sumulas_generated", 'join_token']
     ordering = ['name', 'active', 'is_final_results_published',
                 'is_imortal_results_published', 'token', 'join_token']
 
