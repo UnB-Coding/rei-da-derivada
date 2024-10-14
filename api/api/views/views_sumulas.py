@@ -616,7 +616,7 @@ class GenerateSumulas(BaseSumulaView):
             sumula.rounds = self.round_robin_tournament(
                 n=len(players_list), players_score=players_list)
             sumula.save()
-        return sumulas
+        return sumulas.sorted(key=lambda x: x.name)
 
 
 class RemovePlayersFromSumula(BaseSumulaView):
