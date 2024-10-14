@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, use } from "react";
 import { UserContext } from "@/app/contexts/UserContext";
 import {
     Dialog,
@@ -14,15 +14,65 @@ import request from "@/app/utils/request";
 import { settingsWithAuth } from "@/app/utils/settingsWithAuth";
 import { CheckCircle, ArrowDownToLine } from "lucide-react";
 import { Checkbox } from "@nextui-org/checkbox";
+import { usePathname } from "next/navigation";
+import toast from "react-hot-toast";
+import { isAxiosError } from "axios";
 
 interface ManageProps {
     isAdmin: boolean;
 }
 
 export default function Manage(props: ManageProps) {
-    const [ isClassifiedOpen, setIsClassifiedOpen ] = useState<boolean>(false);
-    const [ isStartOpen, setIsStartOpen ] = useState<boolean>(false);
-    const [ confirmStart, setConfirmStart ] = useState<boolean>(false);
+    const { user } = useContext(UserContext);
+    const [isClassifiedOpen, setIsClassifiedOpen] = useState<boolean>(false);
+    const [isStartOpen, setIsStartOpen] = useState<boolean>(false);
+    const [confirmStart, setConfirmStart] = useState<boolean>(false);
+    const eventId = usePathname().split("/")[1];
+
+    const handleStartEvent = async () => {
+        try {
+            toast.promise(request.post(`/api/sumula/generate/?event_id=${eventId}`, {}, settingsWithAuth(user.access)), {
+                loading: "Criando súmulas...",
+                success: "Súmulas criadas com sucesso.",
+                error: "Erro ao criar súmulas."
+            });
+        } catch (error: unknown) {
+            if (isAxiosError(error)) {
+                const errorMessage = error.response?.data.errors || "Erro desconhecido";
+            }
+            console.error("Erro ao fazer a requisição:", error);
+        }
+        setIsStartOpen(false);
+    }
+
+    const handleDownload = async () => {
+        try {
+            const response = await request.get(`/api/players/export/?event_id=${eventId}`, {
+                ...settingsWithAuth(user.access),
+                responseType: "blob"
+            });
+            const blob = new Blob([response.data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            const downloadUrl = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = downloadUrl;
+            a.download = "jogadores_classificados.xlsx";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(downloadUrl);
+
+            toast.success("Arquivo baixado com sucesso!");
+        } catch (error: unknown) {
+            if (isAxiosError(error)) {
+                const errorMessage = error.response?.data.errors || "Erro desconhecido";
+                toast.error(errorMessage);
+            }
+            console.error("Erro ao fazer a requisição:", error);
+
+        }
+        setIsClassifiedOpen(false);
+    }
 
     return (
         <div className="mt-4 grid justify-center gap-4">
@@ -40,7 +90,7 @@ export default function Manage(props: ManageProps) {
                         Clique no botão abaixo para baixar a lista de jogadores classificados.
                     </DialogDescription>
                     <DialogFooter>
-                        <Button onClick={() => setIsClassifiedOpen(!isClassifiedOpen)} className="text-base font-semibold">
+                        <Button onClick={() => handleDownload()} className="text-base font-semibold">
                             <ArrowDownToLine size={24} className="mr-2" />
                             Baixar
                         </Button>
@@ -54,7 +104,7 @@ export default function Manage(props: ManageProps) {
                         Começar evento
                     </div>
                 </DialogTrigger>
-                <DialogContent className="rounded-lg">
+                <DialogContent className="rounded-lg" onCloseAutoFocus={() => setConfirmStart(false)}>
                     <DialogHeader>
                         <DialogTitle className="text-primary">GERAR SÚMULAS INICIAIS</DialogTitle>
                     </DialogHeader>
@@ -65,7 +115,7 @@ export default function Manage(props: ManageProps) {
                         Tenho certeza que desejo gerar as súmulas iniciais.
                     </Checkbox>
                     <DialogFooter>
-                        <Button variant={"green"} className="text-base font-semibold" disabled={!confirmStart}>
+                        <Button variant={"green"} className="text-base font-semibold" disabled={!confirmStart} onClick={() => handleStartEvent()}>
                             <CheckCircle size={24} className="mr-2" />
                             Criar
                         </Button>

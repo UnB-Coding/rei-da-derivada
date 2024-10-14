@@ -327,6 +327,7 @@ class AddPlayersExcel(BaseView):
             player, created = Player.objects.get_or_create(
                 registration_email=email, event=event)
             player.full_name = name
+            player.is_present = True
             player.save()
         return errors_count, players_count
 

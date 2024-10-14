@@ -17,24 +17,31 @@ import request from "@/app/utils/request";
 import { settingsWithAuth } from "@/app/utils/settingsWithAuth";
 import getAllPlayers from "@/app/utils/api/getAllPlayers";
 import { usePathname } from "next/navigation";
+import { Autocomplete, AutocompleteItem } from "@nextui-org/react";
+import { isAxiosError } from "axios";
 
 
 export default function PublishResults() {
     const { user } = useContext(UserContext);
-    const [ isOpen, setIsOpen ] = useState<boolean>(false);
-    const [ top1, setTop1 ] = useState<string>("");
-    const [ top2, setTop2 ] = useState<string>("");
-    const [ top3, setTop3 ] = useState<string>("");
-    const [ top4, setTop4 ] = useState<string>("");
-    const [ ambassor, setAmbassor ] = useState<string>("");
-    const [ paladin, setPaladin ] = useState<string>("");
-    const [ postTop4, setPostTop4 ] = useState<boolean>(false);
-    const [ postImortais, setPostImortais ] = useState<boolean>(false);
-    const [ postPaladin, setPostPaladin ] = useState<boolean>(false);
-    const [ postAmbassor, setPostAmbassor ] = useState<boolean>(false);
-    const [ confirm, setConfirm ] = useState<boolean>(false);
-    const [ allPlayers, setAllPlayers ] = useState<any[]>([]);
+    const [isOpen, setIsOpen] = useState<boolean>(false);
+    const [top1, setTop1] = useState<any | null>(null);
+    const [top2, setTop2] = useState<any | null>(null);
+    const [top3, setTop3] = useState<any | null>(null);
+    const [top4, setTop4] = useState<any | null>(null);
+    const [ambassor, setAmbassor] = useState<any | null>(null);
+    const [paladin, setPaladin] = useState<any | null>(null);
+    const [postTop4, setPostTop4] = useState<boolean>(false);
+    const [postImortais, setPostImortais] = useState<boolean>(false);
+    const [postPaladin, setPostPaladin] = useState<boolean>(false);
+    const [postAmbassor, setPostAmbassor] = useState<boolean>(false);
+    const [confirm, setConfirm] = useState<boolean>(false);
+    const [allPlayers, setAllPlayers] = useState<any[]>([]);
     const eventId = usePathname().split("/")[1];
+
+    interface Player {
+        full_name: string;
+        id: number;
+    }
 
     const handleClose = () => {
         setPostTop4(false);
@@ -51,8 +58,43 @@ export default function PublishResults() {
     }
 
     const handlePublish = async () => {
-        const body = {};
-
+        if (postAmbassor || postPaladin || postTop4) {
+            const body: any = {}
+            if (postTop4) {
+                const top4List = [{ player_id: top1.id }, { player_id: top2.id }, { player_id: top3.id }, { player_id: top4.id }];
+                body.top4 = top4List;
+            }
+            if (postPaladin) {
+                body.paladin = { player_id: paladin.id }
+            }
+            if (postAmbassor) {
+                body.ambassor = { player_id: ambassor.id }
+            }
+            try {
+                const response = await request.put(`/api/results/?event_id=${eventId}`, body, settingsWithAuth(user.access));
+                if (response.status === 200) {
+                    toast.success("Resultados publicados com sucesso.")
+                }
+            } catch (error) {
+                if (isAxiosError(error)) {
+                    const errorMessage = error.response?.data.errors || "Erro desconhecido";
+                    toast.error(errorMessage);
+                }
+            }
+        }
+        if (postImortais) {
+            try {
+                const response = await request.put(`/api/publish/results/imortals/?event_id=${eventId}`, {}, settingsWithAuth(user.access));
+                if (response.status === 200) {
+                    toast.success("Imortais publicados com sucesso.")
+                }
+            } catch (error) {
+                if (isAxiosError(error)) {
+                    const errorMessage = error.response?.data.errors || "Erro desconhecido";
+                    toast.error(errorMessage);
+                }
+            }
+        }
     }
 
     const getPlayers = async () => {
@@ -61,10 +103,10 @@ export default function PublishResults() {
     }
 
     useEffect(() => {
-        if(isOpen) {
+        if (isOpen) {
             getPlayers();
         }
-    },[isOpen])
+    }, [isOpen]);
 
     return (
         <div className="mt-4 flex justify-center">
@@ -86,23 +128,62 @@ export default function PublishResults() {
                     </Switch>
                     {postTop4 && (
                         <div className="grid gap-2">
-                            <input onChange={(e) => setTop1(e.target.value)} className="border-[1.5px] border-blue-500 w-64 h-10 rounded-lg pl-5" type="text" placeholder="Nome do Top 1" />
-                            <input onChange={(e) => setTop2(e.target.value)} className="border-[1.5px] border-blue-500 w-64 h-10 rounded-lg pl-5" type="text" placeholder="Nome do Top 2" />
-                            <input onChange={(e) => setTop3(e.target.value)} className="border-[1.5px] border-blue-500 w-64 h-10 rounded-lg pl-5" type="text" placeholder="Nome do Top 3" />
-                            <input onChange={(e) => setTop4(e.target.value)} className="border-[1.5px] border-blue-500 w-64 h-10 rounded-lg pl-5" type="text" placeholder="Nome do Top 4" />
+                            <Autocomplete style={{ zIndex: 100, pointerEvents: 'auto' }} placeholder="Nome do Top 1"
+                                onInputChange={(item) => {
+                                    const selectedPlayer = allPlayers.find((player) => player.full_name === item);
+                                    setTop1(selectedPlayer);
+                                }}>
+                                {allPlayers.map((player) => (
+                                    <AutocompleteItem style={{ zIndex: 101, pointerEvents: 'auto' }} key={player.id}>{player.full_name}</AutocompleteItem>
+                                ))}
+                            </Autocomplete>
+                            <Autocomplete style={{ zIndex: 100, pointerEvents: 'auto' }} placeholder="Nome do Top 2"
+                                onInputChange={(item) => {
+                                    const selectedPlayer = allPlayers.find((player) => player.full_name === item); setTop2(selectedPlayer)
+                                }}>
+                                {allPlayers.map((player) => (
+                                    <AutocompleteItem style={{ zIndex: 101, pointerEvents: 'auto' }} key={player.id}>{player.full_name}</AutocompleteItem>
+                                ))}
+                            </Autocomplete>
+                            <Autocomplete style={{ zIndex: 100, pointerEvents: 'auto' }} placeholder="Nome do Top 3" onInputChange={(item) => {
+                                const selectedPlayer = allPlayers.find((player: Player) => player.full_name === item); setTop3(selectedPlayer)
+                            }}>
+                                {allPlayers.map((player) => (
+                                    <AutocompleteItem style={{ zIndex: 101, pointerEvents: 'auto' }} key={player.id}>{player.full_name}</AutocompleteItem>
+                                ))}
+                            </Autocomplete>
+                            <Autocomplete style={{ zIndex: 100, pointerEvents: 'auto' }} placeholder="Nome do Top 4" onInputChange={(item) => {
+                                const selectedPlayer = allPlayers.find((player: Player) => player.full_name === item); setTop4(selectedPlayer)
+                            }}>
+                                {allPlayers.map((player) => (
+                                    <AutocompleteItem style={{ zIndex: 101, pointerEvents: 'auto' }} key={player.id}>{player.full_name}</AutocompleteItem>
+                                ))}
+                            </Autocomplete>
                         </div>
                     )}
                     <Switch defaultSelected={false} onValueChange={() => setPostPaladin(!postPaladin)}>
                         <p>Publicar Paladino</p>
                     </Switch>
                     {postPaladin && (
-                        <input onChange={(e) => setPaladin(e.target.value)} className="border-[1.5px] border-blue-500 w-64 h-10 rounded-lg pl-5" type="text" placeholder="Nome do paladino" />
+                        <Autocomplete style={{ zIndex: 100, pointerEvents: 'auto' }} placeholder="Nome do Paladino" onInputChange={(item) => {
+                            const selectedPlayer = allPlayers.find((player: Player) => player.full_name === item); setPaladin(selectedPlayer)
+                        }}>
+                            {allPlayers.map((player) => (
+                                <AutocompleteItem style={{ zIndex: 101, pointerEvents: 'auto' }} key={player.id}>{player.full_name}</AutocompleteItem>
+                            ))}
+                        </Autocomplete>
                     )}
                     <Switch defaultSelected={false} onValueChange={() => setPostAmbassor(!postAmbassor)}>
                         <p>Publicar Embaixador</p>
                     </Switch>
                     {postAmbassor && (
-                        <input onChange={(e) => setAmbassor(e.target.value)} className="border-[1.5px] border-blue-500 w-64 h-10 rounded-lg pl-5" type="text" placeholder="Nome do embaixador" />
+                        <Autocomplete style={{ zIndex: 100, pointerEvents: 'auto' }} placeholder="Nome do Embaixador" onInputChange={(item) => {
+                            const selectedPlayer = allPlayers.find((player: Player) => player.full_name === item); setAmbassor(selectedPlayer)
+                        }}>
+                            {allPlayers.map((player) => (
+                                <AutocompleteItem style={{ zIndex: 101, pointerEvents: 'auto' }} key={player.id}>{player.full_name}</AutocompleteItem>
+                            ))}
+                        </Autocomplete>
                     )}
                     <Switch defaultSelected={false} onValueChange={() => setPostImortais(!postImortais)}>
                         <p>Publicar Imortais</p>
