@@ -12,7 +12,9 @@ import AddPlayerComponent from "@/app/components/eventComponentes/AddPlayerCompo
 import AddStaffComponent from "@/app/components/eventComponentes/AddStaffComponent";
 import AddManager from "@/app/components/eventComponentes/AddManager";
 import CreateSumula from "@/app/components/eventComponentes/CreateSumula";
-import Navbar from "@/app/components/eventComponentes/Navbar";
+import PublishResults from "@/app/components/eventComponentes/PublishResults";
+import DeleteSumula from "@/app/components/eventComponentes/DeleteSumula";
+import Manage from "@/app/components/eventComponentes/Manage";
 
 export default function Admin() {
   const { user, loading } = useContext(UserContext);
@@ -51,11 +53,19 @@ export default function Admin() {
     <>
       <HeaderComponent />
       <div className="py-32">
-        <SubmitFileComponent />
-        <CreateSumula />
+        <SubmitFileComponent isManager={userType === 'manager'}/>
+        <CreateSumula isImortal={false} buttonName="Súmula classificatória" />
+        <CreateSumula isImortal={true} buttonName="Súmula imortais" />
         <AddPlayerComponent />
-        <AddStaffComponent />
-        <AddManager />
+        {userType === 'admin' && (
+          <>
+            <AddStaffComponent />
+            <AddManager />
+            <PublishResults />
+          </>
+        )}
+        <DeleteSumula />
+        <Manage isAdmin={userType === 'admin'}/>
       </div>
       <EventNavBarComponent userType={userType} />
     </>

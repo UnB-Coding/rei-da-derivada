@@ -35,21 +35,21 @@ interface Points {
 
 export default function SumulaId() {
     const { user, loading } = useContext(UserContext);
-    const [ currentSumula, setCurrentSumula ] = useState<any>(null); // conteúdo da súmula atual
-    const [ isDialogOpen, setIsDialogOpen ] = useState(false);
-    const [ isLeaveOpen, setIsLeaveOpen ] = useState(false); // dialog de sair da súmula
-    const [ canSee, setCanSee ] = useState<boolean>(false);
-    const [ currentPage, setCurrentPage ] = useState(0); // paǵina atual das rodadas
-    const [ rounds, setRounds ] = useState<any>([]); // aqui que estão os rounds, eles saem da currentSumula
-    const [ playersScore, setPlayersScore ] = useState<any>([]);
-    const [ sumulaPoints, setSumulaPoints ] = useState<Points[]>([]); // aqui faz parte da gambiarra pra guardar as pontuações
-    const [ isFinishDialogOpen, setIsFinishDialogOpen ] = useState(false);
-    const [ click3Disabled, setClick3Disabled ] = useState<boolean>(false);
-    const [ click1Disabled, setClick1Disabled ] = useState<boolean>(false);
-    const [ finishConfirm, setFinishConfirm ] = useState<boolean>(false); // checkbox de confirmar finalização da súmula
-    const [ duplaPontuacoes, setDuplaPontuacoes ] = useState<{ [key: number]: number }>({});
-    const [ imortalPlayers, setImortalPlayers ] = useState<any>([]); // aqui é pra enviar os imortais pro backend
-    const [ sumulaPointsAux, setSumulaPointsAux ] = useState<any>([]);
+    const [currentSumula, setCurrentSumula] = useState<any>(null); // conteúdo da súmula atual
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isLeaveOpen, setIsLeaveOpen] = useState(false); // dialog de sair da súmula
+    const [canSee, setCanSee] = useState<boolean>(false);
+    const [currentPage, setCurrentPage] = useState(0); // paǵina atual das rodadas
+    const [rounds, setRounds] = useState<any>([]); // aqui que estão os rounds, eles saem da currentSumula
+    const [playersScore, setPlayersScore] = useState<any>([]);
+    const [sumulaPoints, setSumulaPoints] = useState<Points[]>([]); // aqui faz parte da gambiarra pra guardar as pontuações
+    const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false);
+    const [click3Disabled, setClick3Disabled] = useState<boolean>(false);
+    const [click1Disabled, setClick1Disabled] = useState<boolean>(false);
+    const [finishConfirm, setFinishConfirm] = useState<boolean>(false); // checkbox de confirmar finalização da súmula
+    const [duplaPontuacoes, setDuplaPontuacoes] = useState<{ [key: number]: number }>({});
+    const [imortalPlayers, setImortalPlayers] = useState<any>([]); // aqui é pra enviar os imortais pro backend
+    const [sumulaPointsAux, setSumulaPointsAux] = useState<any>([]);
     const router = useRouter();
     const params = usePathname().split("/");
     const currentId = parseInt(params[1]);
@@ -60,12 +60,10 @@ export default function SumulaId() {
         if (sumula) {
             const auxSumula = JSON.parse(sumula);
             if (auxSumula.id === parseInt(params[3])) {
-                console.log(auxSumula.players_score)
                 setPlayersScore(auxSumula.players_score);
                 setRounds(auxSumula.rounds);
                 setCurrentSumula(auxSumula);
                 setCanSee(true);
-                console.log(auxSumula);
             } else {
                 router.push(`/${currentId}/sumula`);
             }
@@ -110,19 +108,30 @@ export default function SumulaId() {
 
     // aqui é crio um novo objeto com as pontuações da rodada atual e altero a pontuação da dupla no card
     const handleAddPoints = (pageIndex: number, points: number, pair: any, index: number) => {
-        const player1Id = pair.player1.player.id;
-        const player2Id = pair.player2.player.id;
-        const newPoints = {
+        const player1 = pair.player1?.player;
+        const player2 = pair.player2?.player;
+
+        const newPoints: any = {
             pageNumber: pageIndex,
-            player1Id: player1Id,
-            player2Id: player2Id,
             points: points,
         };
+
+        if (player1 && player2) {
+            newPoints.player1Id = player1.id;
+            newPoints.player2Id = player2.id;
+        } else if (player1) {
+            newPoints.player1Id = player1.id;
+        } else if (player2) {
+            newPoints.player2Id = player2.id;
+        }
+
         setSumulaPoints([...sumulaPoints, newPoints]);
+
         setDuplaPontuacoes((prev) => ({
             ...prev,
             [index]: (prev[index] || 0) + points,
         }));
+
         points === 1 ? setClick1Disabled(true) : setClick3Disabled(true);
     }
 
@@ -194,8 +203,8 @@ export default function SumulaId() {
     // aq é quando marca o checkbox no dialog de finalizar a súmula
     const handleIsImortalChange = (playerId: string, isChecked: boolean) => {
         setImortalPlayers((prev: any) => {
-            if(isChecked){
-                return [...prev, {id: playerId}];
+            if (isChecked) {
+                return [...prev, { id: playerId }];
             } else {
                 return prev.filter((player: any) => player.id !== playerId);
             }
@@ -212,7 +221,7 @@ export default function SumulaId() {
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
             <Dialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen}>
                 <DialogTrigger asChild>
-                    <Button variant="outline" onClick={() => console.log("sair da sumula")} className="mb-4 absolute top-4 left-4">
+                    <Button variant="outline" className="mb-4 absolute top-4 left-4">
                         <ChevronLeft className="h-4 w-4 mr-2" />
                         Voltar
                     </Button>
@@ -238,8 +247,8 @@ export default function SumulaId() {
                             <CardTitle className="text-center text-lg">Dupla {index + 1}</CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col items-center space-y-4">
-                            <p className="text-md sm:text-lg font-semibold text-center">{capitalize(pair.player1.player.full_name)}</p>
-                            <p className="text-md sm:text-lg font-semibold text-center">{capitalize(pair.player2.player.full_name)}</p>
+                            <p className="text-md sm:text-lg font-semibold text-center">{pair.player1 ? capitalize(pair.player1.player.full_name) : "Sem dupla"}</p>
+                            <p className="text-md sm:text-lg font-semibold text-center">{pair.player2 ? capitalize(pair.player2.player.full_name) : "Sem dupla"}</p>
                             <p className="text-md sm:text-lg">Pontuação: {duplaPontuacoes[index] || 0}</p>
                             <div className="flex space-x-4">
                                 <Button disabled={duplaPontuacoes[index] !== undefined || click1Disabled} size="lg" className="text-xl font-semibold" onClick={() => handleAddPoints(currentPage, 1, pair, index)}>+1</Button>
@@ -296,7 +305,7 @@ export default function SumulaId() {
                             <div>
                                 {sumulaPointsAux.sort((a: any, b: any) => b.points - a.points).map((player: any, index: number) => (
                                     <div key={index} className="flex items-center justify-between">
-                                        {!currentSumula.is_imortal && (<Checkbox onChange={(e) => handleIsImortalChange(player.player.id, e.target.checked)}/>)}
+                                        {!currentSumula.is_imortal && (<Checkbox onChange={(e) => handleIsImortalChange(player.player.id, e.target.checked)} />)}
                                         <p className={`${player.player.full_name.length > 30 ? "text-[1rem]" : "text-md"} md:text-lg`}>{capitalize(player.player.full_name)}</p>
                                         <p>{player.points} pts</p>
                                     </div>
