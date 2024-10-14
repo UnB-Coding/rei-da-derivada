@@ -17,7 +17,7 @@ export default function AddPlayerComponent() {
 
     return (
         <div className="mt-4 flex justify-center">
-            <button className=" w-[300px] h-[50px] bg-primary text-white font-semibold rounded-lg" onClick={() => setVisible(!visible)}>Adicionar Jogador</button>
+            <button className=" w-[300px] h-[50px] bg-primary text-white font-semibold rounded-lg" onClick={() => setVisible(!visible)}>Adicionar jogador</button>
             {visible && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-20">
                     <div className="relative bg-white px-12 py-16 rounded-lg shadow-lg">

@@ -4,8 +4,14 @@ import { usePathname } from "next/navigation";
 import request from "@/app/utils/request";
 import toast from "react-hot-toast";
 import { formDataSettings } from "@/app/utils/formDataSettings";
+import { isAxiosError } from "axios";
 import AddPlayerComponent from "./AddPlayerComponent";
-export default function SubmitFileComponent() {
+
+interface SubmitFileComponentProps {
+    isManager: boolean;
+}
+
+export default function SubmitFileComponent(props: SubmitFileComponentProps) {
     const [playerFile, setPlayerFile] = useState<File | null>(null);
     const [staffFile, setStaffFile] = useState<File | null>(null);
     const currentId = usePathname().split("/")[1];
@@ -36,12 +42,13 @@ export default function SubmitFileComponent() {
                         toast.success(response.data);
                     }
                 }
-            } catch (error) {
-                if (error.response && error.response.data && error.response.data.errors) {
-                    toast.error(error.response.data.errors);
-                } else {
-                    toast.error("Ocorreu um erro inesperado.");
+            } catch (error: unknown) {
+                if (isAxiosError(error)) {
+                    const { data } = error.response || {};
+                    const errorMessage = data.errors || "Erro desconhecido.";
+                    toast.error(errorMessage);
                 }
+                console.log(error);
             }
         } else {
             toast.error("Selecione um arquivo para enviar!");
@@ -54,15 +61,16 @@ export default function SubmitFileComponent() {
             formData.append("file", staffFile);
             try {
                 const response = await request.post(`/api/upload-staff/?event_id=${currentId}`, formData, formDataSettings(user.access));
-                if(response.status === 201){
+                if (response.status === 201) {
                     toast.success(response.data);
                 }
-            } catch (error) {
-                if (error.response && error.response.data && error.response.data.errors) {
-                    toast.error(error.response.data.errors);
-                } else {
-                    toast.error("Ocorreu um erro inesperado.");
+            } catch (error: unknown) {
+                if (isAxiosError(error)) {
+                    const { data } = error.response || {};
+                    const errorMessage = data.errors || "Erro desconhecido.";
+                    toast.error(errorMessage);
                 }
+                console.log(error);
             }
         } else {
             toast.error("Selecione um arquivo para enviar!");
@@ -75,11 +83,11 @@ export default function SubmitFileComponent() {
                 <input className="pl-4" type="file" onChange={handlePlayerFileChange} />
                 <button className="bg-primary font-medium text-white rounded-md mx-4 p-2" onClick={handlePlayerSubmit}>Enviar</button>
             </div>
-            <div className="grid gap-4 bg-neutral-100 rounded-2xl py-6 shadow-sm">
+            {!props.isManager && <div className="grid gap-4 bg-neutral-100 rounded-2xl py-6 shadow-sm">
                 <p className="font-semibold text-primary pl-4">ADICIONAR STAFF</p>
                 <input className="pl-4" type="file" onChange={handleStaffFileChange} />
                 <button className="bg-primary font-medium text-white rounded-md mx-4 py-2" onClick={handleStaffSubmit}>Enviar</button>
-            </div>
+            </div>}
         </div>
     );
 }

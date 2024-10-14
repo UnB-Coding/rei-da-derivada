@@ -38,7 +38,6 @@ export async function eventLogin(args: any){
   const response = await request.post("/api/players/", body, settingsWithAuth(access));
   if(response.status === 200){
     const data = response.data;
-    console.log(data);
   }
 }
 
