@@ -31,11 +31,20 @@ export default function Manage(props: ManageProps) {
 
     const handleStartEvent = async () => {
         try {
-            toast.promise(request.post(`/api/sumula/generate/?event_id=${eventId}`, {}, settingsWithAuth(user.access)), {
-                loading: "Criando súmulas...",
-                success: "Súmulas criadas com sucesso.",
-                error: "Erro ao criar súmulas."
-            });
+            await toast.promise(
+                request.post(`/api/sumula/generate/?event_id=${eventId}`, {}, settingsWithAuth(user.access)),
+                {
+                    loading: "Criando súmulas...",
+                    success: "Súmulas criadas com sucesso.",
+                    error: ({ response }) => {
+                        let errorMessage = "Erro ao criar súmulas.";
+                        if (response?.data?.errors) {
+                            errorMessage = response.data.errors;
+                        }
+                        return errorMessage;
+                    }
+                }
+            );
         } catch (error: unknown) {
             if (isAxiosError(error)) {
                 const errorMessage = error.response?.data.errors || "Erro desconhecido";
