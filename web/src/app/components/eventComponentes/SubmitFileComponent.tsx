@@ -6,7 +6,11 @@ import toast from "react-hot-toast";
 import { formDataSettings } from "@/app/utils/formDataSettings";
 import AddPlayerComponent from "./AddPlayerComponent";
 
-export default function SubmitFileComponent() {
+interface SubmitFileComponentProps {
+    isManager: boolean;
+}
+
+export default function SubmitFileComponent(props: SubmitFileComponentProps) {
     const [playerFile, setPlayerFile] = useState<File | null>(null);
     const [staffFile, setStaffFile] = useState<File | null>(null);
     const currentId = usePathname().split("/")[1];
@@ -63,11 +67,11 @@ export default function SubmitFileComponent() {
                 <input className="pl-4" type="file" onChange={handlePlayerFileChange}/>
                 <button className="bg-primary font-medium text-white rounded-md mx-4 p-2" onClick={handlePlayerSubmit}>Enviar</button>
             </div>
-            <div className="grid gap-4 bg-neutral-100 rounded-2xl py-6 shadow-sm">
+            {!props.isManager && <div className="grid gap-4 bg-neutral-100 rounded-2xl py-6 shadow-sm">
                 <p className="font-semibold text-primary pl-4">ADICIONAR STAFF</p>
                 <input className="pl-4" type="file" onChange={handleStaffFileChange}/>
                 <button className="bg-primary font-medium text-white rounded-md mx-4 py-2" onClick={handleStaffSubmit}>Enviar</button>
-            </div>
+            </div>}
         </div>
     );
 }
