@@ -566,6 +566,7 @@ class GenerateSumulas(BaseSumulaView):
         MAX_PLAYERS = 8
         letters = string.ascii_uppercase  # Alfabeto para nomear as chaves
         letters_count = 0
+        j_index = 0
         players = Player.objects.filter(
             event=event, is_present=True, is_imortal=False)
         if players.count() < MIN_PLAYERS:
@@ -582,12 +583,12 @@ class GenerateSumulas(BaseSumulaView):
         for i in range(n_sumulas):
             if letters_count % 26 == 0:
                 letters_count = 0
+                j_index += 1
             if i < 26:
                 sumula = SumulaClassificatoria.objects.create(
                     event=event, name=f"Chave {letters[letters_count]}")
             else:
-                name = f"{letters[letters_count]}" * \
-                    (i//26+1)
+                name = f"{letters[letters_count]}{j_index}"
                 sumula = SumulaClassificatoria.objects.create(
                     event=event, name=f"Chave {name}")
             letters_count += 1
@@ -616,7 +617,7 @@ class GenerateSumulas(BaseSumulaView):
             sumula.rounds = self.round_robin_tournament(
                 n=len(players_list), players_score=players_list)
             sumula.save()
-        return sumulas
+        return sumulas.sorted(key=lambda x: x.name)
 
 
 class RemovePlayersFromSumula(BaseSumulaView):
