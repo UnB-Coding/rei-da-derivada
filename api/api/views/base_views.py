@@ -1,4 +1,5 @@
 from io import StringIO
+from django.db.models import BaseManager
 import chardet
 from django.utils.deprecation import MiddlewareMixin
 from django.forms import ValidationError
@@ -201,18 +202,18 @@ class BaseSumulaView(BaseView):
                 return False
         return True
 
-    def get_sumulas(self, event: Event, active: bool = None) -> tuple[list[SumulaImortal], list[SumulaClassificatoria]]:
+    def get_sumulas(self, event: Event, active: bool = None) -> tuple[BaseManager[SumulaClassificatoria], BaseManager[SumulaImortal]]:
         """Retorna as sumulas de um evento de acordo com o parâmetro active."""
         if active is None:
             sumula_imortal = SumulaImortal.objects.filter(
-                event=event)
+                event=event).order_by('name')
             sumula_classificatoria = SumulaClassificatoria.objects.filter(
-                event=event)
+                event=event).order_by('name')
         else:
             sumula_imortal = SumulaImortal.objects.filter(
-                event=event, active=active)
+                event=event, active=active).order_by('name')
             sumula_classificatoria = SumulaClassificatoria.objects.filter(
-                event=event, active=active)
+                event=event, active=active).order_by('name')
         return sumula_imortal, sumula_classificatoria
 
     def create_players_score(self, players: list, sumula: SumulaImortal | SumulaClassificatoria, event: Event,) -> list[PlayerScore] | ValidationError:
