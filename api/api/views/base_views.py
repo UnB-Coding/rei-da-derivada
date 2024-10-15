@@ -1,5 +1,5 @@
 from io import StringIO
-from django.db.models import BaseManager
+#from django.db.models import BaseManager
 import chardet
 from django.utils.deprecation import MiddlewareMixin
 from django.forms import ValidationError
@@ -202,7 +202,7 @@ class BaseSumulaView(BaseView):
                 return False
         return True
 
-    def get_sumulas(self, event: Event, active: bool = None) -> tuple[BaseManager[SumulaClassificatoria], BaseManager[SumulaImortal]]:
+    def get_sumulas(self, event: Event, active: bool = None) -> tuple[SumulaClassificatoria,SumulaImortal]:
         """Retorna as sumulas de um evento de acordo com o parâmetro active."""
         if active is None:
             sumula_imortal = SumulaImortal.objects.filter(
