@@ -30,7 +30,7 @@ export default function AddManager() {
 
     return (
         <div className="mt-4 flex justify-center">
-            <button className=" w-[300px] h-[50px] bg-primary text-white font-semibold rounded-lg" onClick={() => setIsOpen(!isOpen)}>Adicionar Gerente</button>
+            <button className=" w-[300px] h-[50px] bg-primary text-white font-semibold rounded-lg" onClick={() => setIsOpen(!isOpen)}>Adicionar gerente</button>
             {isOpen && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-20">
                     <div className="relative bg-white px-12 py-10 rounded-lg shadow-lg">

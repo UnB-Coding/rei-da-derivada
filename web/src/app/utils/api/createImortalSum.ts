@@ -4,10 +4,6 @@ import { settingsWithAuth } from "../settingsWithAuth";
 import { isAxiosError } from "axios";
 
 export default async function createImortalSum(sumulaName: string, eventId: string, players: any[], staff: any[], access_token?: string) {
-    if (sumulaName.length === 0) {
-        toast.error("Nome da súmula é obrigatório.");
-        return;
-    }
     if(players.length < 4){
         toast.error("A súmula deve conter no mínimo 4 jogadores.");
         return;

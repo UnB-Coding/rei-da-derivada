@@ -82,6 +82,7 @@ class Event (models.Model):
     admin_email = models.EmailField(default='', blank=True, null=True)
     is_final_results_published = models.BooleanField(default=False)
     is_imortal_results_published = models.BooleanField(default=False)
+    is_sumulas_generated = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = ("Evento")

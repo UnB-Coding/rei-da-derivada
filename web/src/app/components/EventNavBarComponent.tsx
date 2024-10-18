@@ -22,30 +22,30 @@ type NavItem = {
 
 const navItems: Record< UserType, NavItem[]> = {
     player: [
-        { figure: <Image src={homel} alt="home" width={36} height={36}/>, href: '/home' },
-        { figure: <Image src={resultl} alt="results" width={36} height={36}/>, href: './results' },
-        { figure: <Image src={profilel} alt="profile" width={36} height={36}/>, href: '/profile' },
+        { figure: <Image draggable="false" src={homel} alt="home" width={36} height={36}/>, href: '/home' },
+        { figure: <Image draggable="false" src={resultl} alt="results" width={36} height={36}/>, href: './results' },
+        { figure: <Image draggable="false" src={profilel} alt="profile" width={36} height={36}/>, href: '/profile' },
     ],
     staff: [
-        { figure: <Image src={homel} alt="home" width={36} height={36}/>, href: '/home' },
-        { figure: <Image src={sumulal} alt="sumula" width={36} height={36}/>, href: './sumula' },
-        { figure: <Image src={resultl} alt="results" width={36} height={36}/>, href: './results' },
+        { figure: <Image draggable="false" src={homel} alt="home" width={36} height={36}/>, href: '/home' },
+        { figure: <Image draggable="false" src={sumulal} alt="sumula" width={36} height={36}/>, href: './sumula' },
+        { figure: <Image draggable="false" src={resultl} alt="results" width={36} height={36}/>, href: './results' },
     ],
     admin: [
-        { figure: <Image src={homel} alt="home" width={36} height={36}/>, href: '/home' },
-        { figure: <Image src={resultl} alt="results" width={36} height={36}/>, href: './results' },
-        { figure: <Image src={sumulal} alt="sumula" width={36} height={36}/>, href: './sumula' },
-        { figure: <Image src={adminl} alt="admin" width={36} height={36}/>, href: './admin' },
+        { figure: <Image draggable="false" src={homel} alt="home" width={36} height={36}/>, href: '/home' },
+        { figure: <Image draggable="false" src={resultl} alt="results" width={36} height={36}/>, href: './results' },
+        { figure: <Image draggable="false" src={sumulal} alt="sumula" width={36} height={36}/>, href: './sumula' },
+        { figure: <Image draggable="false" src={adminl} alt="admin" width={36} height={36}/>, href: './admin' },
     ],
     manager: [
-        { figure: <Image src={homel} alt="home" width={36} height={36}/>, href: '/home' },
-        { figure: <Image src={resultl} alt="results" width={36} height={36}/>, href: './results' },
-        { figure: <Image src={sumulal} alt="sumula" width={36} height={36}/>, href: './sumula' },
-        { figure: <Image src={adminl} alt="admin" width={36} height={36}/>, href: './admin' },
+        { figure: <Image draggable="false" src={homel} alt="home" width={36} height={36}/>, href: '/home' },
+        { figure: <Image draggable="false" src={resultl} alt="results" width={36} height={36}/>, href: './results' },
+        { figure: <Image draggable="false" src={sumulal} alt="sumula" width={36} height={36}/>, href: './sumula' },
+        { figure: <Image draggable="false" src={adminl} alt="admin" width={36} height={36}/>, href: './admin' },
     ],
     common: [
-        { figure: <Image src={homel} alt="home" width={36} height={36}/>, href: '/home' },
-        { figure: <Image src={calendarl} alt="contests" width={36} height={36}/>, href: '/contests' },
+        { figure: <Image draggable="false" src={homel} alt="home" width={36} height={36}/>, href: '/home' },
+        { figure: <Image draggable="false" src={calendarl} alt="contests" width={36} height={36}/>, href: '/contests' },
     ],
 }
 

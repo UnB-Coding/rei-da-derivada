@@ -16,7 +16,7 @@ interface ResultsComponentProps {
 
 export default function ResultsComponent({isPlayer} : ResultsComponentProps) {
     const { user } = useContext(UserContext);
-    const [published, setPublished] = useState<boolean>(true);
+    const [published, setPublished] = useState<boolean>(false);
     const [ canSee, setCanSee ] = useState<boolean>(false);
     const [results, setResults] = useState<any>();
     const [playerResults, setPlayerResults] = useState<any>();
@@ -27,13 +27,11 @@ export default function ResultsComponent({isPlayer} : ResultsComponentProps) {
             const response = await request.get(`/api/results/?event_id=${currentId}`, settingsWithAuth(user.access));
             if(response.status === 200) {
                 setResults(response.data);
-                console.log(response.data);
             }
             if(isPlayer){
                 const playerResponse = await request.get(`/api/results/player/?event_id=${currentId}`, settingsWithAuth(user.access));
                 if(playerResponse.status === 200) {
                     setPlayerResults(response.data);
-                    console.log(response.data);
                 }
             }
             setPublished(true);
@@ -41,8 +39,10 @@ export default function ResultsComponent({isPlayer} : ResultsComponentProps) {
         } catch (error: unknown) {
             if(isAxiosError(error)){
                 const errorMessage = error.response?.data.errors || "Erro desconhecido";
-                console.log(errorMessage);               
+                console.log(errorMessage, "bigodee");               
             }
+            setCanSee(true)
+            console.log(published)
         }
     }
 
@@ -129,7 +129,7 @@ export default function ResultsComponent({isPlayer} : ResultsComponentProps) {
                 {isPlayer &&
                     <div>
                         <p className="font-semibold text-slate-700 md:text-2xl">SEU DESEMPENHO</p>
-                        <DisplayComponent playerName={capitalize(playerMock.full_name)} points={playerMock.total_score} />
+                        <DisplayComponent playerName={capitalize(playerResults.full_name)} points={playerResults.total_score} />
                     </div>}
                 <div className="grid gap-3">
                     <p className="font-semibold text-slate-700 md:text-2xl">TOP 4</p>

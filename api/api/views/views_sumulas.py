@@ -532,6 +532,8 @@ class GenerateSumulas(BaseSumulaView):
         operation_description="""Gera sumulas classificatorias para iniciar um evento.
         Uma sumula possui no maximo 8 e no mínimo 6 jogadores.
         Apenas um gerente ou administrador do evento pode gerar sumulas.
+
+        **Essa ação só pode ser realizada uma vez durante o evento.**
         """,
         security=[{'Bearer': []}],
         manual_parameters=manual_parameter_event_id,
@@ -543,11 +545,16 @@ class GenerateSumulas(BaseSumulaView):
         except Exception as e:
             return handle_400_error(str(e))
         self.check_object_permissions(self.request, event)
+        if event.is_sumulas_generated:
+            return handle_400_error(
+                "As sumulas iniciais já foram geradas para este evento!")
         try:
             sumulas = self.generate_sumulas(
                 event=event)
         except Exception as e:
             return handle_400_error(str(e))
+        event.is_sumulas_generated = True
+        event.save()
         data = SumulaClassificatoriaSerializer(sumulas, many=True).data
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
@@ -557,7 +564,7 @@ class GenerateSumulas(BaseSumulaView):
         """
         MIN_PLAYERS = 6  # A DECIDIR
         MAX_PLAYERS = 8
-        letters = string.ascii_uppercase #Alfabeto para nomear as chaves
+        letters = string.ascii_uppercase  # Alfabeto para nomear as chaves
         letters_count = 0
         players = Player.objects.filter(
             event=event, is_present=True, is_imortal=False)
