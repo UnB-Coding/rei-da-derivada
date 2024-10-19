@@ -572,7 +572,8 @@ class GenerateSumulas(BaseSumulaView):
         players = Player.objects.filter(
             event=event, is_present=True, is_imortal=False)
         if players.count() < MIN_PLAYERS:
-            logger.error(f"O evento precisa de pelo menos {MIN_PLAYERS} jogadores presentes para iniciar.")
+            logger.error(f"O evento precisa de pelo menos {
+                         MIN_PLAYERS} jogadores presentes para iniciar.")
             raise Exception(
                 f"O evento precisa de pelo menos {MIN_PLAYERS} jogadores presentes para iniciar.")
         players = list(players)
@@ -627,7 +628,7 @@ class GenerateSumulas(BaseSumulaView):
                 f"{len(sumulas)} sumulas classificatorias geradas para o evento {event.id}")
         except Exception as e:
             logger.error(f"Erro ao gerar sumulas: {e}")
-            raise
+            return handle_400_error(f"Erro ao gerar sumulas.{e}")
 
         return sumulas
 
