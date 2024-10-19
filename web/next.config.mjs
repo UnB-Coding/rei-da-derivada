@@ -8,7 +8,7 @@ const withPWA = withPWAInit({
     fallbacks: {
         document: "src/app/~offline/page.tsx",
     },
-    cacheOnFrontEndNav:true
+    cacheOnFrontEndNav:true,
 });
 
 const nextConfig = {
