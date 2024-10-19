@@ -557,8 +557,7 @@ class GenerateSumulas(BaseSumulaView):
             return handle_400_error(str(e))
         event.is_sumulas_generated = True
         event.save()
-        data = SumulaClassificatoriaSerializer(sumulas, many=True).data
-        return response.Response(status=status.HTTP_201_CREATED, data=data)
+        return response.Response(status=status.HTTP_201_CREATED, data="Sumulas geradas com sucesso!")
 
     def generate_sumulas(self, event) -> list[SumulaClassificatoria] | Exception:
         logger = logging.getLogger(__name__)
