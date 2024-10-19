@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import status, request, response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.permissions import BasePermission
@@ -11,6 +12,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 import random
 import string
+import logging
 SUMULA_IS_CLOSED_ERROR_MESSAGE = "Súmula já encerrada só pode ser editada por um gerente ou adminstrador!"
 
 
@@ -559,6 +561,7 @@ class GenerateSumulas(BaseSumulaView):
         return response.Response(status=status.HTTP_201_CREATED, data=data)
 
     def generate_sumulas(self, event) -> list[SumulaClassificatoria] | Exception:
+        logger = logging.getLogger(__name__)
         """Gera sumulas classificatorias para iniciar um evento.
         Uma sumula possui no maximo 8 e no mínimo 6 jogadores.
         """
@@ -569,6 +572,7 @@ class GenerateSumulas(BaseSumulaView):
         players = Player.objects.filter(
             event=event, is_present=True, is_imortal=False)
         if players.count() < MIN_PLAYERS:
+            logger.error(f"O evento precisa de pelo menos {MIN_PLAYERS} jogadores presentes para iniciar.")
             raise Exception(
                 f"O evento precisa de pelo menos {MIN_PLAYERS} jogadores presentes para iniciar.")
         players = list(players)
@@ -579,43 +583,52 @@ class GenerateSumulas(BaseSumulaView):
         sumulas: list[SumulaClassificatoria] = []
         if resto > 0:
             n_sumulas += 1
-        for i in range(n_sumulas):
-            if letters_count % 26 == 0:
-                letters_count = 0
-            if i < 26:
-                sumula = SumulaClassificatoria.objects.create(
-                    event=event, name=f"Chave {letters[letters_count]}")
-            else:
-                name = f"{letters[letters_count]}" * \
-                    (i//26+1)
-                sumula = SumulaClassificatoria.objects.create(
-                    event=event, name=f"Chave {name}")
-            letters_count += 1
-            sumulas.append(sumula)
-            players_to_add = players[i*MAX_PLAYERS:(i+1)*MAX_PLAYERS]
-            for j in range(len(players_to_add)):
-                player = players_to_add[j]
-                PlayerScore.objects.create(event=event,
-                                           player=player, sumula_classificatoria=sumulas[i])
-        if resto > 0 and resto < MIN_PLAYERS:
-            index_of_complete_sumulas = n_sumulas-2
-            last_sumula = sumulas[n_sumulas-1]
-            while (last_sumula.scores.count() < MIN_PLAYERS):
-                scores = sumulas[index_of_complete_sumulas].scores.all()
-                for i in range(2):
-                    player = scores[i].player
-                    scores[i].delete()
-                    PlayerScore.objects.create(event=event, player=player,
-                                               sumula_classificatoria=last_sumula)
-                    last_sumula.refresh_from_db(fields=['scores'])
-                    if last_sumula.scores.count() == MIN_PLAYERS:
-                        break
-                index_of_complete_sumulas -= 1
-        for sumula in sumulas:
-            players_list = [player for player in sumula.scores.all()]
-            sumula.rounds = self.round_robin_tournament(
-                n=len(players_list), players_score=players_list)
-            sumula.save()
+
+        try:
+            with transaction.atomic():
+                for i in range(n_sumulas):
+                    if letters_count % 26 == 0:
+                        letters_count = 0
+                    if i < 26:
+                        sumula = SumulaClassificatoria.objects.create(
+                            event=event, name=f"Chave {letters[letters_count]}")
+                    else:
+                        name = f"{letters[letters_count]}" * \
+                            (i//26+1)
+                        sumula = SumulaClassificatoria.objects.create(
+                            event=event, name=f"Chave {name}")
+                    letters_count += 1
+                    sumulas.append(sumula)
+                    players_to_add = players[i*MAX_PLAYERS:(i+1)*MAX_PLAYERS]
+                    for j in range(len(players_to_add)):
+                        player = players_to_add[j]
+                        PlayerScore.objects.create(event=event,
+                                                   player=player, sumula_classificatoria=sumulas[i])
+                if resto > 0 and resto < MIN_PLAYERS:
+                    index_of_complete_sumulas = n_sumulas-2
+                    last_sumula = sumulas[n_sumulas-1]
+                    while (last_sumula.scores.count() < MIN_PLAYERS):
+                        scores = sumulas[index_of_complete_sumulas].scores.all()
+                        for i in range(2):
+                            player = scores[i].player
+                            scores[i].delete()
+                            PlayerScore.objects.create(event=event, player=player,
+                                                       sumula_classificatoria=last_sumula)
+                            last_sumula.refresh_from_db(fields=['scores'])
+                            if last_sumula.scores.count() == MIN_PLAYERS:
+                                break
+                        index_of_complete_sumulas -= 1
+                for sumula in sumulas:
+                    players_list = [player for player in sumula.scores.all()]
+                    sumula.rounds = self.round_robin_tournament(
+                        n=len(players_list), players_score=players_list)
+                    sumula.save()
+            logger.info(
+                f"{len(sumulas)} sumulas classificatorias geradas para o evento {event.id}")
+        except Exception as e:
+            logger.error(f"Erro ao gerar sumulas: {e}")
+            raise
+
         return sumulas
 
 

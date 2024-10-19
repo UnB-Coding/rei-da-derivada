@@ -1,13 +1,16 @@
+from ..models import Event, PlayerScore, Staff, SumulaImortal, SumulaClassificatoria, Player
+from ..serializers import PlayerScoreForRoundRobinSerializer
 from io import StringIO
-#from django.db.models import BaseManager
+from django.db import transaction
+# from django.db.models import BaseManager
 import chardet
 from django.utils.deprecation import MiddlewareMixin
 from django.forms import ValidationError
 from rest_framework.views import APIView
 from rest_framework.exceptions import NotFound
+import logging
 
-from ..serializers import PlayerScoreForRoundRobinSerializer
-from ..models import Event, PlayerScore, Staff, SumulaImortal, SumulaClassificatoria, Player
+logger = logging.getLogger(__name__)
 
 EVENT_NOT_FOUND_ERROR_MESSAGE = 'Evento não encontrado!'
 EVENT_ID_NOT_PROVIDED_ERROR_MESSAGE = "Id do evento não fornecido!"
@@ -202,7 +205,7 @@ class BaseSumulaView(BaseView):
                 return False
         return True
 
-    def get_sumulas(self, event: Event, active: bool = None) -> tuple[SumulaClassificatoria,SumulaImortal]:
+    def get_sumulas(self, event: Event, active: bool = None) -> tuple[SumulaClassificatoria, SumulaImortal]:
         """Retorna as sumulas de um evento de acordo com o parâmetro active."""
         if active is None:
             sumula_imortal = SumulaImortal.objects.filter(
@@ -219,22 +222,29 @@ class BaseSumulaView(BaseView):
     def create_players_score(self, players: list, sumula: SumulaImortal | SumulaClassificatoria, event: Event,) -> list[PlayerScore] | ValidationError:
         """Cria uma lista de PlayerScore associados a uma sumula."""
         players_score = []
-        for player in players:
-            player_id = player.get('id')
-            if player_id is None:
-                continue
-            player_obj = Player.objects.filter(id=player_id).first()
-            if not player_obj:
-                raise ValidationError(
-                    f"Jogador {player.get('name')} não encontrado!")
-            if sumula.__class__ == SumulaImortal:
-                players_score.append(PlayerScore.objects.create(
-                    player=player_obj, sumula_imortal=sumula, event=event))
-            else:
-                players_score.append(PlayerScore.objects.create(
-                    player=player_obj, sumula_classificatoria=sumula, event=event))
-
-        return players_score
+        try:
+            with transaction.atomic():
+                for player in players:
+                    player_id = player.get('id')
+                    if player_id is None:
+                        continue
+                    player_obj = Player.objects.filter(id=player_id).first()
+                    if not player_obj:
+                        raise ValidationError(
+                            f"Jogador {player.get('name')} não encontrado!")
+                    if sumula.__class__ == SumulaImortal:
+                        players_score.append(PlayerScore.objects.create(
+                            player=player_obj, sumula_imortal=sumula, event=event))
+                    else:
+                        players_score.append(PlayerScore.objects.create(
+                            player=player_obj, sumula_classificatoria=sumula, event=event))
+                logger.info(
+                    f"{len(players_score)} PlayerScores criados para a sumula {sumula.id}")
+            return players_score
+        except Exception as e:
+            logger.error(
+                f"Erro ao criar PlayerScores para a sumula {sumula.id}: {e}")
+            raise ValidationError("Erro ao criar PlayerScores!")
 
     def add_referees(self, sumula: SumulaImortal | SumulaClassificatoria, event: Event, referees: list) -> None:
         """Adiciona um árbitro a uma sumula."""
