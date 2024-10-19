@@ -228,7 +228,7 @@ class BaseSumulaView(BaseView):
                     player_id = player.get('id')
                     if player_id is None:
                         continue
-                    player_obj = Player.objects.filter(id=player_id).first()
+                    player_obj = Player.objects.select_for_update().filter(id=player_id).first()
                     if not player_obj:
                         raise ValidationError(
                             f"Jogador {player.get('name')} não encontrado!")
