@@ -12,7 +12,7 @@ import {
 import { Button } from "@/app/components/ui/button";
 import request from "@/app/utils/request";
 import { settingsWithAuth } from "@/app/utils/settingsWithAuth";
-import { CheckCircle, ArrowDownToLine } from "lucide-react";
+import { CheckCircle, ArrowDownToLine, Check } from "lucide-react";
 import { Checkbox } from "@nextui-org/checkbox";
 import { usePathname } from "next/navigation";
 import toast from "react-hot-toast";
@@ -27,6 +27,8 @@ export default function Manage(props: ManageProps) {
     const [isClassifiedOpen, setIsClassifiedOpen] = useState<boolean>(false);
     const [isStartOpen, setIsStartOpen] = useState<boolean>(false);
     const [confirmStart, setConfirmStart] = useState<boolean>(false);
+    const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false);
+    const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
     const eventId = usePathname().split("/")[1];
 
     const handleStartEvent = async () => {
@@ -82,6 +84,29 @@ export default function Manage(props: ManageProps) {
         }
         setIsClassifiedOpen(false);
     }
+    const handleDeleteResult = async () => {
+        try {
+            await toast.promise(
+                request.delete(`/api/results/?event_id=${eventId}`, settingsWithAuth(user.access)),
+                {
+                    loading: "Deletando resultados...",
+                    success: "Resultados deletados com sucesso.",
+                    error: ({ response }) => {
+                        let errorMessage = "Erro ao deletar resultados.";
+                        if (response?.data?.errors) {
+                            errorMessage = response.data.errors;
+                        }
+                        return errorMessage;
+                    }
+                }
+            );
+        } catch (error: unknown) {
+            if (isAxiosError(error)) {
+                const errorMessage = error.response?.data.errors || "Erro desconhecido";
+            }
+            console.error("Erro ao fazer a requisição:", error);
+        }
+    }
 
     return (
         <div className="mt-4 grid justify-center gap-4">
@@ -127,6 +152,30 @@ export default function Manage(props: ManageProps) {
                         <Button variant={"green"} className="text-base font-semibold" disabled={!confirmStart} onClick={() => handleStartEvent()}>
                             <CheckCircle size={24} className="mr-2" />
                             Criar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>)}
+            {props.isAdmin && (<Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+                <DialogTrigger>
+                    <div className="w-[300px] h-[50px] bg-red-500 text-white font-semibold rounded-lg flex items-center justify-center cursor-pointer">
+                        Revogar resultados
+                    </div>
+                </DialogTrigger>
+                <DialogContent className="rounded-lg" onCloseAutoFocus={() => setConfirmDelete(false)}>
+                    <DialogHeader>
+                        <DialogTitle className="text-primary">DELETAR RESULTADOS</DialogTitle>
+                    </DialogHeader>
+                    <DialogDescription className="text-lg">
+                        Clique no botão abaixo para deletar os resultados de Paladino, Top4 e Embaixador. <br />
+                        Note que esta ação também revoga a publicação dos resultados.
+                    </DialogDescription>
+                    <Checkbox className="mt-2" size="lg" radius="sm" isSelected={confirmDelete} onValueChange={setConfirmDelete}>
+                        Tenho certeza que desejo deletar os resultados.
+                    </Checkbox>
+                    <DialogFooter>
+                        <Button variant={"delete"} className="text-base font-semibold" disabled={!confirmDelete} onClick={() => handleDeleteResult()}  >
+                            Deletar
                         </Button>
                     </DialogFooter>
                 </DialogContent>
