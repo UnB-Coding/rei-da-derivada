@@ -216,3 +216,4 @@ api/config/files_tests/excel/Exemplo.xlsx
 
 web/public/workbox-*.js
 web/public/sw.js
+web/public/sw.js.map
