@@ -572,8 +572,7 @@ class GenerateSumulas(BaseSumulaView):
         players = Player.objects.filter(
             event=event, is_present=True, is_imortal=False)
         if players.count() < MIN_PLAYERS:
-            logger.error(f"O evento precisa de pelo menos {
-                         MIN_PLAYERS} jogadores presentes para iniciar.")
+            logger.error(f"O evento precisa de pelo menos {MIN_PLAYERS} jogadores presentes para iniciar.")
             raise Exception(
                 f"O evento precisa de pelo menos {MIN_PLAYERS} jogadores presentes para iniciar.")
         players = list(players)
