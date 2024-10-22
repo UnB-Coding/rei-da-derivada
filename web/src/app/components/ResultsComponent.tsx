@@ -14,10 +14,10 @@ interface ResultsComponentProps {
     isPlayer: boolean,
 }
 
-export default function ResultsComponent({isPlayer} : ResultsComponentProps) {
+export default function ResultsComponent({ isPlayer }: ResultsComponentProps) {
     const { user } = useContext(UserContext);
     const [published, setPublished] = useState<boolean>(false);
-    const [ canSee, setCanSee ] = useState<boolean>(false);
+    const [canSee, setCanSee] = useState<boolean>(false);
     const [results, setResults] = useState<any>();
     const [playerResults, setPlayerResults] = useState<any>();
     const currentId = usePathname().split('/')[1];
@@ -25,21 +25,21 @@ export default function ResultsComponent({isPlayer} : ResultsComponentProps) {
     const fetchResults = async () => {
         try {
             const response = await request.get(`/api/results/?event_id=${currentId}`, settingsWithAuth(user.access));
-            if(response.status === 200) {
+            if (response.status === 200) {
                 setResults(response.data);
             }
-            if(isPlayer){
+            if (isPlayer) {
                 const playerResponse = await request.get(`/api/results/player/?event_id=${currentId}`, settingsWithAuth(user.access));
-                if(playerResponse.status === 200) {
+                if (playerResponse.status === 200) {
                     setPlayerResults(response.data);
                 }
             }
             setPublished(true);
             setCanSee(true);
         } catch (error: unknown) {
-            if(isAxiosError(error)){
+            if (isAxiosError(error)) {
                 const errorMessage = error.response?.data.errors || "Erro desconhecido";
-                console.log(errorMessage, "bigodee");               
+                console.log(errorMessage, "bigodee");
             }
             setCanSee(true)
             console.log(published)
@@ -145,12 +145,12 @@ export default function ResultsComponent({isPlayer} : ResultsComponentProps) {
                 </div>
                 <div className="grid gap-3">
                     <p className="font-semibold text-slate-700 md:text-2xl">PALADINO</p>
-                    {results.paladin.full_name ? <DisplayComponent playerName={capitalize(results.paladin.full_name)} points={results.paladin.total_score} /> :
+                    {results.paladin && results.paladin.full_name ? <DisplayComponent playerName={capitalize(results.paladin.full_name)} points={results.paladin.total_score} /> :
                         <p className="text-lg md:text-xl">Ainda não divulgado</p>}
                 </div>
                 <div className="grid gap-3">
                     <p className="font-semibold text-slate-700 md:text-2xl">EMBAIXADOR</p>
-                    {results.ambassor.full_name ? <DisplayComponent playerName={capitalize(results.ambassor.full_name)} points={results.ambassor.total_score} /> :
+                    {results.ambassor && results.ambassor.full_name ? <DisplayComponent playerName={capitalize(results.ambassor.full_name)} points={results.ambassor.total_score} /> :
                         <p className="text-lg md:text-xl">Ainda não divulgado</p>}
                 </div>
             </div>
