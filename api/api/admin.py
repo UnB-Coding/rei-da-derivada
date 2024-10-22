@@ -75,11 +75,12 @@ class EventAdmin(GuardedModelAdmin):
         return obj.is_imortal_results_published
     imortal_results_published.short_description = 'Imortal Results Published?'
     imortal_results_published.boolean = True
+
     def is_sumulas_generated(self, obj):
         return obj.is_sumulas_generated
     list_display = ['id', 'token', 'join_token', 'name', 'active',
                     'final_results_published', 'imortal_results_published', 'admin_email', "is_sumulas_generated"]
-    search_fields = ['token', 'name', 'active', 'join_token']
+    search_fields = ['token__token_code', 'name', 'active', 'join_token']
     fields = ['token', 'name', 'active',
               'admin_email', 'is_final_results_published', 'is_imortal_results_published', "is_sumulas_generated", 'join_token']
     ordering = ['name', 'active', 'is_final_results_published',
@@ -164,8 +165,7 @@ class SumulaAdmin(GuardedModelAdmin):
     referees.short_description = 'Referees'
     list_display = ['name', 'event', 'referees',
                     'id', 'player_scores', 'players_count', 'active', 'rounds_count', 'rounds']
-    search_fields = ['referee__username',
-                     'event__name', 'name', 'player_scores_count']
+    search_fields = ['referee__username', 'event__name', 'name']
     fields = ['referee', 'event', 'name',
               'active', 'description', 'rounds']
     filter_horizontal = ['referee']
@@ -232,8 +232,8 @@ class PlayerScoreAdmin(GuardedModelAdmin):
 
     list_display = ['id', 'player', 'event', 'sumula_classificatoria',
                     'sumula_imortal', 'points', 'rounds_number']
-    search_fields = ['event', 'sumula_classificatoria',
-                     'sumula_imortal', 'points', 'player']
+    search_fields = ['event__name', 'sumula_classificatoria__name',
+                     'sumula_imortal__name', 'points', 'player__username']
     fields = ['event', 'sumula_classificatoria',
               'sumula_imortal', 'points', 'player']
 
@@ -242,8 +242,9 @@ class PlayerScoreAdmin(GuardedModelAdmin):
 class PlayerAdmin(GuardedModelAdmin):
     list_display = ['id', 'user', 'full_name', 'social_name',
                     'event', 'total_score', 'registration_email', 'is_imortal', 'is_present']
-    search_fields = ['user', 'total_score', 'event', 'registration_email']
-    fields = ['user', 'total_score', 'event',
+    search_fields = ['user__first_name', 'total_score',
+                     'event__name', 'registration_email']
+    fields = ['user', 'total_score', 'event__name',
               'registration_email', 'full_name', 'social_name', 'is_imortal', 'is_present']
 
     def username(self, obj):
@@ -256,7 +257,8 @@ class PlayerAdmin(GuardedModelAdmin):
 class StaffAdmin(GuardedModelAdmin):
     list_display = ['id', 'full_name', 'user', 'event',
                     'registration_email', 'is_manager']
-    search_fields = ['full_name', 'user', 'event', 'registration_email']
+    search_fields = ['full_name', 'user__first_name',
+                     'event__name', 'registration_email']
     fields = ['full_name', 'user', 'event', 'registration_email', 'is_manager']
 
     # def username(self, obj):
@@ -277,7 +279,7 @@ class ResultsAdmin(GuardedModelAdmin):
 
     list_display = ['id', 'event', 'display_top4',
                     'display_imortals', 'ambassor', 'paladin']
-    search_fields = ['event', 'top4__name',
-                     'imortals__name', 'ambassor', 'paladin']
+    search_fields = ['event__name', 'top4__full_name',
+                     'imortals__full_name', 'ambassor__full_name', 'paladin__full_name']
     fields = ['event', 'top4', 'imortals', 'ambassor', 'paladin']
     filter_horizontal = ['top4', 'imortals']
