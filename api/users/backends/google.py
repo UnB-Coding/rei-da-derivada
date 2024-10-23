@@ -3,6 +3,7 @@ from users.models import User
 from decouple import config
 from requests import Response
 from rest_framework import status
+from django.db import transaction, IntegrityError
 
 
 class GoogleOAuth2:
@@ -37,25 +38,30 @@ class GoogleOAuth2:
                 return user_data
             else:
                 return None
-        except requests.exceptions.RequestException as e: # pragma: no cover
+        except requests.exceptions.RequestException as e:  # pragma: no cover
             return None
 
     @staticmethod
     def do_auth(user_data: dict) -> User | None:
-        user, _ = User.objects.get_or_create(
-            email=user_data['email'],
-            username=user_data['email']
-        )
+        try:
+            with transaction.atomic():
+                user, _ = User.objects.get_or_create(
+                    email=user_data['email'],
+                    username=user_data['email']
+                )
 
-        if user_data.get('given_name'):
-            user.first_name = user_data['given_name']
+                if user_data.get('given_name'):
+                    user.first_name = user_data['given_name']
 
-        if user_data.get('family_name'):
-            user.last_name = user_data['family_name']
+                if user_data.get('family_name'):
+                    user.last_name = user_data['family_name']
 
-        if user_data.get('picture'):
-            user.picture_url = user_data['picture']
+                if user_data.get('picture'):
+                    user.picture_url = user_data['picture']
 
-        user.save()
+                user.save()
 
-        return user
+                return user
+        except IntegrityError:
+            # Handle the case where the user was created by another process
+            return User.objects.get(email=user_data['email'])
